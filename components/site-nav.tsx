@@ -1,17 +1,23 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { ThemeToggle } from "@/components/theme_toggle";
 
 const links = [
   { href: "/", label: "Program Builder" },
   { href: "/dashboard", label: "Training Dashboard" },
-  { href: "/athlete", label: "Athlete View" },
+];
+
+const viewOptions = [
+  { href: "/athlete", label: "Athlete view" },
+  { href: "/", label: "Coach view" },
 ];
 
 export function SiteNav() {
   const pathname = usePathname();
+  const router = useRouter();
+  const activeView = viewOptions.find((view) => pathname.startsWith(view.href)) ?? viewOptions[1];
 
   return (
     <header className="border-b border-base-300 bg-base-200 z-40">
@@ -23,8 +29,26 @@ export function SiteNav() {
           <p className="text-sm text-base-content/70">High-performance coaching OS</p>
         </div>
 
-        <nav className="flex flex-wrap gap-2">
-          <ThemeToggle />
+        <nav className="flex flex-wrap items-center gap-3">
+          <div className="dropdown dropdown-end">
+            <label tabIndex={0} className="btn btn-sm btn-ghost rounded-full border-base-200 px-4">
+              {activeView.label}
+              <span className="ml-1">▾</span>
+            </label>
+            <ul tabIndex={0} className="menu dropdown-content z-[1] mt-2 w-48 rounded-box border border-base-300 bg-base-200 p-2 shadow">
+              {viewOptions.map((view) => (
+                <li key={view.href}>
+                  <button
+                    className={pathname.startsWith(view.href) ? "active" : ""}
+                    onClick={() => router.push(view.href)}
+                  >
+                    {view.label}
+                  </button>
+                </li>
+              ))}
+            </ul>
+          </div>
+
           {links.map((link) => {
             const isActive = pathname === link.href;
             return (
@@ -39,6 +63,7 @@ export function SiteNav() {
               </Link>
             );
           })}
+          <ThemeToggle />
         </nav>
       </div>
     </header>
