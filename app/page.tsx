@@ -173,17 +173,17 @@ export default function CoachDashboard() {
             <div className="card-body space-y-4">
               <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
                 <div>
-                  <h2 className="card-title text-lg">Create a new module</h2>
+                  <h2 className="card-title text-lg">Create a new block</h2>
                   <p className="text-sm text-base-content/70">
                   </p>
                 </div>
                 <button
                   type="button"
                   onClick={() => setIsAddModuleExpanded((prev) => !prev)}
-                  className="btn btn-outline btn-sm"
+                  className="btn btn-secondary btn-outline btn-sm"
                   aria-expanded={isAddModuleExpanded}
                 >
-                  {isAddModuleExpanded ? "Hide form" : "Add module"}
+                  {isAddModuleExpanded ? "Hide form" : "Add block"}
                 </button>
               </div>
 
@@ -261,8 +261,8 @@ export default function CoachDashboard() {
                       />
                     </label>
 
-                    <button type="submit" className="btn btn-primary w-full">
-                      Add module to library
+                    <button type="submit" className="btn btn-secondary w-full">
+                      Add block to library
                     </button>
                   </form>
                 </>
@@ -322,9 +322,6 @@ export default function CoachDashboard() {
                 <div>
                   <p className="text-xs font-semibold uppercase tracking-wide text-neutral">Schedule in progress</p>
                   <h2 className="text-3xl font-semibold">Camp Momentum · Week 43</h2>
-                  <p className="text-sm text-base-content/70">
-                    Drag modules into each day. Use the delete button on a block to remove it from the plan.
-                  </p>
                 </div>
               </header>
               <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">

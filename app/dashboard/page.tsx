@@ -65,7 +65,7 @@ export default function TrainingDashboardPage() {
                   {week.label}
                 </button>
               ))}
-              <button className="btn btn-outline btn-sm">Edit program</button>
+              <button className="btn btn-outline btn-sm btn-secondary">Edit program</button>
             </div>
           </div>
 
