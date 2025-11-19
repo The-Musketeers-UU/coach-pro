@@ -1,9 +1,11 @@
+"use client";
+
 import { useState } from "react";
 
 const programWeeks = [
   {
     id: "wk-1",
-    label: "Week 1 · June 3 – 9",
+    label: "Camp momentum",
     focus: "Race-week sharpening",
     days: [
       {
@@ -64,7 +66,7 @@ const programWeeks = [
   },
   {
     id: "wk-2",
-    label: "Week 2 · June 10 – 16",
+    label: "Week 34",
     focus: "Return-to-play rebuild",
     days: [
       {
@@ -169,10 +171,6 @@ const athletes = [
 ];
 
 export default function TrainingDashboardPage() {
-  const totalModules = programWeeks.reduce(
-    (count, week) => count + week.days.reduce((weekCount, day) => weekCount + day.modules.length, 0),
-    0,
-  );
 
   const [activeWeekId, setActiveWeekId] = useState(programWeeks[0].id);
   const activeWeek = programWeeks.find((week) => week.id === activeWeekId) ?? programWeeks[0];
@@ -180,38 +178,9 @@ export default function TrainingDashboardPage() {
   return (
     <div className="min-h-screen">
       <div className="mx-auto max-w-6xl space-y-10 px-4 py-10">
-        <header className="space-y-4">
-          <p className="text-xs font-semibold uppercase tracking-wide text-neutral">Training dashboard</p>
-          <div className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
-            <div>
-              <h1 className="text-3xl font-semibold tracking-tight">Programs & Athletes Overview</h1>
-              <p className="text-base text-base-content/70">
-                Monitor how the current build is progressing and which athletes need support today.
-              </p>
-            </div>
-            <div className="stats stats-horizontal shadow">
-              <div className="stat">
-                <div className="stat-title">Weeks in block</div>
-                <div className="stat-value text-primary">{programWeeks.length}</div>
-              </div>
-              <div className="stat">
-                <div className="stat-title">Modules scheduled</div>
-                <div className="stat-value text-secondary">{totalModules}</div>
-              </div>
-              <div className="stat">
-                <div className="stat-title">Athletes in block</div>
-                <div className="stat-value">{athletes.length}</div>
-              </div>
-            </div>
-          </div>
-        </header>
 
         <section className="space-y-4">
           <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
-            <div>
-              <h2 className="text-2xl font-semibold">Camp Momentum</h2>
-              <p className="text-sm text-base-content/70">June 3 – 16 · Built in the program builder</p>
-            </div>
             <div className="flex flex-wrap gap-2">
               {programWeeks.map((week) => (
                 <button
@@ -230,21 +199,9 @@ export default function TrainingDashboardPage() {
             <div className="card-body space-y-6">
               <div className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
                 <div>
-                  <p className="text-xs font-semibold uppercase tracking-wide text-neutral">Active week</p>
+                  <p className="text-xs font-semibold uppercase tracking-wide text-neutral">Week 33</p>
                   <h3 className="text-2xl font-semibold">{activeWeek.label}</h3>
                   <p className="text-sm text-base-content/70">Focus: {activeWeek.focus}</p>
-                </div>
-                <div className="stats shadow">
-                  <div className="stat">
-                    <div className="stat-title">Days</div>
-                    <div className="stat-value text-primary">{activeWeek.days.length}</div>
-                  </div>
-                  <div className="stat">
-                    <div className="stat-title">Modules</div>
-                    <div className="stat-value text-secondary">
-                      {activeWeek.days.reduce((count, day) => count + day.modules.length, 0)}
-                    </div>
-                  </div>
                 </div>
               </div>
 
@@ -259,7 +216,6 @@ export default function TrainingDashboardPage() {
                         <p className="text-xs font-semibold uppercase tracking-wide text-neutral">{day.label}</p>
                         <p className="text-sm text-base-content/70">{day.modules.length} modules</p>
                       </div>
-                      <span className="badge badge-outline badge-sm">Program builder view</span>
                     </div>
 
                     <div className="mt-3 space-y-3">

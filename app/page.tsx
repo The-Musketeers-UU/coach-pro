@@ -170,7 +170,7 @@ export default function CoachDashboard() {
     <div className="min-h-screen">
       <div className="mx-auto flex max-w-7xl flex-col gap-6 px-4 py-10 lg:flex-row">
         <aside className="w-full space-y-6 lg:w-1/3">
-          <div className="card bg-base-200 shadow-lg border border-base-300">
+          <div className="card bg-base-200 shadow-md border border-base-300">
             <div className="card-body space-y-4">
               <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
                 <div>
@@ -271,7 +271,7 @@ export default function CoachDashboard() {
             </div>
           </div>
 
-          <div className="card bg-base-200 border border-base-300 shadow-lg">
+          <div className="card bg-base-200 border border-base-300 shadow-md">
             <div className="card-body">
               <p className="text-xs font-semibold uppercase tracking-wide text-neutral">Reusable blocks</p>
               <div className="mt-3 max-h-[30rem] space-y-3 overflow-y-auto pr-1">
@@ -306,7 +306,7 @@ export default function CoachDashboard() {
         </aside>
 
         <section className="w-full space-y-6 lg:w-2/3">
-          <div className="card bg-base-200 border border-base-300 shadow-lg">
+          <div className="card bg-base-200 border border-base-300 shadow-md">
             <div className="card-body gap-6">
               <header className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
                 <div>
@@ -329,7 +329,6 @@ export default function CoachDashboard() {
                       <div>
                         <p className="text-xs font-semibold uppercase tracking-wide text-neutral">{day.label}</p>
                       </div>
-                      <span className="badge badge-outline badge-sm">Drop here</span>
                     </div>
 
                     <div className="mt-3 flex-1 space-y-3">
