@@ -1,7 +1,6 @@
 import type { Metadata } from "next";
 import { SiteNav } from "@/components/site-nav";
 import "./globals.css";
-import { ThemeToggle } from "../components/theme_toggle";
 
 export const metadata: Metadata = {
   title: "Coach Pro · Camp Momentum",

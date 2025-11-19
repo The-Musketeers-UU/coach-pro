@@ -1,7 +1,6 @@
 "use client";
 
 import { FormEvent, useMemo, useState } from "react";
-import { useEffect } from 'react';
 
 type Module = {
   id: string;
@@ -102,8 +101,8 @@ const days = [
 ];
 
 export default function CoachDashboard() {
-  const [search, setSearch] = useState("");
-  const [focusFilter, setFocusFilter] = useState<string>("All");
+  const search = "";
+  const focusFilter = "All";
   const [activeDrag, setActiveDrag] = useState<Module | null>(null);
   const [moduleLibrary, setModuleLibrary] = useState<Module[]>(initialModules);
   const [schedule, setSchedule] = useState<DaySchedule>(() =>
