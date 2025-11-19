@@ -110,6 +110,7 @@ export default function CoachDashboard() {
   );
   const [newModule, setNewModule] = useState<ModuleForm>(() => createInitialFormState());
   const [formError, setFormError] = useState<string | null>(null);
+  const [isAddModuleExpanded, setIsAddModuleExpanded] = useState(false);
 
   const filteredModules = useMemo(() => {
     return moduleLibrary.filter((module) => {
@@ -214,87 +215,103 @@ export default function CoachDashboard() {
 
           <div className="card bg-base-100 shadow-xl">
             <div className="card-body space-y-4">
-              <div>
-                <h2 className="card-title text-lg">Add a new module</h2>
-                <p className="text-sm text-base-content/70">
-                  Capture on-the-fly blocks that you can immediately schedule.
-                </p>
+              <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                <div>
+                  <h2 className="card-title text-lg">Add a new module</h2>
+                  <p className="text-sm text-base-content/70">
+                    Capture on-the-fly blocks that you can immediately schedule.
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setIsAddModuleExpanded((prev) => !prev)}
+                  className="btn btn-outline btn-sm"
+                  aria-expanded={isAddModuleExpanded}
+                >
+                  {isAddModuleExpanded ? "Hide form" : "Add module"}
+                </button>
               </div>
 
-              {formError && <div className="alert alert-error text-sm">{formError}</div>}
+              {isAddModuleExpanded && (
+                <>
+                  {formError && <div className="alert alert-error text-sm">{formError}</div>}
 
-              <form className="space-y-3" onSubmit={handleAddModule}>
-                <label className="form-control">
-                  <span className="label-text">Title</span>
-                  <input
-                    type="text"
-                    value={newModule.title}
-                    onChange={(event) => setNewModule((prev) => ({ ...prev, title: event.target.value }))}
-                    className="input input-bordered"
-                    placeholder="Explosive Acceleration"
-                  />
-                </label>
+                  <form className="space-y-3" onSubmit={handleAddModule}>
+                    <label className="form-control">
+                      <span className="label-text">Title</span>
+                      <input
+                        type="text"
+                        value={newModule.title}
+                        onChange={(event) => setNewModule((prev) => ({ ...prev, title: event.target.value }))}
+                        className="input input-bordered"
+                        placeholder="Explosive Acceleration"
+                      />
+                    </label>
 
-                <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
-                  <label className="form-control">
-                    <span className="label-text">Focus</span>
-                    <select
-                      className="select select-bordered"
-                      value={newModule.focus}
-                      onChange={(event) => setNewModule((prev) => ({ ...prev, focus: event.target.value as Module["focus"] }))}
-                    >
-                      {focusValues.map((focus) => (
-                        <option key={focus} value={focus}>
-                          {focus}
-                        </option>
-                      ))}
-                    </select>
-                  </label>
+                    <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
+                      <label className="form-control">
+                        <span className="label-text">Focus</span>
+                        <select
+                          className="select select-bordered"
+                          value={newModule.focus}
+                          onChange={(event) =>
+                            setNewModule((prev) => ({ ...prev, focus: event.target.value as Module["focus"] }))
+                          }
+                        >
+                          {focusValues.map((focus) => (
+                            <option key={focus} value={focus}>
+                              {focus}
+                            </option>
+                          ))}
+                        </select>
+                      </label>
 
-                  <label className="form-control">
-                    <span className="label-text">Intensity</span>
-                    <select
-                      className="select select-bordered"
-                      value={newModule.intensity}
-                      onChange={(event) =>
-                        setNewModule((prev) => ({ ...prev, intensity: event.target.value as Module["intensity"] }))
-                      }
-                    >
-                      {["Low", "Moderate", "High"].map((level) => (
-                        <option key={level} value={level}>
-                          {level}
-                        </option>
-                      ))}
-                    </select>
-                  </label>
-                </div>
+                      <label className="form-control">
+                        <span className="label-text">Intensity</span>
+                        <select
+                          className="select select-bordered"
+                          value={newModule.intensity}
+                          onChange={(event) =>
+                            setNewModule((prev) => ({ ...prev, intensity: event.target.value as Module["intensity"] }))
+                          }
+                        >
+                          {["Low", "Moderate", "High"].map((level) => (
+                            <option key={level} value={level}>
+                              {level}
+                            </option>
+                          ))}
+                        </select>
+                      </label>
+                    </div>
 
-                <label className="form-control">
-                  <span className="label-text">Duration</span>
-                  <input
-                    type="text"
-                    className="input input-bordered"
-                    placeholder="45 min"
-                    value={newModule.duration}
-                    onChange={(event) => setNewModule((prev) => ({ ...prev, duration: event.target.value }))}
-                  />
-                </label>
+                    <label className="form-control">
+                      <span className="label-text">Duration</span>
+                      <input
+                        type="text"
+                        className="input input-bordered"
+                        placeholder="45 min"
+                        value={newModule.duration}
+                        onChange={(event) => setNewModule((prev) => ({ ...prev, duration: event.target.value }))}
+                      />
+                    </label>
 
-                <label className="form-control">
-                  <span className="label-text">Description</span>
-                  <textarea
-                    className="textarea textarea-bordered"
-                    rows={3}
-                    placeholder="What's the intent?"
-                    value={newModule.description}
-                    onChange={(event) => setNewModule((prev) => ({ ...prev, description: event.target.value }))}
-                  />
-                </label>
+                    <label className="form-control">
+                      <span className="label-text">Description</span>
+                      <textarea
+                        className="textarea textarea-bordered"
+                        rows={3}
+                        placeholder="What's the intent?"
+                        value={newModule.description}
+                        onChange={(event) => setNewModule((prev) => ({ ...prev, description: event.target.value }))}
+                      />
+                    </label>
 
-                <button type="submit" className="btn btn-primary w-full">
-                  Add module to library
-                </button>
-              </form>
+                    <button type="submit" className="btn btn-primary w-full">
+                      Add module to library
+                    </button>
+                  </form>
+                </>
+              )}
             </div>
           </div>
 
