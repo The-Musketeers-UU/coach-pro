@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { ThemeToggle } from "@/components/theme_toggle";
 
 const links = [
   { href: "/", label: "Program Builder" },
@@ -13,7 +14,7 @@ export function SiteNav() {
   const pathname = usePathname();
 
   return (
-    <header className="border-b border-base-200 bg-white/95 backdrop-blur supports-[backdrop-filter]:bg-white/80">
+    <header className="border-b border-base-200 bg-white/95 backdrop-blur supports-[backdrop-filter]:bg-white/80 z-40">
       <div className="mx-auto flex max-w-7xl flex-col gap-4 px-4 py-5 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <Link href="/" className="text-xl font-semibold tracking-tight text-primary">
@@ -23,6 +24,7 @@ export function SiteNav() {
         </div>
 
         <nav className="flex flex-wrap gap-2">
+          <ThemeToggle />
           {links.map((link) => {
             const isActive = pathname === link.href;
             return (
