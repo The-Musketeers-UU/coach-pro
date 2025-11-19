@@ -101,7 +101,7 @@ const days = [
 ];
 
 export default function CoachDashboard() {
-  const search = "";
+  const [search, setSearch] = useState("");
   const focusFilter = "All";
   const [activeDrag, setActiveDrag] = useState<Module | null>(null);
   const [moduleLibrary, setModuleLibrary] = useState<Module[]>(initialModules);
@@ -272,7 +272,18 @@ export default function CoachDashboard() {
 
           <div className="card bg-base-200 border border-base-300 shadow-md">
             <div className="card-body">
-              <p className="text-xs font-semibold uppercase tracking-wide text-neutral">Reusable blocks</p>
+              <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                <p className="text-xs font-semibold uppercase tracking-wide text-neutral">Reusable blocks</p>
+                <label className="input input-bordered input-sm flex items-center gap-2 sm:max-w-xs">
+                  <input
+                    type="search"
+                    value={search}
+                    onChange={(event) => setSearch(event.target.value)}
+                    placeholder="Search blocks"
+                    className="grow"
+                  />
+                </label>
+              </div>
               <div className="mt-3 max-h-[30rem] space-y-3 overflow-y-auto pr-1">
                 {filteredModules.map((module) => (
                   <article
@@ -312,7 +323,7 @@ export default function CoachDashboard() {
                   <p className="text-xs font-semibold uppercase tracking-wide text-neutral">Schedule in progress</p>
                   <h2 className="text-3xl font-semibold">Camp Momentum · Week 43</h2>
                   <p className="text-sm text-base-content/70">
-                    Drag modules into each day. Tap a block to remove it from the plan.
+                    Drag modules into each day. Use the delete button on a block to remove it from the plan.
                   </p>
                 </div>
               </header>
@@ -338,18 +349,29 @@ export default function CoachDashboard() {
                       )}
 
                       {schedule[day.id].map((module, index) => (
-                        <button
+                        <div
                           key={`${module.id}-${index}`}
-                          onClick={() => handleRemoveModule(day.id, index)}
-                          className="w-full rounded-xl border border-base-200 bg-base-100 p-3 text-left transition hover:border-error hover:bg-error/10"
+                          className="w-full rounded-xl border border-base-200 bg-base-100 p-3 transition"
                         >
-                          <div className="flex items-center justify-between text-xs text-base-content/60">
-                            <span>{module.focus}</span>
-                            <span>{module.duration}</span>
+                          <div className="flex items-start justify-between gap-2">
+                            <div className="text-xs text-base-content/60">
+                              <div className="flex items-center gap-2">
+                                <span>{module.focus}</span>
+                                <span className="text-base-content/50">·</span>
+                                <span>{module.duration}</span>
+                              </div>
+                              <p className="mt-1 font-semibold text-base-content">{module.title}</p>
+                            </div>
+                            <button
+                              type="button"
+                              onClick={() => handleRemoveModule(day.id, index)}
+                              className="btn btn-ghost btn-xs text-error"
+                              aria-label={`Delete ${module.title}`}
+                            >
+                              Delete
+                            </button>
                           </div>
-                          <p className="mt-1 font-semibold">{module.title}</p>
-                          <p className="text-xs text-base-content/60">Tap to remove</p>
-                        </button>
+                        </div>
                       ))}
                     </div>
                   </div>
