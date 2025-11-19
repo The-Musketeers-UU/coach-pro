@@ -221,43 +221,44 @@ export default function AthleteSchedulePage() {
             </Link>
           </div>
 
-          <div className="space-y-4">
-            {weekPlan.map((day) => (
-              <article key={day.id} className="rounded-3xl border border-base-300 bg-base-200 p-5 shadow-sm">
-                <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                  <div>
-                    <p className="text-xs font-semibold uppercase tracking-wide text-neutral">
-                      {day.day} · {day.date}
-                    </p>
-                    <p className="text-sm text-base-content/70">{day.modules.length} modules</p>
-                  </div>
-                  <div className="flex items-center gap-2 text-sm font-semibold">
-                    <span>{day.readiness}% ready</span>
-                    <span className={`badge ${statusBadge[day.status]} badge-sm`}>{day.status}</span>
-                  </div>
-                </div>
-
-                <div className="mt-4 grid gap-3 md:grid-cols-2">
-                  {day.modules.map((module) => (
-                    <details key={`${day.id}-${module.title}`} className="collapse rounded-2xl border border-base-300 bg-base-300/40">
-                      <summary className="collapse-title flex items-center justify-between text-sm font-semibold">
-                        <span>{module.title}</span>
-                        <span className="badge badge-outline badge-sm">{module.focus}</span>
-                      </summary>
-                      <div className="collapse-content space-y-2 text-sm text-base-content/70">
-                        <p className="font-semibold text-base-content">Duration: {module.duration}</p>
-                        <p>{module.intent}</p>
+          <div className="overflow-x-auto">
+            <div className="min-w-[1100px]">
+              <div className="grid grid-cols-7 gap-3">
+                {weekPlan.map((day) => (
+                  <article key={day.id} className="flex h-full flex-col rounded-3xl border border-base-300 bg-base-200 shadow-sm">
+                    <div className="flex items-start justify-between border-b border-base-300 px-4 py-3">
+                      <div>
+                        <p className="text-xs font-semibold uppercase tracking-wide text-neutral">{day.day}</p>
+                        <p className="text-sm text-base-content/70">{day.date}</p>
+                        <p className="text-xs text-base-content/60">{day.modules.length} modules</p>
                       </div>
-                    </details>
-                  ))}
-                </div>
+                      <div className="text-right text-sm font-semibold">
+                        <p>{day.readiness}% ready</p>
+                        <span className={`badge ${statusBadge[day.status]} badge-sm`}>{day.status}</span>
+                      </div>
+                    </div>
 
-                <div className="mt-4 rounded-2xl bg-base-300/60 p-4 text-sm text-base-content/80">
-                  <p className="font-semibold">Coach note</p>
-                  <p>{day.note}</p>
-                </div>
-              </article>
-            ))}
+                    <div className="divide-y divide-base-300">
+                      {day.modules.map((module) => (
+                        <div key={`${day.id}-${module.title}`} className="space-y-1 px-4 py-3 text-sm">
+                          <div className="flex items-center justify-between gap-2 font-semibold">
+                            <span className="leading-tight">{module.title}</span>
+                            <span className="badge badge-outline badge-xs">{module.focus}</span>
+                          </div>
+                          <p className="text-xs text-base-content/70">Duration: {module.duration}</p>
+                          <p className="text-xs text-base-content/60">{module.intent}</p>
+                        </div>
+                      ))}
+                    </div>
+
+                    <div className="mt-auto border-t border-base-300 bg-base-300/60 px-4 py-3 text-xs text-base-content/80">
+                      <p className="font-semibold text-base-content">Coach note</p>
+                      <p>{day.note}</p>
+                    </div>
+                  </article>
+                ))}
+              </div>
+            </div>
           </div>
         </section>
       </div>
