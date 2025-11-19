@@ -13,7 +13,7 @@ export default function AthleteSchedulePage() {
         <header className="rounded-3xl border border-base-300 bg-base-200 p-6 shadow-sm">
           <div className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
             <div>
-              <h1 className="text-3xl font-semibold">Anna's Schedules</h1>
+              <h1 className="text-3xl font-semibold">Anna&apos;s Schedules</h1>
               <p className="text-sm text-base-content/70">Shared by coach Benke.</p>
             </div>
           </div>
