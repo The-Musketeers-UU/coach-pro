@@ -4,20 +4,23 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { ThemeToggle } from "@/components/theme_toggle";
 
-const links = [
-  { href: "/", label: "Program Builder" },
-  { href: "/dashboard", label: "Training Dashboard" },
-];
-
 const viewOptions = [
   { href: "/athlete", label: "Athlete view" },
   { href: "/", label: "Coach view" },
 ];
 
+const coachLinks = [
+  { href: "/", label: "Program Builder" },
+  { href: "/dashboard", label: "Training Dashboard" },
+];
+
+const athleteLinks = [{ href: "/athlete", label: "Veckoscheman" }];
+
 export function SiteNav() {
   const pathname = usePathname();
   const router = useRouter();
   const activeView = viewOptions.find((view) => pathname.startsWith(view.href)) ?? viewOptions[1];
+  const navLinks = activeView.href === "/athlete" ? athleteLinks : coachLinks;
 
   return (
     <header className="border-b border-base-300 bg-base-200 z-40">
@@ -49,7 +52,7 @@ export function SiteNav() {
             </ul>
           </div>
 
-          {links.map((link) => {
+          {navLinks.map((link) => {
             const isActive = pathname === link.href;
             return (
               <Link
