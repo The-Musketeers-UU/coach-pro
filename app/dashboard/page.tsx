@@ -69,10 +69,10 @@ export default function TrainingDashboardPage() {
             </div>
           </div>
 
-          <div className="card border border-base-300 bg-base-200 shadow-sm">
-            <div className="card-body space-y-6">
-              <div className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
-                <div>
+              <div className="card border border-base-300 bg-base-200 shadow-sm">
+                <div className="card-body space-y-6">
+                  <div className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
+                    <div>
                   <p className="text-xs font-semibold uppercase tracking-wide text-neutral">Week 33</p>
                   <h3 className="text-2xl font-semibold">{activeWeek.label}</h3>
                   <p className="text-sm text-base-content/70">Focus: {activeWeek.focus}</p>
@@ -165,6 +165,7 @@ export default function TrainingDashboardPage() {
             </table>
           </div>
         </section>
+
       </div>
     </div>
   );
