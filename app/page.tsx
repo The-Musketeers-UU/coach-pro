@@ -173,7 +173,7 @@ export default function CoachDashboard() {
             <div className="card-body space-y-4">
               <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
                 <div>
-                  <h2 className="card-title text-lg">Add a new module</h2>
+                  <h2 className="card-title text-lg">Create a new module</h2>
                   <p className="text-sm text-base-content/70">
                   </p>
                 </div>

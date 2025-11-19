@@ -14,7 +14,7 @@ const coachLinks = [
   { href: "/dashboard", label: "Training Dashboard" },
 ];
 
-const athleteLinks = [{ href: "/athlete", label: "Veckoscheman" }];
+const athleteLinks = [{ href: "/athlete", label: "My Schedules" }];
 
 export function SiteNav() {
   const pathname = usePathname();
@@ -25,20 +25,17 @@ export function SiteNav() {
   return (
     <header className="border-b border-base-300 bg-base-200 z-40">
       <div className="mx-auto flex max-w-7xl flex-col gap-4 px-4 py-5 sm:flex-row sm:items-center sm:justify-between">
-        <div>
+        <div className="flex flex-wrap items-center gap-3">
           <Link href="/" className="text-xl font-semibold tracking-tight text-primary">
             Coach Pro
           </Link>
-          <p className="text-sm text-base-content/70">High-performance coaching OS</p>
-        </div>
-
-        <nav className="flex flex-wrap items-center gap-3">
+          <ThemeToggle />
           <div className="dropdown dropdown-end">
             <label tabIndex={0} className="btn btn-sm btn-ghost rounded-full border-base-200 px-4">
               {activeView.label}
               <span className="ml-1">▾</span>
             </label>
-            <ul tabIndex={0} className="menu dropdown-content z-[1] mt-2 w-48 rounded-box border border-base-300 bg-base-200 p-2 shadow">
+            <ul tabIndex={0} className="menu dropdown-content z-1 mt-2 w-48 rounded-box border border-base-300 bg-base-200 p-2 shadow">
               {viewOptions.map((view) => (
                 <li key={view.href}>
                   <button
@@ -51,6 +48,10 @@ export function SiteNav() {
               ))}
             </ul>
           </div>
+        </div>
+
+        <nav className="flex flex-wrap items-center gap-3">
+          
 
           {navLinks.map((link) => {
             const isActive = pathname === link.href;
@@ -66,7 +67,6 @@ export function SiteNav() {
               </Link>
             );
           })}
-          <ThemeToggle />
         </nav>
       </div>
     </header>
