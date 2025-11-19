@@ -170,7 +170,7 @@ export default function AthleteSchedulePage() {
   const totalModules = weekPlan.reduce((count, day) => count + day.modules.length, 0);
 
   return (
-    <div className="min-h-screen bg-white">
+    <div className="min-h-screen">
       <div className="mx-auto max-w-5xl space-y-8 px-4 py-10">
         <header className="rounded-3xl border border-base-200 bg-base-100 p-6 shadow-sm">
           <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">

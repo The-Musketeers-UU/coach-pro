@@ -70,7 +70,7 @@ const athletes = [
 
 export default function TrainingDashboardPage() {
   return (
-    <div className="min-h-screen bg-white">
+    <div className="min-h-screen">
       <div className="mx-auto max-w-6xl space-y-10 px-4 py-10">
         <header className="space-y-4">
           <p className="text-xs font-semibold uppercase tracking-wide text-neutral">Training dashboard</p>
