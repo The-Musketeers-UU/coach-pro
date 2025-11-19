@@ -170,57 +170,12 @@ export default function CoachDashboard() {
     <div className="min-h-screen">
       <div className="mx-auto flex max-w-7xl flex-col gap-6 px-4 py-10 lg:flex-row">
         <aside className="w-full space-y-6 lg:w-1/3">
-          <div className="card bg-base-100 shadow-xl">
-            <div className="card-body">
-              <header className="space-y-2">
-                <p className="text-xs font-semibold uppercase tracking-wide text-neutral">Module library</p>
-                <h1 className="card-title text-3xl">Build from your toolkit</h1>
-                <p className="text-sm text-base-content/70">
-                  Search, filter, add, then drag modules into the weekly schedule.
-                </p>
-              </header>
-
-              <label className="form-control w-full">
-                <div className="label">
-                  <span className="label-text text-xs uppercase tracking-wide">Search modules</span>
-                </div>
-                <input
-                  type="text"
-                  value={search}
-                  onChange={(event) => setSearch(event.target.value)}
-                  placeholder="e.g. Threshold, Mobility"
-                  className="input input-bordered w-full"
-                />
-              </label>
-
-              <div className="form-control">
-                <div className="label">
-                  <span className="label-text text-xs uppercase tracking-wide">Focus area</span>
-                </div>
-                <div className="flex flex-wrap gap-2">
-                  {focusOptions.map((option) => (
-                    <button
-                      key={option}
-                      onClick={() => setFocusFilter(option)}
-                      className={`btn btn-xs ${
-                        option === focusFilter ? "btn-primary" : "btn-outline"
-                      }`}
-                    >
-                      {option}
-                    </button>
-                  ))}
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <div className="card bg-base-100 shadow-xl">
+          <div className="card bg-base-200 shadow-lg border border-base-300">
             <div className="card-body space-y-4">
               <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
                 <div>
                   <h2 className="card-title text-lg">Add a new module</h2>
                   <p className="text-sm text-base-content/70">
-                    Capture on-the-fly blocks that you can immediately schedule.
                   </p>
                 </div>
                 <button
@@ -316,7 +271,7 @@ export default function CoachDashboard() {
             </div>
           </div>
 
-          <div className="card bg-base-100 shadow-xl">
+          <div className="card bg-base-200 border border-base-300 shadow-lg">
             <div className="card-body">
               <p className="text-xs font-semibold uppercase tracking-wide text-neutral">Reusable blocks</p>
               <div className="mt-3 max-h-[30rem] space-y-3 overflow-y-auto pr-1">
@@ -341,7 +296,7 @@ export default function CoachDashboard() {
                 ))}
 
                 {filteredModules.length === 0 && (
-                  <p className="rounded-2xl border border-dashed border-base-300 p-6 text-center text-sm text-base-content/60">
+                  <p className="rounded-2xl border border-dashed border-base-200 p-6 text-center text-sm text-base-content/60">
                     No modules match your search. Clear filters to see more.
                   </p>
                 )}
@@ -351,7 +306,7 @@ export default function CoachDashboard() {
         </aside>
 
         <section className="w-full space-y-6 lg:w-2/3">
-          <div className="card bg-base-100 shadow-xl">
+          <div className="card bg-base-200 border border-base-300 shadow-lg">
             <div className="card-body gap-6">
               <header className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
                 <div>
@@ -361,29 +316,14 @@ export default function CoachDashboard() {
                     Drag modules into each day. Tap a block to remove it from the plan.
                   </p>
                 </div>
-                <div className="stats stats-vertical shadow lg:stats-horizontal">
-                  <div className="stat">
-                    <div className="stat-title">Modules scheduled</div>
-                    <div className="stat-value text-primary">
-                      {Object.values(schedule).reduce((count, blocks) => count + blocks.length, 0)}
-                    </div>
-                  </div>
-                  <div className="stat">
-                    <div className="stat-title">Active filter</div>
-                    <div className="stat-value text-secondary text-lg">
-                      {focusFilter === "All" ? "All focuses" : focusFilter}
-                    </div>
-                  </div>
-                </div>
               </header>
-
               <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
                 {days.map((day) => (
                   <div
                     key={day.id}
                     onDragOver={(event) => event.preventDefault()}
                     onDrop={() => handleDrop(day.id)}
-                    className="flex min-h-[220px] flex-col rounded-2xl border border-dashed border-base-300 bg-base-200/50 p-4"
+                    className="flex min-h-[220px] flex-col rounded-2xl border border-dashed border-base-200 bg-base-300 p-4"
                   >
                     <div className="flex items-center justify-between">
                       <div>
@@ -395,7 +335,7 @@ export default function CoachDashboard() {
 
                     <div className="mt-3 flex-1 space-y-3">
                       {schedule[day.id].length === 0 && (
-                        <div className="flex h-full items-center justify-center rounded-xl border border-dashed border-base-300 bg-base-100/60 p-4 text-center text-xs text-base-content/60">
+                        <div className="flex h-full items-center justify-center rounded-xl border border-dashed border-base-200 bg-base-100/60 p-4 text-center text-xs text-base-content/60">
                           Drag a module to begin
                         </div>
                       )}
@@ -404,7 +344,7 @@ export default function CoachDashboard() {
                         <button
                           key={`${module.id}-${index}`}
                           onClick={() => handleRemoveModule(day.id, index)}
-                          className="w-full rounded-xl border border-base-300 bg-base-100 p-3 text-left transition hover:border-error hover:bg-error/10"
+                          className="w-full rounded-xl border border-base-200 bg-base-100 p-3 text-left transition hover:border-error hover:bg-error/10"
                         >
                           <div className="flex items-center justify-between text-xs text-base-content/60">
                             <span>{module.focus}</span>

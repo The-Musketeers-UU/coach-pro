@@ -172,7 +172,7 @@ export default function AthleteSchedulePage() {
   return (
     <div className="min-h-screen">
       <div className="mx-auto max-w-5xl space-y-8 px-4 py-10">
-        <header className="rounded-3xl border border-base-200 bg-base-100 p-6 shadow-sm">
+        <header className="rounded-3xl border border-base-300 bg-base-200 p-6 shadow-sm">
           <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
             <div>
               <p className="text-xs font-semibold uppercase tracking-wide text-neutral">Athlete view</p>
@@ -200,7 +200,7 @@ export default function AthleteSchedulePage() {
 
         <section className="grid grid-cols-1 gap-4 md:grid-cols-2">
           {focusHighlights.map((highlight) => (
-            <article key={highlight.title} className="card border border-base-200 bg-base-100 shadow-sm">
+            <article key={highlight.title} className="card border border-base-300 bg-base-200 shadow-sm">
               <div className="card-body space-y-2">
                 <p className="text-xs uppercase tracking-wide text-neutral">Focus</p>
                 <h2 className="text-lg font-semibold">{highlight.title}</h2>
@@ -223,7 +223,7 @@ export default function AthleteSchedulePage() {
 
           <div className="space-y-4">
             {weekPlan.map((day) => (
-              <article key={day.id} className="rounded-3xl border border-base-200 bg-base-100 p-5 shadow-sm">
+              <article key={day.id} className="rounded-3xl border border-base-300 bg-base-200 p-5 shadow-sm">
                 <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                   <div>
                     <p className="text-xs font-semibold uppercase tracking-wide text-neutral">
@@ -239,7 +239,7 @@ export default function AthleteSchedulePage() {
 
                 <div className="mt-4 grid gap-3 md:grid-cols-2">
                   {day.modules.map((module) => (
-                    <details key={`${day.id}-${module.title}`} className="collapse rounded-2xl border border-base-200 bg-base-200/40">
+                    <details key={`${day.id}-${module.title}`} className="collapse rounded-2xl border border-base-300 bg-base-300/40">
                       <summary className="collapse-title flex items-center justify-between text-sm font-semibold">
                         <span>{module.title}</span>
                         <span className="badge badge-outline badge-sm">{module.focus}</span>
@@ -252,7 +252,7 @@ export default function AthleteSchedulePage() {
                   ))}
                 </div>
 
-                <div className="mt-4 rounded-2xl bg-base-200/60 p-4 text-sm text-base-content/80">
+                <div className="mt-4 rounded-2xl bg-base-300/60 p-4 text-sm text-base-content/80">
                   <p className="font-semibold">Coach note</p>
                   <p>{day.note}</p>
                 </div>

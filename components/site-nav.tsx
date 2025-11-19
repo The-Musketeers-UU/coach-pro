@@ -14,7 +14,7 @@ export function SiteNav() {
   const pathname = usePathname();
 
   return (
-    <header className="border-b border-base-200 bg-white/95 backdrop-blur supports-[backdrop-filter]:bg-white/80 z-40">
+    <header className="border-b border-base-300 bg-base-200 z-40">
       <div className="mx-auto flex max-w-7xl flex-col gap-4 px-4 py-5 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <Link href="/" className="text-xl font-semibold tracking-tight text-primary">

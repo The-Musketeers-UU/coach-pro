@@ -105,7 +105,7 @@ export default function TrainingDashboardPage() {
 
           <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
             {programs.map((program) => (
-              <article key={program.id} className="card border border-base-200 bg-base-100 shadow-sm">
+              <article key={program.id} className="card border border-base-300 bg-base-200 shadow-sm">
                 <div className="card-body space-y-3">
                   <div className="flex items-center justify-between text-sm text-base-content/70">
                     <span className="badge badge-outline">{program.window}</span>
@@ -133,7 +133,7 @@ export default function TrainingDashboardPage() {
             </p>
           </div>
 
-          <div className="overflow-x-auto rounded-2xl border border-base-200 bg-base-100">
+          <div className="overflow-x-auto rounded-2xl border border-base-300 bg-base-200">
             <table className="table">
               <thead>
                 <tr className="text-xs uppercase text-base-content/70">
