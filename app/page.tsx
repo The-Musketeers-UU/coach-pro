@@ -311,7 +311,7 @@ export default function CoachDashboard() {
               <header className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
                 <div>
                   <p className="text-xs font-semibold uppercase tracking-wide text-neutral">Schedule in progress</p>
-                  <h2 className="text-3xl font-semibold">Camp Momentum · June 3 – 9</h2>
+                  <h2 className="text-3xl font-semibold">Camp Momentum · Week 43</h2>
                   <p className="text-sm text-base-content/70">
                     Drag modules into each day. Tap a block to remove it from the plan.
                   </p>
@@ -328,7 +328,6 @@ export default function CoachDashboard() {
                     <div className="flex items-center justify-between">
                       <div>
                         <p className="text-xs font-semibold uppercase tracking-wide text-neutral">{day.label}</p>
-                        <p className="text-sm text-base-content/70">{schedule[day.id].length} modules</p>
                       </div>
                       <span className="badge badge-outline badge-sm">Drop here</span>
                     </div>
