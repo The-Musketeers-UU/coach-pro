@@ -32,6 +32,18 @@ export default function TrainingDashboardPage() {
             </p>
           </div>
 
+          <div className="flex flex-wrap gap-3">
+            {Object.keys(groupedAthletes).map((groupName) => (
+              <Link
+                key={groupName}
+                href={`/dashboard/groups/${encodeURIComponent(groupName)}`}
+                className="btn btn-outline btn-primary"
+              >
+                {groupName}
+              </Link>
+            ))}
+          </div>
+
           <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
             {Object.entries(groupedAthletes).map(([groupName, athletes]) => (
               <article
