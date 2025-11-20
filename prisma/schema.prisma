@@ -15,10 +15,124 @@ generator client {
   provider = "prisma-client-js"
 }
 
+/// Defines the user's role for access control.
+enum UserRole {
+  ADMIN
+  COACH
+  ATHLETE
+}
+
+/// Defines the primary focus of an exercise.
+enum ExerciseCategory {
+  STRENGTH
+  ENDURANCE
+  SPEED
+  FLEXIBILITY
+}
+
+/// Defines the assignment status of a workout.
+enum AssignmentStatus {
+  PENDING
+  COMPLETED
+  MISSED
+}
+
+
 model User {
-  id        Int      @id @default(autoincrement())
-  email     String   @unique
-  name      String?
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id            String    @id @default(uuid())
+  name          String
+  email         String    @unique
+  role          UserRole  // Access Control: ADMIN, COACH, ATHLETE
+  dateJoined    DateTime  @default(now())
+
+  teamId        String?
+  team          Team?     @relation(fields: [teamId], references: [id])
+
+  athleteStats  Json?     // Map/Object for athlete PRs: { '100mPR': '10.5' }
+  coachBio      String?   // Short description for coaches
+
+  ownedExercises    Exercise[]              @relation("CoachOwnedExercises")
+  designedWorkouts  Workout[]               @relation("CoachDesignedWorkouts")
+  assignedWorkouts  AssignedWorkout[]       @relation("AthleteAssignedWorkouts")
+  assignedByCoach   AssignedWorkout[]       @relation("CoachAssignedWorkouts")
+
+}
+
+model Team {
+  id      String    @id @default(uuid())
+  name    String    @unique
+
+  // Reverse relationship to users in this team (replaces coachIds/rosterIds arrays)
+  users   User[]
+}
+
+model Exercise {
+  id                String            @id @default(uuid())
+  name              String
+  description       String?
+  category          ExerciseCategory  // Strength, Endurance, Speed, Flexibility
+  defaultDuration   Int               @default(0) // Seconds
+  defaultReps       Int               @default(0)
+  isPublic          Boolean           @default(true)
+
+  // Relationships
+  ownerId           String            // The coach who created this exercise
+  owner             User              @relation("CoachOwnedExercises", fields: [ownerId], references: [id])
+
+  // Reverse relationship to intermediate join table
+  workoutItems      WorkoutItem[]
+}
+
+model Workout {
+  id                  String          @id @default(uuid())
+  name                String
+  targetDiscipline    String?         // e.g., Sprints, Jumps, Throws, All
+  isTemplate          Boolean         @default(true)
+
+  // Relationships
+  coachId             String
+  coach               User            @relation("CoachDesignedWorkouts", fields: [coachId], references: [id])
+
+  // Reverse relationships
+  workoutItems        WorkoutItem[]
+  assignedWorkouts    AssignedWorkout[]
+}
+
+model WorkoutItem {
+  id            Int     @id @default(autoincrement()) // Use Int ID for primary key performance
+  order         Int     // Sequence in the workout
+  sets          Int
+  reps          Int     // Reps, distance, or time, overriding exercise default
+  restSeconds   Int
+  notes         String?
+
+  // Relationships to Exercise and Workout
+  exerciseId    String
+  exercise      Exercise @relation(fields: [exerciseId], references: [id])
+
+  workoutId     String
+  workout       Workout @relation(fields: [workoutId], references: [id])
+
+  @@unique([workoutId, order]) // Ensure order is unique within a workout
+}
+
+
+model AssignedWorkout {
+  id                  String              @id @default(uuid())
+  assignedDate        DateTime            @db.Date // Use Date type if time component isn't needed
+  status              AssignmentStatus    @default(PENDING)
+  completionNotes     String?
+  completedMetrics    Json?               // Map/Object for actual metrics
+
+  // Relationships
+  workoutId           String
+  workout             Workout             @relation(fields: [workoutId], references: [id])
+
+  assignedToId        String              // The athlete's ID
+  assignedTo          User                @relation("AthleteAssignedWorkouts", fields: [assignedToId], references: [id])
+
+  assignedByCoachId   String              // The coach's ID
+  assignedByCoach     User                @relation("CoachAssignedWorkouts", fields: [assignedByCoachId], references: [id])
+
+  @@index([assignedToId, assignedDate]) // Index for fast lookup of an athlete's schedule
 }
