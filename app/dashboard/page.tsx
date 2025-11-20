@@ -63,6 +63,7 @@ export default function TrainingDashboardPage() {
           </div>
         </section>
 
+		<h1 className="text-3xl font-semibold">Shared with the whole group</h1>
         <section className="space-y-4">
           <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
             <div className="flex items-center gap-3">
@@ -144,60 +145,6 @@ export default function TrainingDashboardPage() {
                 </div>
               )}
             </div>
-          </div>
-        </section>
-
-        <section className="space-y-4">
-          <div>
-            <h2 className="text-2xl font-semibold">Athletes</h2>
-            <p className="text-sm text-base-content/70">
-              Training group roster with readiness signals from the last 24 hours.
-            </p>
-          </div>
-
-          <div className="overflow-x-auto rounded-2xl border border-base-300 bg-base-200">
-            <table className="table">
-              <thead>
-                <tr className="text-xs uppercase text-base-content/70">
-                  <th>Athlete</th>
-                  <th>Sport</th>
-                  <th>Program</th>
-                  <th className="text-right">Readiness</th>
-                  <th>Status</th>
-                </tr>
-              </thead>
-              <tbody>
-                {athleteRoster.map((athlete) => (
-                  <tr key={athlete.id} className="text-sm">
-                    <td>
-                      <Link
-                        href={`/dashboard/athletes/${athlete.id}`}
-                        className="link link-hover font-semibold"
-                      >
-                        {athlete.name}
-                      </Link>
-                      <div className="text-xs text-base-content/60">#{athlete.id}</div>
-                    </td>
-                    <td>{athlete.sport}</td>
-                    <td>{athlete.program}</td>
-                    <td className="text-right font-semibold">{athlete.readiness}%</td>
-                    <td>
-                      <span
-                        className={`badge ${
-                          athlete.status === "Green"
-                            ? "badge-success"
-                            : athlete.status === "Yellow"
-                              ? "badge-warning"
-                              : "badge-error"
-                        } badge-sm`}
-                      >
-                        {athlete.status}
-                      </span>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
           </div>
         </section>
       </div>
