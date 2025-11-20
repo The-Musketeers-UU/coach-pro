@@ -157,11 +157,18 @@ export default function CoachDashboard() {
     });
   }, [moduleLibrary, search]);
 
+  const cloneModuleForSchedule = (module: Module): Module => ({
+    id: `scheduled-${module.id}-${Date.now()}`,
+    title: module.title,
+    description: module.description,
+    attributes: module.attributes.map((attribute) => ({ ...attribute })),
+  });
+
   const handleDrop = (dayId: string) => {
     if (!activeDrag) return;
     setSchedule((prev) => ({
       ...prev,
-      [dayId]: [...prev[dayId], activeDrag],
+      [dayId]: [...prev[dayId], cloneModuleForSchedule(activeDrag)],
     }));
     setActiveDrag(null);
   };
@@ -257,15 +264,6 @@ export default function CoachDashboard() {
     if (!result.module) return;
 
     setModuleLibrary((prev) => prev.map((module) => (module.id === editingModuleId ? result.module! : module)));
-    setSchedule((prev) => {
-      const updatedSchedule: DaySchedule = {} as DaySchedule;
-      days.forEach((day) => {
-        updatedSchedule[day.id] = prev[day.id].map((scheduledModule) =>
-          scheduledModule.id === editingModuleId ? result.module! : scheduledModule,
-        );
-      });
-      return updatedSchedule;
-    });
 
     closeEditModal();
   };
