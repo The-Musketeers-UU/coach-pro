@@ -3,7 +3,67 @@
 import Link from "next/link";
 import { useMemo, useState } from "react";
 import { athleteRoster } from "@/app/data/athletes";
+import type { Athlete } from "@/app/data/athletes";
 import { programWeeks } from "@/app/data/program-weeks";
+
+const fallbackGroupAthletes: Athlete[] = [
+  {
+    id: "fallback-g1-1",
+    name: "Tova Lindgren",
+    sport: "800m",
+    program: "Race Readiness",
+    readiness: 92,
+    status: "Green",
+    group: "Group 1",
+  },
+  {
+    id: "fallback-g1-2",
+    name: "Milo Ekström",
+    sport: "400m",
+    program: "Speed Development",
+    readiness: 78,
+    status: "Yellow",
+    group: "Group 1",
+  },
+  {
+    id: "fallback-g2-1",
+    name: "Signe Holm",
+    sport: "Triathlon",
+    program: "Altitude Prep Block",
+    readiness: 85,
+    status: "Green",
+    group: "Group 2",
+  },
+  {
+    id: "fallback-g2-2",
+    name: "Elliot Berg",
+    sport: "Cycling",
+    program: "Stage Race Prep",
+    readiness: 74,
+    status: "Yellow",
+    group: "Group 2",
+  },
+  {
+    id: "fallback-g3-1",
+    name: "Liv Sandberg",
+    sport: "Swimming",
+    program: "Speed & Turns",
+    readiness: 69,
+    status: "Green",
+    group: "Group 3",
+  },
+  {
+    id: "fallback-g3-2",
+    name: "Aron Dahl",
+    sport: "CrossFit",
+    program: "Strength Base",
+    readiness: 71,
+    status: "Green",
+    group: "Group 3",
+  },
+];
+
+const normalizeGroupName = (value: string) => value.trim().toLowerCase();
 
 export default function GroupDashboardPage({ params }: { params: { groupName: string } }) {
   const [weekIndex, setWeekIndex] = useState(0);
@@ -11,8 +71,26 @@ export default function GroupDashboardPage({ params }: { params: { groupName: st
   const weekNumber = 33 + weekIndex;
 
   const decodedGroupName = useMemo(() => decodeURIComponent(params.groupName), [params.groupName]);
-  const groupAthletes = athleteRoster.filter((athlete) => athlete.group === decodedGroupName);
-  const allGroups = Array.from(new Set(athleteRoster.map((athlete) => athlete.group)));
+  const normalizedGroupName = useMemo(
+    () => normalizeGroupName(decodedGroupName),
+    [decodedGroupName],
+  );
+  const rosterMatches = athleteRoster.filter(
+    (athlete) => normalizeGroupName(athlete.group) === normalizedGroupName,
+  );
+  const fallbackMatches = fallbackGroupAthletes.filter(
+    (athlete) => normalizeGroupName(athlete.group) === normalizedGroupName,
+  );
+  const groupAthletes = rosterMatches.length > 0 ? rosterMatches : fallbackMatches;
+  const displayGroupName =
+    rosterMatches[0]?.group ?? fallbackMatches[0]?.group ?? decodedGroupName;
+  const allGroups = useMemo(() => {
+    const groups = new Set(
+      [...athleteRoster, ...fallbackGroupAthletes].map((athlete) => athlete.group),
+    );
+    groups.add(decodedGroupName);
+    return Array.from(groups);
+  }, [decodedGroupName]);
 
   return (
     <div className="min-h-screen">
@@ -20,19 +98,24 @@ export default function GroupDashboardPage({ params }: { params: { groupName: st
         <header className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
           <div>
             <p className="text-xs font-semibold uppercase tracking-wide text-neutral">Coaching group</p>
-            <h1 className="text-3xl font-semibold">{decodedGroupName}</h1>
+            <h1 className="text-3xl font-semibold">{displayGroupName}</h1>
             <p className="text-sm text-base-content/70">Athletes and shared plan for this group.</p>
           </div>
           <div className="flex flex-wrap gap-2">
-            {allGroups.map((groupName) => (
-              <Link
-                key={groupName}
-                href={`/dashboard/groups/${encodeURIComponent(groupName)}`}
-                className={`btn btn-outline btn-primary btn-sm ${groupName === decodedGroupName ? "btn-active" : ""}`}
-              >
-                {groupName}
-              </Link>
-            ))}
+            {allGroups.map((groupName) => {
+              const isCurrentGroup = normalizeGroupName(groupName) === normalizedGroupName;
+              return (
+                <Link
+                  key={groupName}
+                  href={`/dashboard/groups/${encodeURIComponent(groupName)}`}
+                  className={`btn btn-sm rounded-full px-4 ${
+                    isCurrentGroup ? "btn-primary" : "btn-outline btn-primary"
+                  }`}
+                >
+                  {groupName}
+                </Link>
+              );
+            })}
           </div>
         </header>
 
