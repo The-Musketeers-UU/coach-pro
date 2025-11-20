@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useMemo, useState } from "react";
+import { useMemo, useState, use } from "react";
 import { athleteRoster } from "@/app/data/athletes";
 import type { Athlete } from "@/app/data/athletes";
 import { programWeeks } from "@/app/data/program-weeks";
@@ -65,12 +65,17 @@ const fallbackGroupAthletes: Athlete[] = [
 
 const normalizeGroupName = (value: string) => value.trim().toLowerCase();
 
-export default function GroupDashboardPage({ params }: { params: { groupName: string } }) {
+export default function GroupDashboardPage({
+  params,
+}: {
+  params: Promise<{ groupName: string }>;
+}) {
   const [weekIndex, setWeekIndex] = useState(0);
   const activeWeek = programWeeks[weekIndex];
   const weekNumber = 33 + weekIndex;
 
-  const decodedGroupName = useMemo(() => decodeURIComponent(params.groupName), [params.groupName]);
+  const { groupName } = use(params);
+  const decodedGroupName = useMemo(() => decodeURIComponent(groupName), [groupName]);
   const normalizedGroupName = useMemo(
     () => normalizeGroupName(decodedGroupName),
     [decodedGroupName],
