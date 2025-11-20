@@ -54,7 +54,8 @@ export function SiteNav() {
           
 
           {navLinks.map((link) => {
-            const isActive = pathname === link.href;
+            const isActive =
+              link.href === "/" ? pathname === link.href : pathname.startsWith(link.href);
             return (
               <Link
                 key={link.href}
