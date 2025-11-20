@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { programWeeks, ProgramWeek } from "@/app/data/program-weeks";
+import { programWeeks } from "@/app/data/program-weeks";
 
 const athletes = [
   {
@@ -47,13 +47,19 @@ const athletes = [
 ];
 
 export default function TrainingDashboardPage() {
-  const [activeWeekId, setActiveWeekId] = useState<ProgramWeek["id"]>(programWeeks[0].id);
+  const [activeWeekNumber, setActiveWeekNumber] = useState(programWeeks[0].weekNumber);
   const [isAssignModalOpen, setIsAssignModalOpen] = useState(false);
   const [selectedGroup, setSelectedGroup] = useState("");
   const [selectedAthletes, setSelectedAthletes] = useState<string[]>([]);
 
   const groups = useMemo(() => Array.from(new Set(athletes.map((athlete) => athlete.program))), []);
-  const activeWeek = programWeeks.find((week) => week.id === activeWeekId) ?? programWeeks[0];
+  const activeWeek = programWeeks.find((week) => week.weekNumber === activeWeekNumber) ?? null;
+
+  const handleWeekChange = (direction: "previous" | "next") => {
+    setActiveWeekNumber((prevWeekNumber) =>
+      direction === "next" ? prevWeekNumber + 1 : prevWeekNumber - 1,
+    );
+  };
 
   const toggleAthleteSelection = (athleteId: string) => {
     setSelectedAthletes((prev) =>
@@ -80,71 +86,88 @@ export default function TrainingDashboardPage() {
       <div className="mx-auto max-w-6xl space-y-10 px-4 py-10">
         <section className="space-y-4">
           <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
-            <div className="flex flex-wrap gap-2">
-              {programWeeks.map((week) => (
+            <div className="flex flex-wrap items-center gap-3">
+              <div className="flex items-center gap-2">
                 <button
-                  key={week.id}
-                  className={`btn btn-sm ${week.id === activeWeekId ? "btn-primary" : "btn-ghost"}`}
-                  onClick={() => setActiveWeekId(week.id)}
+                  className="btn btn-ghost btn-sm"
+                  aria-label="Previous week"
+                  onClick={() => handleWeekChange("previous")}
                 >
-                  {week.label}
+                  &lt;
                 </button>
-              ))}
+                <span className="text-lg font-semibold">Vecka {activeWeekNumber}</span>
+                <button
+                  className="btn btn-ghost btn-sm"
+                  aria-label="Next week"
+                  onClick={() => handleWeekChange("next")}
+                >
+                  &gt;
+                </button>
+              </div>
+
               <button className="btn btn-outline btn-sm btn-secondary">Edit program</button>
             </div>
           </div>
 
-              <div className="card border border-base-300 bg-base-200 shadow-sm">
-                <div className="card-body space-y-6">
-                  <div className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
-                    <div>
-                      <p className="text-xs font-semibold uppercase tracking-wide text-neutral">Week 33</p>
-                      <h3 className="text-2xl font-semibold">{activeWeek.label}</h3>
-                      <p className="text-sm text-base-content/70">Focus: {activeWeek.focus}</p>
-                    </div>
+          <div className="card border border-base-300 bg-base-200 shadow-sm">
+            <div className="card-body space-y-6">
+              <div className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
+                <div>
+                  <p className="text-xs font-semibold uppercase tracking-wide text-neutral">
+                    Vecka {activeWeekNumber}
+                  </p>
+                  <h3 className="text-2xl font-semibold">{activeWeek?.label ?? "No schedule"}</h3>
+                  <p className="text-sm text-base-content/70">Focus: {activeWeek?.focus ?? "Empty"}</p>
+                </div>
 
-                    <button
-                      className="btn btn-primary btn-sm"
-                      onClick={() => setIsAssignModalOpen(true)}
-                    >
-                      Assign schedule
-                    </button>
-                  </div>
-
-              <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
-                {activeWeek.days.map((day) => (
-                  <article
-                    key={day.id}
-                    className="flex min-h-[240px] flex-col rounded-2xl border border-base-300 bg-base-300 p-4 shadow-sm"
-                  >
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <p className="text-xs font-semibold uppercase tracking-wide text-neutral">{day.label}</p>
-                        <p className="text-sm text-base-content/70">{day.modules.length} modules</p>
-                      </div>
-                    </div>
-
-                    <div className="mt-3 space-y-3">
-                      {day.modules.map((module) => (
-                        <div key={`${day.id}-${module.title}`} className="rounded-xl border border-base-200 bg-base-100 p-3">
-                          <div className="flex items-center justify-between text-xs text-base-content/60">
-                            <span className="badge badge-outline badge-sm">{module.focus}</span>
-                            <span>{module.duration}</span>
-                          </div>
-                          <p className="mt-1 font-semibold">{module.title}</p>
-                          <p className="text-sm text-base-content/70">{module.intent}</p>
-                        </div>
-                      ))}
-
-                      {day.modules.length === 0 && (
-                        <p className="rounded-xl border border-dashed border-base-200 bg-base-100/60 p-4 text-center text-xs text-base-content/60">
-                          No modules scheduled.
-                        </p>
-                      )}
-                    </div>
-                  </article>
-                ))}
+                <button className="btn btn-primary btn-sm" onClick={() => setIsAssignModalOpen(true)}>
+                  Assign schedule
+                </button>
               </div>
+
+              {activeWeek ? (
+                <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
+                  {activeWeek.days.map((day) => (
+                    <article
+                      key={day.id}
+                      className="flex min-h-[240px] flex-col rounded-2xl border border-base-300 bg-base-300 p-4 shadow-sm"
+                    >
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <p className="text-xs font-semibold uppercase tracking-wide text-neutral">{day.label}</p>
+                          <p className="text-sm text-base-content/70">{day.modules.length} modules</p>
+                        </div>
+                      </div>
+
+                      <div className="mt-3 space-y-3">
+                        {day.modules.map((module) => (
+                          <div
+                            key={`${day.id}-${module.title}`}
+                            className="rounded-xl border border-base-200 bg-base-100 p-3"
+                          >
+                            <div className="flex items-center justify-between text-xs text-base-content/60">
+                              <span className="badge badge-outline badge-sm">{module.focus}</span>
+                              <span>{module.duration}</span>
+                            </div>
+                            <p className="mt-1 font-semibold">{module.title}</p>
+                            <p className="text-sm text-base-content/70">{module.intent}</p>
+                          </div>
+                        ))}
+
+                        {day.modules.length === 0 && (
+                          <p className="rounded-xl border border-dashed border-base-200 bg-base-100/60 p-4 text-center text-xs text-base-content/60">
+                            No modules scheduled.
+                          </p>
+                        )}
+                      </div>
+                    </article>
+                  ))}
+                </div>
+              ) : (
+                <div className="rounded-2xl border border-dashed border-base-300 bg-base-300/80 p-6 text-center text-sm text-base-content/70">
+                  No schedule for this week. Empty.
+                </div>
+              )}
             </div>
           </div>
         </section>
