@@ -30,7 +30,8 @@ const initialModules: Module[] = [
   {
     id: "mod-1",
     title: "Explosive Power Circuit",
-    description: "Olympic lifts, sled pushes, and plyometrics to prime neuromuscular output.",
+    description:
+      "Olympic lifts, sled pushes, and plyometrics to prime neuromuscular output.",
     attributes: [
       { id: "attr-1", key: "Focus", value: "Strength" },
       { id: "attr-2", key: "Duration", value: "45 min" },
@@ -50,7 +51,8 @@ const initialModules: Module[] = [
   {
     id: "mod-3",
     title: "Mobility & Prehab Flow",
-    description: "Thoracic opener, hip cars, and ankle sequencing for joint prep.",
+    description:
+      "Thoracic opener, hip cars, and ankle sequencing for joint prep.",
     attributes: [
       { id: "attr-1", key: "Focus", value: "Mobility" },
       { id: "attr-2", key: "Duration", value: "25 min" },
@@ -60,7 +62,8 @@ const initialModules: Module[] = [
   {
     id: "mod-4",
     title: "Race Visualization",
-    description: "Guided visualization script focusing on strategic decision-making.",
+    description:
+      "Guided visualization script focusing on strategic decision-making.",
     attributes: [
       { id: "attr-1", key: "Focus", value: "Mindset" },
       { id: "attr-2", key: "Duration", value: "15 min" },
@@ -70,7 +73,8 @@ const initialModules: Module[] = [
   {
     id: "mod-5",
     title: "Threshold Track Session",
-    description: "5x1k repeats @ 10k pace with 90s recoveries to raise lactate threshold.",
+    description:
+      "5x1k repeats @ 10k pace with 90s recoveries to raise lactate threshold.",
     attributes: [
       { id: "attr-1", key: "Focus", value: "Conditioning" },
       { id: "attr-2", key: "Duration", value: "50 min" },
@@ -80,7 +84,8 @@ const initialModules: Module[] = [
   {
     id: "mod-6",
     title: "Contrast Recovery",
-    description: "Contrast bath protocol paired with diaphragmatic breathing reset.",
+    description:
+      "Contrast bath protocol paired with diaphragmatic breathing reset.",
     attributes: [
       { id: "attr-1", key: "Focus", value: "Recovery" },
       { id: "attr-2", key: "Duration", value: "30 min" },
@@ -90,7 +95,8 @@ const initialModules: Module[] = [
   {
     id: "mod-7",
     title: "Strength Foundations",
-    description: "Tempo squats, pull variations, and single-leg stability primer.",
+    description:
+      "Tempo squats, pull variations, and single-leg stability primer.",
     attributes: [
       { id: "attr-1", key: "Focus", value: "Strength" },
       { id: "attr-2", key: "Duration", value: "40 min" },
@@ -131,7 +137,7 @@ const athletes: Athlete[] = [
     name: "Jordan Vega",
     sport: "800m",
     program: "Camp Momentum",
-  }
+  },
 ];
 
 export default function CoachDashboard() {
@@ -139,20 +145,26 @@ export default function CoachDashboard() {
   const [activeDrag, setActiveDrag] = useState<Module | null>(null);
   const [moduleLibrary, setModuleLibrary] = useState<Module[]>(initialModules);
   const [schedule, setSchedule] = useState<DaySchedule>(() =>
-    days.reduce((acc, day) => ({ ...acc, [day.id]: [] }), {} as DaySchedule),
+    days.reduce((acc, day) => ({ ...acc, [day.id]: [] }), {} as DaySchedule)
   );
-  const [newModule, setNewModule] = useState<ModuleForm>(() => createInitialFormState());
+  const [newModule, setNewModule] = useState<ModuleForm>(() =>
+    createInitialFormState()
+  );
   const [formError, setFormError] = useState<string | null>(null);
   const [isAddModuleExpanded, setIsAddModuleExpanded] = useState(false);
   const [isAssignModalOpen, setIsAssignModalOpen] = useState(false);
   const [selectedAthletes, setSelectedAthletes] = useState<string[]>([]);
   const [editingModuleId, setEditingModuleId] = useState<string | null>(null);
-  const [editingModuleForm, setEditingModuleForm] = useState<ModuleForm | null>(null);
+  const [editingModuleForm, setEditingModuleForm] = useState<ModuleForm | null>(
+    null
+  );
   const [editFormError, setEditFormError] = useState<string | null>(null);
 
   const filteredModules = useMemo(() => {
     return moduleLibrary.filter((module) => {
-      const matchesSearch = module.title.toLowerCase().includes(search.toLowerCase());
+      const matchesSearch = module.title
+        .toLowerCase()
+        .includes(search.toLowerCase());
       return matchesSearch;
     });
   }, [moduleLibrary, search]);
@@ -203,15 +215,17 @@ export default function CoachDashboard() {
 
   const prepareModuleToSave = (
     formState: ModuleForm,
-    moduleId?: string,
+    moduleId?: string
   ): { module?: Module; error?: string } => {
     const trimmedTitle = formState.title.trim();
     const trimmedDescription = formState.description.trim();
     const completedAttributes = formState.attributes.filter(
-      (attribute) => attribute.key.trim() && attribute.value.trim(),
+      (attribute) => attribute.key.trim() && attribute.value.trim()
     );
     const hasIncompleteAttribute = formState.attributes.some(
-      (attribute) => (attribute.key.trim() && !attribute.value.trim()) || (!attribute.key.trim() && attribute.value.trim()),
+      (attribute) =>
+        (attribute.key.trim() && !attribute.value.trim()) ||
+        (!attribute.key.trim() && attribute.value.trim())
     );
 
     if (!trimmedTitle || !trimmedDescription) {
@@ -263,14 +277,20 @@ export default function CoachDashboard() {
 
     if (!result.module) return;
 
-    setModuleLibrary((prev) => prev.map((module) => (module.id === editingModuleId ? result.module! : module)));
+    setModuleLibrary((prev) =>
+      prev.map((module) =>
+        module.id === editingModuleId ? result.module! : module
+      )
+    );
 
     closeEditModal();
   };
 
   const toggleAthleteSelection = (athleteId: string) => {
     setSelectedAthletes((prev) =>
-      prev.includes(athleteId) ? prev.filter((id) => id !== athleteId) : [...prev, athleteId],
+      prev.includes(athleteId)
+        ? prev.filter((id) => id !== athleteId)
+        : [...prev, athleteId]
     );
   };
 
@@ -288,8 +308,7 @@ export default function CoachDashboard() {
               <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
                 <div>
                   <h2 className="card-title text-lg">Create a new block</h2>
-                  <p className="text-sm text-base-content/70">
-                  </p>
+                  <p className="text-sm text-base-content/70"></p>
                 </div>
                 <button
                   type="button"
@@ -309,7 +328,9 @@ export default function CoachDashboard() {
 
               {isAddModuleExpanded && (
                 <>
-                  {formError && <div className="alert alert-error text-sm">{formError}</div>}
+                  {formError && (
+                    <div className="alert alert-error text-sm">{formError}</div>
+                  )}
 
                   <form className="space-y-3" onSubmit={handleAddModule}>
                     <label className="form-control">
@@ -317,7 +338,12 @@ export default function CoachDashboard() {
                       <input
                         type="text"
                         value={newModule.title}
-                        onChange={(event) => setNewModule((prev) => ({ ...prev, title: event.target.value }))}
+                        onChange={(event) =>
+                          setNewModule((prev) => ({
+                            ...prev,
+                            title: event.target.value,
+                          }))
+                        }
                         className="input input-bordered"
                         placeholder="Explosive Acceleration"
                       />
@@ -330,13 +356,20 @@ export default function CoachDashboard() {
                         rows={3}
                         placeholder="What's the intent?"
                         value={newModule.description}
-                        onChange={(event) => setNewModule((prev) => ({ ...prev, description: event.target.value }))}
+                        onChange={(event) =>
+                          setNewModule((prev) => ({
+                            ...prev,
+                            description: event.target.value,
+                          }))
+                        }
                       />
                     </label>
 
                     <div className="space-y-2 rounded-xl border border-base-300 bg-base-100 p-3">
                       <div className="flex items-center justify-between gap-2">
-                        <span className="text-sm font-semibold">Key/value pairs</span>
+                        <span className="text-sm font-semibold">
+                          Key/value pairs
+                        </span>
                         <button
                           type="button"
                           className="btn btn-ghost btn-xs"
@@ -345,7 +378,13 @@ export default function CoachDashboard() {
                               ...prev,
                               attributes: [
                                 ...prev.attributes,
-                                { id: `attr-${Date.now()}-${prev.attributes.length}`, key: "", value: "" },
+                                {
+                                  id: `attr-${Date.now()}-${
+                                    prev.attributes.length
+                                  }`,
+                                  key: "",
+                                  value: "",
+                                },
                               ],
                             }))
                           }
@@ -356,7 +395,10 @@ export default function CoachDashboard() {
 
                       <div className="space-y-3">
                         {newModule.attributes.map((attribute, index) => (
-                          <div key={attribute.id} className="grid grid-cols-1 gap-2 md:grid-cols-2">
+                          <div
+                            key={attribute.id}
+                            className="grid grid-cols-1 gap-2 md:grid-cols-2"
+                          >
                             <label className="form-control">
                               <span className="label-text">Key</span>
                               <input
@@ -365,8 +407,14 @@ export default function CoachDashboard() {
                                 value={attribute.key}
                                 onChange={(event) => {
                                   const updated = [...newModule.attributes];
-                                  updated[index] = { ...attribute, key: event.target.value };
-                                  setNewModule((prev) => ({ ...prev, attributes: updated }));
+                                  updated[index] = {
+                                    ...attribute,
+                                    key: event.target.value,
+                                  };
+                                  setNewModule((prev) => ({
+                                    ...prev,
+                                    attributes: updated,
+                                  }));
                                 }}
                                 placeholder="e.g. Focus"
                               />
@@ -380,8 +428,14 @@ export default function CoachDashboard() {
                                   value={attribute.value}
                                   onChange={(event) => {
                                     const updated = [...newModule.attributes];
-                                    updated[index] = { ...attribute, value: event.target.value };
-                                    setNewModule((prev) => ({ ...prev, attributes: updated }));
+                                    updated[index] = {
+                                      ...attribute,
+                                      value: event.target.value,
+                                    };
+                                    setNewModule((prev) => ({
+                                      ...prev,
+                                      attributes: updated,
+                                    }));
                                   }}
                                   placeholder="e.g. Moderate"
                                 />
@@ -393,7 +447,9 @@ export default function CoachDashboard() {
                                     onClick={() =>
                                       setNewModule((prev) => ({
                                         ...prev,
-                                        attributes: prev.attributes.filter((_, attrIndex) => attrIndex !== index),
+                                        attributes: prev.attributes.filter(
+                                          (_, attrIndex) => attrIndex !== index
+                                        ),
                                       }))
                                     }
                                   >
@@ -408,7 +464,10 @@ export default function CoachDashboard() {
                     </div>
 
                     <div className="flex flex-col gap-2 sm:flex-row">
-                      <button type="submit" className="btn btn-secondary w-full">
+                      <button
+                        type="submit"
+                        className="btn btn-secondary w-full"
+                      >
                         Add block to library
                       </button>
                       <button
@@ -428,7 +487,9 @@ export default function CoachDashboard() {
           <div className="card bg-base-200 border border-base-300 shadow-md">
             <div className="card-body">
               <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                <p className="text-xs font-semibold uppercase tracking-wide text-neutral">Reusable blocks</p>
+                <p className="text-xs font-semibold uppercase tracking-wide text-neutral">
+                  Reusable blocks
+                </p>
                 <label className="input input-bordered input-sm flex items-center gap-2 sm:max-w-xs">
                   <input
                     type="search"
@@ -451,10 +512,15 @@ export default function CoachDashboard() {
                   >
                     <div className="card-body space-y-2 p-4">
                       <h2 className="font-semibold">{module.title}</h2>
-                      <p className="text-sm text-base-content/70">{module.description}</p>
+                      <p className="text-sm text-base-content/70">
+                        {module.description}
+                      </p>
                       <div className="flex flex-wrap gap-2">
                         {module.attributes.map((attribute) => (
-                          <span key={attribute.id} className="badge badge-outline badge-sm">
+                          <span
+                            key={attribute.id}
+                            className="badge badge-outline badge-sm"
+                          >
                             {attribute.key}: {attribute.value}
                           </span>
                         ))}
@@ -478,11 +544,18 @@ export default function CoachDashboard() {
             <div className="card-body gap-6">
               <header className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
                 <div>
-                  <p className="text-xs font-semibold uppercase tracking-wide text-neutral">Schedule in progress</p>
-                  <h2 className="text-3xl font-semibold">Camp Momentum · Week 43</h2>
+                  <p className="text-xs font-semibold uppercase tracking-wide text-neutral">
+                    Schedule in progress
+                  </p>
+                  <h2 className="text-3xl font-semibold">
+                    Camp Momentum · Week 43
+                  </h2>
                 </div>
 
-                <button className="btn btn-secondary btn-sm" onClick={() => setIsAssignModalOpen(true)}>
+                <button
+                  className="btn btn-secondary btn-sm"
+                  onClick={() => setIsAssignModalOpen(true)}
+                >
                   Assign schedule
                 </button>
               </header>
@@ -496,7 +569,9 @@ export default function CoachDashboard() {
                   >
                     <div className="flex items-center justify-between">
                       <div>
-                        <p className="text-xs font-semibold uppercase tracking-wide text-neutral">{day.label}</p>
+                        <p className="text-xs font-semibold uppercase tracking-wide text-neutral">
+                          {day.label}
+                        </p>
                       </div>
                     </div>
 
@@ -514,10 +589,15 @@ export default function CoachDashboard() {
                         >
                           <div className="flex items-start justify-between gap-2">
                             <div className="space-y-1 text-xs text-base-content/60">
-                              <p className="font-semibold text-base-content">{module.title}</p>
+                              <p className="font-semibold text-base-content">
+                                {module.title}
+                              </p>
                               <div className="flex flex-wrap gap-1">
                                 {module.attributes.map((attribute) => (
-                                  <span key={attribute.id} className="badge badge-outline badge-xs">
+                                  <span
+                                    key={attribute.id}
+                                    className="badge badge-outline badge-xs"
+                                  >
                                     {attribute.key}: {attribute.value}
                                   </span>
                                 ))}
@@ -549,7 +629,10 @@ export default function CoachDashboard() {
             <div>
               <h3 className="text-xl font-semibold">Assign schedule</h3>
             </div>
-            <button className="btn btn-circle btn-ghost btn-sm" onClick={() => setIsAssignModalOpen(false)}>
+            <button
+              className="btn btn-circle btn-ghost btn-sm"
+              onClick={() => setIsAssignModalOpen(false)}
+            >
               ✕
             </button>
           </div>
@@ -564,7 +647,9 @@ export default function CoachDashboard() {
                   >
                     <div>
                       <p className="font-semibold">{athlete.name}</p>
-                      <p className="text-xs text-base-content/60">{athlete.sport}</p>
+                      <p className="text-xs text-base-content/60">
+                        {athlete.sport}
+                      </p>
                     </div>
                     <input
                       type="checkbox"
@@ -586,7 +671,11 @@ export default function CoachDashboard() {
             </section>
           </div>
         </div>
-        <form method="dialog" className="modal-backdrop" onSubmit={() => setIsAssignModalOpen(false)}>
+        <form
+          method="dialog"
+          className="modal-backdrop"
+          onSubmit={() => setIsAssignModalOpen(false)}
+        >
           <button>close</button>
         </form>
       </dialog>
@@ -595,18 +684,27 @@ export default function CoachDashboard() {
         <div className="modal-box max-w-2xl space-y-6">
           <div className="flex items-start justify-between gap-4">
             <div>
-              <p className="text-xs font-semibold uppercase tracking-wide text-neutral">Edit reusable block</p>
-              <h3 className="text-xl font-semibold">{editingModuleForm?.title}</h3>
+              <p className="text-xs font-semibold uppercase tracking-wide text-neutral">
+                Edit reusable block
+              </p>
+              <h3 className="text-xl font-semibold">
+                {editingModuleForm?.title}
+              </h3>
             </div>
-            <button className="btn btn-circle btn-ghost btn-sm" onClick={closeEditModal}>
+            <button
+              className="btn btn-circle btn-ghost btn-sm"
+              onClick={closeEditModal}
+            >
               ✕
             </button>
           </div>
 
-          {editFormError && <div className="alert alert-error text-sm">{editFormError}</div>}
+          {editFormError && (
+            <div className="alert alert-error text-sm">{editFormError}</div>
+          )}
 
           {editingModuleForm && (
-            <form className="space-y-3" onSubmit={handleSaveEditedModule}>
+            <form className="space-y-3 flex flex-col" onSubmit={handleSaveEditedModule}>
               <label className="form-control">
                 <span className="label-text">Title</span>
                 <input
@@ -619,7 +717,7 @@ export default function CoachDashboard() {
                             ...prev,
                             title: event.target.value,
                           }
-                        : prev,
+                        : prev
                     )
                   }
                   className="input input-bordered"
@@ -641,7 +739,7 @@ export default function CoachDashboard() {
                             ...prev,
                             description: event.target.value,
                           }
-                        : prev,
+                        : prev
                     )
                   }
                 />
@@ -660,10 +758,16 @@ export default function CoachDashboard() {
                               ...prev,
                               attributes: [
                                 ...prev.attributes,
-                                { id: `attr-${Date.now()}-${prev.attributes.length}`, key: "", value: "" },
+                                {
+                                  id: `attr-${Date.now()}-${
+                                    prev.attributes.length
+                                  }`,
+                                  key: "",
+                                  value: "",
+                                },
                               ],
                             }
-                          : prev,
+                          : prev
                       )
                     }
                   >
@@ -673,7 +777,10 @@ export default function CoachDashboard() {
 
                 <div className="space-y-3">
                   {editingModuleForm.attributes.map((attribute, index) => (
-                    <div key={attribute.id} className="grid grid-cols-1 gap-2 md:grid-cols-2">
+                    <div
+                      key={attribute.id}
+                      className="grid grid-cols-1 gap-2 md:grid-cols-2"
+                    >
                       <label className="form-control">
                         <span className="label-text">Key</span>
                         <input
@@ -682,8 +789,13 @@ export default function CoachDashboard() {
                           value={attribute.key}
                           onChange={(event) => {
                             const updated = [...editingModuleForm.attributes];
-                            updated[index] = { ...attribute, key: event.target.value };
-                            setEditingModuleForm((prev) => (prev ? { ...prev, attributes: updated } : prev));
+                            updated[index] = {
+                              ...attribute,
+                              key: event.target.value,
+                            };
+                            setEditingModuleForm((prev) =>
+                              prev ? { ...prev, attributes: updated } : prev
+                            );
                           }}
                           placeholder="e.g. Focus"
                         />
@@ -697,8 +809,13 @@ export default function CoachDashboard() {
                             value={attribute.value}
                             onChange={(event) => {
                               const updated = [...editingModuleForm.attributes];
-                              updated[index] = { ...attribute, value: event.target.value };
-                              setEditingModuleForm((prev) => (prev ? { ...prev, attributes: updated } : prev));
+                              updated[index] = {
+                                ...attribute,
+                                value: event.target.value,
+                              };
+                              setEditingModuleForm((prev) =>
+                                prev ? { ...prev, attributes: updated } : prev
+                              );
                             }}
                             placeholder="e.g. Moderate"
                           />
@@ -712,9 +829,11 @@ export default function CoachDashboard() {
                                   prev
                                     ? {
                                         ...prev,
-                                        attributes: prev.attributes.filter((_, attrIndex) => attrIndex !== index),
+                                        attributes: prev.attributes.filter(
+                                          (_, attrIndex) => attrIndex !== index
+                                        ),
                                       }
-                                    : prev,
+                                    : prev
                                 )
                               }
                             >
@@ -728,18 +847,20 @@ export default function CoachDashboard() {
                 </div>
               </div>
 
-              <div className="flex flex-col gap-2 sm:flex-row">
+              <div className="flex gap-2 sm:flex-col">
+								<p className="text-sm">Changes will affect only the reusable block template, no blocks in schedules will be affected.</p>
                 <button type="submit" className="btn btn-secondary w-full">
                   Save changes
-                </button>
-                <button type="button" className="btn btn-ghost w-full" onClick={closeEditModal}>
-                  Cancel
                 </button>
               </div>
             </form>
           )}
         </div>
-        <form method="dialog" className="modal-backdrop" onSubmit={closeEditModal}>
+        <form
+          method="dialog"
+          className="modal-backdrop"
+          onSubmit={closeEditModal}
+        >
           <button>close</button>
         </form>
       </dialog>
