@@ -102,9 +102,7 @@ export default function GroupDashboardPage({
       <div className="mx-auto max-w-6xl space-y-10 px-4 py-10">
         <header className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
           <div>
-            <p className="text-xs font-semibold uppercase tracking-wide text-neutral">Coaching group</p>
             <h1 className="text-3xl font-semibold">{displayGroupName}</h1>
-            <p className="text-sm text-base-content/70">Athletes and shared plan for this group.</p>
           </div>
           <div className="flex flex-wrap gap-2">
             {allGroups.map((groupName) => {
