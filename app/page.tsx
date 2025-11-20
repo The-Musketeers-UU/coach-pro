@@ -146,6 +146,7 @@ export default function CoachDashboard() {
   const [isAddModuleExpanded, setIsAddModuleExpanded] = useState(false);
   const [isAssignModalOpen, setIsAssignModalOpen] = useState(false);
   const [selectedAthletes, setSelectedAthletes] = useState<string[]>([]);
+  const [editingModuleId, setEditingModuleId] = useState<string | null>(null);
 
   const filteredModules = useMemo(() => {
     return moduleLibrary.filter((module) => {
@@ -170,6 +171,23 @@ export default function CoachDashboard() {
     }));
   };
 
+  const resetModuleForm = () => {
+    setNewModule(createInitialFormState());
+    setEditingModuleId(null);
+    setFormError(null);
+  };
+
+  const startEditingModule = (module: Module) => {
+    setIsAddModuleExpanded(true);
+    setFormError(null);
+    setEditingModuleId(module.id);
+    setNewModule({
+      title: module.title,
+      description: module.description,
+      attributes: module.attributes.map((attribute) => ({ ...attribute })),
+    });
+  };
+
   const handleAddModule = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
 
@@ -192,16 +210,31 @@ export default function CoachDashboard() {
       return;
     }
 
-    const moduleToAdd: Module = {
-      id: `mod-${Date.now()}`,
+    const moduleToSave: Module = {
+      id: editingModuleId ?? `mod-${Date.now()}`,
       title: trimmedTitle,
       description: trimmedDescription,
       attributes: completedAttributes,
     };
 
-    setModuleLibrary((prev) => [moduleToAdd, ...prev]);
-    setNewModule(createInitialFormState());
-    setFormError(null);
+    if (editingModuleId) {
+      setModuleLibrary((prev) =>
+        prev.map((module) => (module.id === editingModuleId ? moduleToSave : module)),
+      );
+      setSchedule((prev) => {
+        const updatedSchedule: DaySchedule = {} as DaySchedule;
+        days.forEach((day) => {
+          updatedSchedule[day.id] = prev[day.id].map((scheduledModule) =>
+            scheduledModule.id === editingModuleId ? moduleToSave : scheduledModule,
+          );
+        });
+        return updatedSchedule;
+      });
+    } else {
+      setModuleLibrary((prev) => [moduleToSave, ...prev]);
+    }
+
+    resetModuleForm();
   };
 
   const toggleAthleteSelection = (athleteId: string) => {
@@ -229,7 +262,13 @@ export default function CoachDashboard() {
                 </div>
                 <button
                   type="button"
-                  onClick={() => setIsAddModuleExpanded((prev) => !prev)}
+                  onClick={() =>
+                    setIsAddModuleExpanded((prev) => {
+                      const nextState = !prev;
+                      if (!nextState) resetModuleForm();
+                      return nextState;
+                    })
+                  }
                   className="btn btn-secondary btn-outline btn-sm"
                   aria-expanded={isAddModuleExpanded}
                 >
@@ -337,9 +376,20 @@ export default function CoachDashboard() {
                       </div>
                     </div>
 
-                    <button type="submit" className="btn btn-secondary w-full">
-                      Add block to library
-                    </button>
+                    <div className="flex flex-col gap-2 sm:flex-row">
+                      <button type="submit" className="btn btn-secondary w-full">
+                        {editingModuleId ? "Save changes" : "Add block to library"}
+                      </button>
+                      {editingModuleId && (
+                        <button
+                          type="button"
+                          className="btn btn-ghost w-full"
+                          onClick={resetModuleForm}
+                        >
+                          Cancel editing
+                        </button>
+                      )}
+                    </div>
                   </form>
                 </>
               )}
@@ -367,6 +417,7 @@ export default function CoachDashboard() {
                     draggable
                     onDragStart={() => setActiveDrag(module)}
                     onDragEnd={() => setActiveDrag(null)}
+                    onClick={() => startEditingModule(module)}
                     className="card cursor-grab border border-base-200 bg-base-100 transition hover:border-primary"
                   >
                     <div className="card-body space-y-2 p-4">
