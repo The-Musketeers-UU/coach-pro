@@ -1,547 +1,334 @@
 "use client";
 
-import { FormEvent, useMemo, useState } from "react";
+import { FormEvent, useState } from "react";
 
-type Module = {
-  id: string;
-  title: string;
-  focus: "Strength" | "Conditioning" | "Mobility" | "Mindset" | "Recovery";
-  duration: string;
-  intensity: "Low" | "Moderate" | "High";
-  description: string;
-};
+import {
+  addModuleToSchedule,
+  createTrainingModule,
+  type AddModuleToScheduleInput,
+  type CreateTrainingModuleInput,
+} from "@/lib/supabase/training-modules";
 
-type DaySchedule = Record<string, Module[]>;
-
-type ModuleForm = Omit<Module, "id">;
-
-type Athlete = {
-  id: string;
-  name: string;
-  sport: string;
-  program: string;
-	group: string;
-};
-
-const initialModules: Module[] = [
-  {
-    id: "mod-1",
-    title: "Explosive Power Circuit",
-    focus: "Strength",
-    duration: "45 min",
-    intensity: "High",
-    description: "Olympic lifts, sled pushes, and plyometrics to prime neuromuscular output.",
-  },
-  {
-    id: "mod-2",
-    title: "Tempo Endurance Ride",
-    focus: "Conditioning",
-    duration: "60 min",
-    intensity: "Moderate",
-    description: "Zone 3 tempo ride with cadence holds for sustainable power.",
-  },
-  {
-    id: "mod-3",
-    title: "Mobility & Prehab Flow",
-    focus: "Mobility",
-    duration: "25 min",
-    intensity: "Low",
-    description: "Thoracic opener, hip cars, and ankle sequencing for joint prep.",
-  },
-  {
-    id: "mod-4",
-    title: "Race Visualization",
-    focus: "Mindset",
-    duration: "15 min",
-    intensity: "Low",
-    description: "Guided visualization script focusing on strategic decision-making.",
-  },
-  {
-    id: "mod-5",
-    title: "Threshold Track Session",
-    focus: "Conditioning",
-    duration: "50 min",
-    intensity: "High",
-    description: "5x1k repeats @ 10k pace with 90s recoveries to raise lactate threshold.",
-  },
-  {
-    id: "mod-6",
-    title: "Contrast Recovery",
-    focus: "Recovery",
-    duration: "30 min",
-    intensity: "Low",
-    description: "Contrast bath protocol paired with diaphragmatic breathing reset.",
-  },
-  {
-    id: "mod-7",
-    title: "Strength Foundations",
-    focus: "Strength",
-    duration: "40 min",
-    intensity: "Moderate",
-    description: "Tempo squats, pull variations, and single-leg stability primer.",
-  },
-  {
-    id: "mod-8",
-    title: "Track Strides",
-    focus: "Conditioning",
-    duration: "20 min",
-    intensity: "Moderate",
-    description: "8x120m strides with buildups to reinforce running mechanics.",
-  },
+const moduleFocusOptions: CreateTrainingModuleInput["focus"][] = [
+  "STRENGTH",
+  "CONDITIONING",
+  "MOBILITY",
+  "MINDSET",
+  "RECOVERY",
 ];
 
-const createInitialFormState = (): ModuleForm => ({
+const moduleIntensityOptions: CreateTrainingModuleInput["intensity"][] = [
+  "LOW",
+  "MODERATE",
+  "HIGH",
+];
+
+const createDefaultModuleForm = (): CreateTrainingModuleInput => ({
   title: "",
-  focus: "Strength",
-  duration: "",
-  intensity: "Moderate",
+  focus: "STRENGTH",
+  intensity: "MODERATE",
+  durationMinutes: 30,
   description: "",
+  createdById: "",
 });
 
-const days = [
-  { id: "mon", label: "Monday" },
-  { id: "tue", label: "Tuesday" },
-  { id: "wed", label: "Wednesday" },
-  { id: "thu", label: "Thursday" },
-  { id: "fri", label: "Friday" },
-  { id: "sat", label: "Saturday" },
-  { id: "sun", label: "Sunday" },
-];
-
-const athletes: Athlete[] = [
-  {
-    id: "ath-1",
-    name: "Jordan Vega",
-    sport: "800m",
-    program: "Camp Momentum",
-		group: "Group 1"
-  },
-  {
-    id: "ath-2",
-    name: "Mira Hwang",
-    sport: "Triathlon",
-    program: "Altitude Prep Block",
-		group: "Group 2"
-  },
-  {
-    id: "ath-3",
-    name: "Leo Brennan",
-    sport: "400m",
-    program: "Camp Momentum",
-		group: "Group 3"
-  },
-  {
-    id: "ath-4",
-    name: "Rafa Costa",
-    sport: "Soccer",
-    program: "Return-to-Play Ramp",
-		group: "Group 1"
-  },
-  {
-    id: "ath-5",
-    name: "Ada Lewis",
-    sport: "Marathon",
-    program: "Altitude Prep Block",
-		group: "Group 2"
-  },
-];
+const createDefaultScheduleForm = (): AddModuleToScheduleInput => ({
+  scheduleId: "",
+  dayOfWeek: "MONDAY",
+  moduleId: "",
+  notes: "",
+  position: 0,
+});
 
 export default function CoachDashboard() {
-  const [search, setSearch] = useState("");
-  const focusFilter = "All";
-  const [activeDrag, setActiveDrag] = useState<Module | null>(null);
-  const [moduleLibrary, setModuleLibrary] = useState<Module[]>(initialModules);
-  const [schedule, setSchedule] = useState<DaySchedule>(() =>
-    days.reduce((acc, day) => ({ ...acc, [day.id]: [] }), {} as DaySchedule),
+  const [moduleForm, setModuleForm] = useState<CreateTrainingModuleInput>(
+    createDefaultModuleForm,
   );
-  const [newModule, setNewModule] = useState<ModuleForm>(() => createInitialFormState());
-  const [formError, setFormError] = useState<string | null>(null);
-  const [isAddModuleExpanded, setIsAddModuleExpanded] = useState(false);
-  const [isAssignModalOpen, setIsAssignModalOpen] = useState(false);
-  const [selectedGroup, setSelectedGroup] = useState("");
-  const [selectedAthletes, setSelectedAthletes] = useState<string[]>([]);
-
-  const filteredModules = useMemo(() => {
-    return moduleLibrary.filter((module) => {
-      const matchesSearch = module.title.toLowerCase().includes(search.toLowerCase());
-      const matchesFocus = focusFilter === "All" || module.focus === focusFilter;
-      return matchesSearch && matchesFocus;
-    });
-  }, [moduleLibrary, search, focusFilter]);
-
-  const focusOptions: ("All" | Module["focus"])[] = [
-    "All",
-    "Strength",
-    "Conditioning",
-    "Mobility",
-    "Mindset",
-    "Recovery",
-  ];
-  const focusValues = focusOptions.filter(
-    (option): option is Module["focus"] => option !== "All",
+  const [scheduleForm, setScheduleForm] = useState<AddModuleToScheduleInput>(
+    createDefaultScheduleForm,
   );
+  const [isSubmittingModule, setIsSubmittingModule] = useState(false);
+  const [isSubmittingSchedule, setIsSubmittingSchedule] = useState(false);
+  const [moduleResult, setModuleResult] = useState<string | null>(null);
+  const [scheduleResult, setScheduleResult] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
 
-  const groups = useMemo(() => Array.from(new Set(athletes.map((athlete) => athlete.group))), []);
-
-  const handleDrop = (dayId: string) => {
-    if (!activeDrag) return;
-    setSchedule((prev) => ({
-      ...prev,
-      [dayId]: [...prev[dayId], activeDrag],
-    }));
-    setActiveDrag(null);
-  };
-
-  const handleRemoveModule = (dayId: string, moduleIndex: number) => {
-    setSchedule((prev) => ({
-      ...prev,
-      [dayId]: prev[dayId].filter((_, index) => index !== moduleIndex),
-    }));
-  };
-
-  const handleAddModule = (event: FormEvent<HTMLFormElement>) => {
+  const handleCreateModule = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    if (!newModule.title.trim() || !newModule.duration.trim() || !newModule.description.trim()) {
-      setFormError("Title, duration, and description are required.");
-      return;
+    setIsSubmittingModule(true);
+    setError(null);
+    setModuleResult(null);
+
+    try {
+      const sanitizedInput: CreateTrainingModuleInput = {
+        ...moduleForm,
+        createdById: moduleForm.createdById?.trim() || null,
+      };
+      const createdModule = await createTrainingModule(sanitizedInput);
+      setModuleResult(`Created module “${createdModule.title}” with id ${createdModule.id}.`);
+      setModuleForm(createDefaultModuleForm());
+    } catch (supabaseError) {
+      setError(supabaseError instanceof Error ? supabaseError.message : String(supabaseError));
+    } finally {
+      setIsSubmittingModule(false);
     }
-
-    const moduleToAdd: Module = {
-      id: `mod-${Date.now()}`,
-      ...newModule,
-    };
-
-    setModuleLibrary((prev) => [moduleToAdd, ...prev]);
-    setNewModule(createInitialFormState());
-    setFormError(null);
   };
 
-  const toggleAthleteSelection = (athleteId: string) => {
-    setSelectedAthletes((prev) =>
-      prev.includes(athleteId) ? prev.filter((id) => id !== athleteId) : [...prev, athleteId],
-    );
-  };
+  const handleAddToSchedule = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    setIsSubmittingSchedule(true);
+    setError(null);
+    setScheduleResult(null);
 
-  const handleAssignToGroup = () => {
-    if (!selectedGroup) {
-      return;
+    try {
+      const { day, scheduledModule } = await addModuleToSchedule({
+        ...scheduleForm,
+        position: Number.isFinite(scheduleForm.position)
+          ? Number(scheduleForm.position)
+          : undefined,
+        notes: scheduleForm.notes?.trim() || undefined,
+      });
+
+      setScheduleResult(
+        `Added module ${scheduledModule.module_id} to ${day.day_of_week} (day ${day.id}) at position ${scheduledModule.position}.`,
+      );
+      setScheduleForm(createDefaultScheduleForm());
+    } catch (supabaseError) {
+      setError(supabaseError instanceof Error ? supabaseError.message : String(supabaseError));
+    } finally {
+      setIsSubmittingSchedule(false);
     }
-
-    setSelectedGroup("");
-    setIsAssignModalOpen(false);
-  };
-
-  const handleAssignToAthletes = () => {
-    setSelectedAthletes([]);
-    setIsAssignModalOpen(false);
   };
 
   return (
     <div className="min-h-screen">
-      <div className="mx-auto flex max-w-7xl flex-col gap-6 px-4 py-10 lg:flex-row">
-        <aside className="w-full space-y-6 lg:w-1/3">
-          <div className="card bg-base-200 shadow-md border border-base-300">
+      <div className="mx-auto flex max-w-5xl flex-col gap-6 px-4 py-10">
+        <header className="space-y-2">
+          <p className="text-xs font-semibold uppercase tracking-wide text-neutral">Supabase tooling</p>
+          <h1 className="text-3xl font-semibold">Training modules + schedules</h1>
+          <p className="text-base text-base-content/70">
+            Create new reusable training modules and attach them to Supabase-backed schedules without relying on
+            placeholder data.
+          </p>
+        </header>
+
+        {error && <div className="alert alert-error">{error}</div>}
+
+        <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+          <section className="card border border-base-300 bg-base-200 shadow-sm">
             <div className="card-body space-y-4">
-              <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-                <div>
-                  <h2 className="card-title text-lg">Create a new block</h2>
-                  <p className="text-sm text-base-content/70">
-                  </p>
-                </div>
-                <button
-                  type="button"
-                  onClick={() => setIsAddModuleExpanded((prev) => !prev)}
-                  className="btn btn-secondary btn-outline btn-sm"
-                  aria-expanded={isAddModuleExpanded}
-                >
-                  {isAddModuleExpanded ? "Hide form" : "Add block"}
-                </button>
-              </div>
+              <header className="space-y-1">
+                <p className="text-xs font-semibold uppercase tracking-wide text-neutral">Modules</p>
+                <h2 className="text-xl font-semibold">Create a training module</h2>
+                <p className="text-sm text-base-content/70">
+                  Save a reusable building block directly to Supabase with focus, intensity, and duration metadata.
+                </p>
+              </header>
 
-              {isAddModuleExpanded && (
-                <>
-                  {formError && <div className="alert alert-error text-sm">{formError}</div>}
-
-                  <form className="space-y-3" onSubmit={handleAddModule}>
-                    <label className="form-control">
-                      <span className="label-text">Title</span>
-                      <input
-                        type="text"
-                        value={newModule.title}
-                        onChange={(event) => setNewModule((prev) => ({ ...prev, title: event.target.value }))}
-                        className="input input-bordered"
-                        placeholder="Explosive Acceleration"
-                      />
-                    </label>
-
-                    <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
-                      <label className="form-control">
-                        <span className="label-text">Focus</span>
-                        <select
-                          className="select select-bordered"
-                          value={newModule.focus}
-                          onChange={(event) =>
-                            setNewModule((prev) => ({ ...prev, focus: event.target.value as Module["focus"] }))
-                          }
-                        >
-                          {focusValues.map((focus) => (
-                            <option key={focus} value={focus}>
-                              {focus}
-                            </option>
-                          ))}
-                        </select>
-                      </label>
-
-                      <label className="form-control">
-                        <span className="label-text">Intensity</span>
-                        <select
-                          className="select select-bordered"
-                          value={newModule.intensity}
-                          onChange={(event) =>
-                            setNewModule((prev) => ({ ...prev, intensity: event.target.value as Module["intensity"] }))
-                          }
-                        >
-                          {["Low", "Moderate", "High"].map((level) => (
-                            <option key={level} value={level}>
-                              {level}
-                            </option>
-                          ))}
-                        </select>
-                      </label>
-                    </div>
-
-                    <label className="form-control">
-                      <span className="label-text">Duration</span>
-                      <input
-                        type="text"
-                        className="input input-bordered"
-                        placeholder="45 min"
-                        value={newModule.duration}
-                        onChange={(event) => setNewModule((prev) => ({ ...prev, duration: event.target.value }))}
-                      />
-                    </label>
-
-                    <label className="form-control">
-                      <span className="label-text">Description</span>
-                      <textarea
-                        className="textarea textarea-bordered"
-                        rows={3}
-                        placeholder="What's the intent?"
-                        value={newModule.description}
-                        onChange={(event) => setNewModule((prev) => ({ ...prev, description: event.target.value }))}
-                      />
-                    </label>
-
-                    <button type="submit" className="btn btn-secondary w-full">
-                      Add block to library
-                    </button>
-                  </form>
-                </>
-              )}
-            </div>
-          </div>
-
-          <div className="card bg-base-200 border border-base-300 shadow-md">
-            <div className="card-body">
-              <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                <p className="text-xs font-semibold uppercase tracking-wide text-neutral">Reusable blocks</p>
-                <label className="input input-bordered input-sm flex items-center gap-2 sm:max-w-xs">
+              <form className="space-y-3" onSubmit={handleCreateModule}>
+                <label className="form-control">
+                  <span className="label-text">Title</span>
                   <input
-                    type="search"
-                    value={search}
-                    onChange={(event) => setSearch(event.target.value)}
-                    placeholder="Search blocks"
-                    className="grow"
+                    type="text"
+                    className="input input-bordered"
+                    required
+                    value={moduleForm.title}
+                    onChange={(event) => setModuleForm((prev) => ({ ...prev, title: event.target.value }))}
+                    placeholder="Acceleration mechanics"
                   />
                 </label>
-              </div>
-              <div className="mt-3 max-h-[30rem] space-y-3 overflow-y-auto pr-1">
-                {filteredModules.map((module) => (
-                  <article
-                    key={module.id}
-                    draggable
-                    onDragStart={() => setActiveDrag(module)}
-                    onDragEnd={() => setActiveDrag(null)}
-                    className="card cursor-grab border border-base-200 bg-base-100 transition hover:border-primary"
-                  >
-                    <div className="card-body space-y-2 p-4">
-                      <div className="flex items-center justify-between text-xs text-base-content/60">
-                        <span className="badge badge-outline badge-sm">{module.focus}</span>
-                        <span>{module.duration}</span>
-                      </div>
-                      <h2 className="font-semibold">{module.title}</h2>
-                      <p className="text-sm text-base-content/70">{module.description}</p>
-                      <div className="badge badge-primary badge-sm">Intensity · {module.intensity}</div>
-                    </div>
-                  </article>
-                ))}
 
-                {filteredModules.length === 0 && (
-                  <p className="rounded-2xl border border-dashed border-base-200 p-6 text-center text-sm text-base-content/60">
-                    No modules match your search. Clear filters to see more.
-                  </p>
-                )}
-              </div>
-            </div>
-          </div>
-        </aside>
-
-        <section className="w-full space-y-6 lg:w-2/3">
-          <div className="card bg-base-200 border border-base-300 shadow-md">
-            <div className="card-body gap-6">
-              <header className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
-                <div>
-                  <p className="text-xs font-semibold uppercase tracking-wide text-neutral">Schedule in progress</p>
-                  <h2 className="text-3xl font-semibold">Camp Momentum · Week 43</h2>
-                </div>
-
-                <button className="btn btn-secondary btn-sm" onClick={() => setIsAssignModalOpen(true)}>
-                  Assign schedule
-                </button>
-              </header>
-              <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
-                {days.map((day) => (
-                  <div
-                    key={day.id}
-                    onDragOver={(event) => event.preventDefault()}
-                    onDrop={() => handleDrop(day.id)}
-                    className="flex min-h-[220px] flex-col rounded-2xl border border-dashed border-base-200 bg-base-300 p-4"
-                  >
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <p className="text-xs font-semibold uppercase tracking-wide text-neutral">{day.label}</p>
-                      </div>
-                    </div>
-
-                    <div className="mt-3 flex-1 space-y-3">
-                      {schedule[day.id].length === 0 && (
-                        <div className="flex h-full items-center justify-center rounded-xl border border-dashed border-base-200 bg-base-100/60 p-4 text-center text-xs text-base-content/60">
-                          Drag a module to begin
-                        </div>
-                      )}
-
-                      {schedule[day.id].map((module, index) => (
-                        <div
-                          key={`${module.id}-${index}`}
-                          className="w-full rounded-xl border border-base-200 bg-base-100 p-3 transition"
-                        >
-                          <div className="flex items-start justify-between gap-2">
-                            <div className="text-xs text-base-content/60">
-                              <div className="flex items-center gap-2">
-                                <span>{module.focus}</span>
-                                <span className="text-base-content/50">·</span>
-                                <span>{module.duration}</span>
-                              </div>
-                              <p className="mt-1 font-semibold text-base-content">{module.title}</p>
-                            </div>
-                            <button
-                              type="button"
-                              onClick={() => handleRemoveModule(day.id, index)}
-                              className="btn btn-ghost btn-xs text-error"
-                              aria-label={`Delete ${module.title}`}
-                            >
-                              Delete
-                            </button>
-                          </div>
-                        </div>
+                <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
+                  <label className="form-control">
+                    <span className="label-text">Focus</span>
+                    <select
+                      className="select select-bordered"
+                      value={moduleForm.focus}
+                      onChange={(event) =>
+                        setModuleForm((prev) => ({ ...prev, focus: event.target.value as CreateTrainingModuleInput["focus"] }))
+                      }
+                    >
+                      {moduleFocusOptions.map((focus) => (
+                        <option key={focus} value={focus}>
+                          {focus}
+                        </option>
                       ))}
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </div>
-        </section>
-      </div>
+                    </select>
+                  </label>
 
-      <dialog className={`modal ${isAssignModalOpen ? "modal-open" : ""}`}>
-        <div className="modal-box max-w-2xl space-y-6">
-          <div className="flex items-start justify-between gap-4">
-            <div>
-              <h3 className="text-xl font-semibold">Assign schedule</h3>
-              <p className="text-sm text-base-content/70">
-                Share this week&apos;s plan with a full group or select individual athletes.
-              </p>
-            </div>
-            <button className="btn btn-circle btn-ghost btn-sm" onClick={() => setIsAssignModalOpen(false)}>
-              ✕
-            </button>
-          </div>
-
-          <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-            <section className="space-y-3 rounded-2xl border border-base-300 bg-base-100 p-4">
-              <header className="flex items-center justify-between">
-                <div>
-                  <h4 className="text-lg font-semibold">Assign to group</h4>
+                  <label className="form-control">
+                    <span className="label-text">Intensity</span>
+                    <select
+                      className="select select-bordered"
+                      value={moduleForm.intensity}
+                      onChange={(event) =>
+                        setModuleForm((prev) => ({
+                          ...prev,
+                          intensity: event.target.value as CreateTrainingModuleInput["intensity"],
+                        }))
+                      }
+                    >
+                      {moduleIntensityOptions.map((intensity) => (
+                        <option key={intensity} value={intensity}>
+                          {intensity}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
                 </div>
-              </header>
 
-              <label className="form-control w-full">
-                <div className="label">
-                  <span className="label-text">Select group</span>
-                </div>
-                <select
-                  className="select select-bordered"
-                  value={selectedGroup}
-                  onChange={(event) => setSelectedGroup(event.target.value)}
-                >
-                  <option value="" disabled>
-                    Choose a group
-                  </option>
-                  {groups.map((group) => (
-                    <option key={group} value={group}>
-                      {group}
-                    </option>
-                  ))}
-                </select>
-              </label>
-
-              <button className="btn btn-primary w-full" disabled={!selectedGroup} onClick={handleAssignToGroup}>
-                Assign to group
-              </button>
-            </section>
-
-            <section className="space-y-3 rounded-2xl border border-base-300 bg-base-100 p-4">
-              <header className="flex items-center justify-between">
-                <div>
-                  <h4 className="text-lg font-semibold">Assign to athletes</h4>
-                </div>
-              </header>
-
-              <div className="max-h-72 space-y-2 overflow-y-auto pr-1">
-                {athletes.map((athlete) => (
-                  <label
-                    key={athlete.id}
-                    className="flex cursor-pointer items-center justify-between gap-2 rounded-xl border border-base-200 bg-base-50 px-3 py-2 text-sm hover:border-base-300"
-                  >
-                    <div>
-                      <p className="font-semibold">{athlete.name}</p>
-                      <p className="text-xs text-base-content/60">{athlete.sport}</p>
-                    </div>
+                <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
+                  <label className="form-control">
+                    <span className="label-text">Duration (minutes)</span>
                     <input
-                      type="checkbox"
-                      className="checkbox"
-                      checked={selectedAthletes.includes(athlete.id)}
-                      onChange={() => toggleAthleteSelection(athlete.id)}
+                      type="number"
+                      min={1}
+                      className="input input-bordered"
+                      value={moduleForm.durationMinutes}
+                      onChange={(event) =>
+                        setModuleForm((prev) => ({
+                          ...prev,
+                          durationMinutes: Number(event.target.value) || 0,
+                        }))
+                      }
                     />
                   </label>
-                ))}
-              </div>
 
-              <button
-                className="btn btn-secondary w-full"
-                disabled={selectedAthletes.length === 0}
-                onClick={handleAssignToAthletes}
-              >
-                Assign to selected athletes
-              </button>
-            </section>
-          </div>
+                  <label className="form-control">
+                    <span className="label-text">Created by (optional)</span>
+                    <input
+                      type="text"
+                      className="input input-bordered"
+                      value={moduleForm.createdById ?? ""}
+                      onChange={(event) =>
+                        setModuleForm((prev) => ({
+                          ...prev,
+                          createdById: event.target.value,
+                        }))
+                      }
+                      placeholder="coach_user_id"
+                    />
+                  </label>
+                </div>
+
+                <label className="form-control">
+                  <span className="label-text">Description</span>
+                  <textarea
+                    className="textarea textarea-bordered"
+                    rows={4}
+                    required
+                    value={moduleForm.description}
+                    onChange={(event) =>
+                      setModuleForm((prev) => ({ ...prev, description: event.target.value }))
+                    }
+                    placeholder="Intent, key movements, constraints..."
+                  />
+                </label>
+
+                <button className="btn btn-primary w-full" type="submit" disabled={isSubmittingModule}>
+                  {isSubmittingModule ? "Saving module..." : "Save module to Supabase"}
+                </button>
+              </form>
+
+              {moduleResult && <div className="alert alert-success text-sm">{moduleResult}</div>}
+            </div>
+          </section>
+
+          <section className="card border border-base-300 bg-base-200 shadow-sm">
+            <div className="card-body space-y-4">
+              <header className="space-y-1">
+                <p className="text-xs font-semibold uppercase tracking-wide text-neutral">Schedules</p>
+                <h2 className="text-xl font-semibold">Attach a module to a schedule</h2>
+                <p className="text-sm text-base-content/70">
+                  Use the new Supabase REST helpers to connect a module to a weekly schedule and training day.
+                </p>
+              </header>
+
+              <form className="space-y-3" onSubmit={handleAddToSchedule}>
+                <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
+                  <label className="form-control">
+                    <span className="label-text">Schedule ID</span>
+                    <input
+                      type="text"
+                      className="input input-bordered"
+                      required
+                      value={scheduleForm.scheduleId}
+                      onChange={(event) =>
+                        setScheduleForm((prev) => ({ ...prev, scheduleId: event.target.value }))
+                      }
+                      placeholder="schedule_uuid"
+                    />
+                  </label>
+
+                  <label className="form-control">
+                    <span className="label-text">Day of week</span>
+                    <input
+                      type="text"
+                      className="input input-bordered"
+                      required
+                      value={scheduleForm.dayOfWeek}
+                      onChange={(event) =>
+                        setScheduleForm((prev) => ({ ...prev, dayOfWeek: event.target.value.toUpperCase() }))
+                      }
+                      placeholder="MONDAY"
+                    />
+                  </label>
+                </div>
+
+                <label className="form-control">
+                  <span className="label-text">Module ID</span>
+                  <input
+                    type="text"
+                    className="input input-bordered"
+                    required
+                    value={scheduleForm.moduleId}
+                    onChange={(event) =>
+                      setScheduleForm((prev) => ({ ...prev, moduleId: event.target.value }))
+                    }
+                    placeholder="module_uuid"
+                  />
+                </label>
+
+                <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
+                  <label className="form-control">
+                    <span className="label-text">Position (optional)</span>
+                    <input
+                      type="number"
+                      className="input input-bordered"
+                      value={scheduleForm.position ?? 0}
+                      onChange={(event) =>
+                        setScheduleForm((prev) => ({
+                          ...prev,
+                          position: Number(event.target.value) || 0,
+                        }))
+                      }
+                    />
+                  </label>
+
+                  <label className="form-control">
+                    <span className="label-text">Notes (optional)</span>
+                    <input
+                      type="text"
+                      className="input input-bordered"
+                      value={scheduleForm.notes ?? ""}
+                      onChange={(event) =>
+                        setScheduleForm((prev) => ({ ...prev, notes: event.target.value }))
+                      }
+                      placeholder="Context for this placement"
+                    />
+                  </label>
+                </div>
+
+                <button className="btn btn-secondary w-full" type="submit" disabled={isSubmittingSchedule}>
+                  {isSubmittingSchedule ? "Saving to schedule..." : "Add module to schedule"}
+                </button>
+              </form>
+
+              {scheduleResult && <div className="alert alert-success text-sm">{scheduleResult}</div>}
+            </div>
+          </section>
         </div>
-        <form method="dialog" className="modal-backdrop" onSubmit={() => setIsAssignModalOpen(false)}>
-          <button>close</button>
-        </form>
-      </dialog>
+      </div>
     </div>
   );
 }
