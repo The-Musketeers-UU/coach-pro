@@ -12,6 +12,7 @@ export default function GroupDashboardPage({ params }: { params: { groupName: st
 
   const decodedGroupName = useMemo(() => decodeURIComponent(params.groupName), [params.groupName]);
   const groupAthletes = athleteRoster.filter((athlete) => athlete.group === decodedGroupName);
+  const allGroups = Array.from(new Set(athleteRoster.map((athlete) => athlete.group)));
 
   return (
     <div className="min-h-screen">
@@ -22,9 +23,17 @@ export default function GroupDashboardPage({ params }: { params: { groupName: st
             <h1 className="text-3xl font-semibold">{decodedGroupName}</h1>
             <p className="text-sm text-base-content/70">Athletes and shared plan for this group.</p>
           </div>
-          <Link href="/dashboard" className="btn btn-outline btn-sm">
-            Back to dashboard
-          </Link>
+          <div className="flex flex-wrap gap-2">
+            {allGroups.map((groupName) => (
+              <Link
+                key={groupName}
+                href={`/dashboard/groups/${encodeURIComponent(groupName)}`}
+                className={`btn btn-outline btn-primary btn-sm ${groupName === decodedGroupName ? "btn-active" : ""}`}
+              >
+                {groupName}
+              </Link>
+            ))}
+          </div>
         </header>
 
         <section className="space-y-4">
