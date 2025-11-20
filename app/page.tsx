@@ -163,6 +163,8 @@ export default function CoachDashboard() {
     null
   );
   const [editFormError, setEditFormError] = useState<string | null>(null);
+  const libraryModuleCounter = useRef(initialModules.length);
+  const attributeIdCounter = useRef(0);
   const scheduledModuleCounter = useRef(0);
 
   const filteredModules = useMemo(() => {
@@ -199,6 +201,17 @@ export default function CoachDashboard() {
       ...prev,
       [dayId]: prev[dayId].filter((_, index) => index !== moduleIndex),
     }));
+  };
+
+  const handleRemoveLibraryModule = (moduleId: string) => {
+    setModuleLibrary((prev) => prev.filter((module) => module.id !== moduleId));
+
+    if (
+      editingContext?.type === "library" &&
+      editingContext.moduleId === moduleId
+    ) {
+      closeEditModal();
+    }
   };
 
   const resetModuleForm = () => {
@@ -247,7 +260,8 @@ export default function CoachDashboard() {
 
     return {
       module: {
-        id: moduleId ?? `mod-${Date.now()}`,
+        id:
+          moduleId ?? `mod-${(libraryModuleCounter.current += 1)}`,
         title: trimmedTitle,
         description: trimmedDescription,
         attributes: completedAttributes,
@@ -404,9 +418,7 @@ export default function CoachDashboard() {
                               attributes: [
                                 ...prev.attributes,
                                 {
-                                  id: `attr-${Date.now()}-${
-                                    prev.attributes.length
-                                  }`,
+                                  id: `attr-${(attributeIdCounter.current += 1)}`,
                                   key: "",
                                   value: "",
                                 },
@@ -541,7 +553,20 @@ export default function CoachDashboard() {
                     className="card cursor-grab border border-base-200 bg-base-100 transition hover:border-primary"
                   >
                     <div className="card-body space-y-2 p-4">
-                      <h2 className="font-semibold">{module.title}</h2>
+                      <div className="flex items-start justify-between gap-3">
+                        <h2 className="font-semibold">{module.title}</h2>
+                        <button
+                          type="button"
+                          onClick={(event) => {
+                            event.stopPropagation();
+                            handleRemoveLibraryModule(module.id);
+                          }}
+                          className="btn btn-ghost btn-xs text-error"
+                          aria-label={`Delete ${module.title}`}
+                        >
+                          Delete
+                        </button>
+                      </div>
                       <p className="text-sm text-base-content/70">
                         {module.description}
                       </p>
@@ -802,9 +827,7 @@ export default function CoachDashboard() {
                               attributes: [
                                 ...prev.attributes,
                                 {
-                                  id: `attr-${Date.now()}-${
-                                    prev.attributes.length
-                                  }`,
+                                  id: `attr-${(attributeIdCounter.current += 1)}`,
                                   key: "",
                                   value: "",
                                 },
