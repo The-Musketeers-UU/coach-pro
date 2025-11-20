@@ -149,7 +149,7 @@ export default function GroupDashboardPage({
           </div>
 
           <div className="space-y-4">
-            <h2 className="text-2xl font-semibold">Shared with the whole group</h2>
+            <h2 className="text-2xl font-semibold">Programs shared with the whole group</h2>
             <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
               <div className="flex items-center gap-3">
                 <button
