@@ -74,7 +74,7 @@ export default function TrainingDashboardPage() {
               >
                 &lt;
               </button>
-              <p className="text-sm font-semibold uppercase tracking-wide text-neutral">Vecka {weekNumber}</p>
+              <p className="text-sm font-semibold uppercase tracking-wide text-neutral">Week {weekNumber}</p>
               <button
                 className="btn btn-outline btn-xs btn-primary"
                 onClick={() => setWeekIndex((prev) => prev + 1)}
@@ -91,13 +91,13 @@ export default function TrainingDashboardPage() {
               <div className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
                 {activeWeek ? (
                   <div>
-                    <p className="text-xs font-semibold uppercase tracking-wide text-neutral">Vecka {weekNumber}</p>
+                    <p className="text-xs font-semibold uppercase tracking-wide text-neutral">Week {weekNumber}</p>
                     <h3 className="text-2xl font-semibold">{activeWeek.label}</h3>
                     <p className="text-sm text-base-content/70">Focus: {activeWeek.focus}</p>
                   </div>
                 ) : (
                   <div>
-                    <p className="text-xs font-semibold uppercase tracking-wide text-neutral">Vecka {weekNumber}</p>
+                    <p className="text-xs font-semibold uppercase tracking-wide text-neutral">Week {weekNumber}</p>
                     <h3 className="text-2xl font-semibold">No schedule</h3>
                     <p className="text-sm text-base-content/70">Empty week.</p>
                   </div>

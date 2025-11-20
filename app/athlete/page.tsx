@@ -24,15 +24,15 @@ export default function AthleteSchedulePage() {
           <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
             <div className="flex items-center gap-3">
               <button
-                className="btn btn-outline btn-sm"
+                className="btn btn-outline btn-xs btn-primary"
                 onClick={() => setWeekIndex((prev) => prev - 1)}
                 aria-label="Previous week"
               >
                 &lt;
               </button>
-              <p className="text-sm font-semibold uppercase tracking-wide text-neutral">Vecka {weekNumber}</p>
+              <p className="text-sm font-semibold uppercase tracking-wide text-neutral">Week {weekNumber}</p>
               <button
-                className="btn btn-outline btn-sm"
+                className="btn btn-outline btn-xs btn-primary"
                 onClick={() => setWeekIndex((prev) => prev + 1)}
                 aria-label="Next week"
               >
@@ -46,15 +46,15 @@ export default function AthleteSchedulePage() {
               <div className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
                 {activeWeek ? (
                   <div>
-                    <p className="text-xs font-semibold uppercase tracking-wide text-neutral">Vecka {weekNumber}</p>
+                    <p className="text-xs font-semibold uppercase tracking-wide text-neutral">Week {weekNumber}</p>
                     <h2 className="text-2xl font-semibold">{activeWeek.label}</h2>
                     <p className="text-sm text-base-content/70">Fokus: {activeWeek.focus}</p>
                   </div>
                 ) : (
                   <div>
-                    <p className="text-xs font-semibold uppercase tracking-wide text-neutral">Vecka {weekNumber}</p>
-                    <h2 className="text-2xl font-semibold">Ingen plan</h2>
-                    <p className="text-sm text-base-content/70">Tom vecka.</p>
+                    <p className="text-xs font-semibold uppercase tracking-wide text-neutral">Week {weekNumber}</p>
+                    <h2 className="text-2xl font-semibold">No program</h2>
+                    <p className="text-sm text-base-content/70">Empty Week.</p>
                   </div>
                 )}
               </div>
@@ -96,7 +96,7 @@ export default function AthleteSchedulePage() {
                 </div>
               ) : (
                 <div className="rounded-2xl border border-dashed border-base-300 bg-base-100/60 p-6 text-center text-sm text-base-content/70">
-                  Tom vecka.
+                  Empty Week.
                 </div>
               )}
             </div>
