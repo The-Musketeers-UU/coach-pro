@@ -14,7 +14,6 @@ export type ProgramDay = {
 export type ProgramWeek = {
   id: string;
   label: string;
-  weekNumber: number;
   focus: string;
   days: ProgramDay[];
 };
@@ -23,7 +22,6 @@ export const programWeeks: ProgramWeek[] = [
   {
     id: "wk-1",
     label: "Camp momentum",
-    weekNumber: 33,
     focus: "Race-week sharpening",
     days: [
       {
@@ -145,7 +143,6 @@ export const programWeeks: ProgramWeek[] = [
   {
     id: "wk-2",
     label: "Week 34",
-    weekNumber: 34,
     focus: "Return-to-play rebuild",
     days: [
       {
