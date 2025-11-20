@@ -20,7 +20,6 @@ type Athlete = {
   name: string;
   sport: string;
   program: string;
-	group: string;
 };
 
 const initialModules: Module[] = [
@@ -114,36 +113,7 @@ const athletes: Athlete[] = [
     name: "Jordan Vega",
     sport: "800m",
     program: "Camp Momentum",
-		group: "Group 1"
-  },
-  {
-    id: "ath-2",
-    name: "Mira Hwang",
-    sport: "Triathlon",
-    program: "Altitude Prep Block",
-		group: "Group 2"
-  },
-  {
-    id: "ath-3",
-    name: "Leo Brennan",
-    sport: "400m",
-    program: "Camp Momentum",
-		group: "Group 3"
-  },
-  {
-    id: "ath-4",
-    name: "Rafa Costa",
-    sport: "Soccer",
-    program: "Return-to-Play Ramp",
-		group: "Group 1"
-  },
-  {
-    id: "ath-5",
-    name: "Ada Lewis",
-    sport: "Marathon",
-    program: "Altitude Prep Block",
-		group: "Group 2"
-  },
+  }
 ];
 
 export default function CoachDashboard() {
@@ -158,7 +128,6 @@ export default function CoachDashboard() {
   const [formError, setFormError] = useState<string | null>(null);
   const [isAddModuleExpanded, setIsAddModuleExpanded] = useState(false);
   const [isAssignModalOpen, setIsAssignModalOpen] = useState(false);
-  const [selectedGroup, setSelectedGroup] = useState("");
   const [selectedAthletes, setSelectedAthletes] = useState<string[]>([]);
 
   const filteredModules = useMemo(() => {
@@ -180,8 +149,6 @@ export default function CoachDashboard() {
   const focusValues = focusOptions.filter(
     (option): option is Module["focus"] => option !== "All",
   );
-
-  const groups = useMemo(() => Array.from(new Set(athletes.map((athlete) => athlete.group))), []);
 
   const handleDrop = (dayId: string) => {
     if (!activeDrag) return;
@@ -220,15 +187,6 @@ export default function CoachDashboard() {
     setSelectedAthletes((prev) =>
       prev.includes(athleteId) ? prev.filter((id) => id !== athleteId) : [...prev, athleteId],
     );
-  };
-
-  const handleAssignToGroup = () => {
-    if (!selectedGroup) {
-      return;
-    }
-
-    setSelectedGroup("");
-    setIsAssignModalOpen(false);
   };
 
   const handleAssignToAthletes = () => {
@@ -455,59 +413,18 @@ export default function CoachDashboard() {
       </div>
 
       <dialog className={`modal ${isAssignModalOpen ? "modal-open" : ""}`}>
-        <div className="modal-box max-w-2xl space-y-6">
+        <div className="modal-box max-w-l space-y-6">
           <div className="flex items-start justify-between gap-4">
             <div>
               <h3 className="text-xl font-semibold">Assign schedule</h3>
-              <p className="text-sm text-base-content/70">
-                Share this week&apos;s plan with a full group or select individual athletes.
-              </p>
             </div>
             <button className="btn btn-circle btn-ghost btn-sm" onClick={() => setIsAssignModalOpen(false)}>
               ✕
             </button>
           </div>
 
-          <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-1">
             <section className="space-y-3 rounded-2xl border border-base-300 bg-base-100 p-4">
-              <header className="flex items-center justify-between">
-                <div>
-                  <h4 className="text-lg font-semibold">Assign to group</h4>
-                </div>
-              </header>
-
-              <label className="form-control w-full">
-                <div className="label">
-                  <span className="label-text">Select group</span>
-                </div>
-                <select
-                  className="select select-bordered"
-                  value={selectedGroup}
-                  onChange={(event) => setSelectedGroup(event.target.value)}
-                >
-                  <option value="" disabled>
-                    Choose a group
-                  </option>
-                  {groups.map((group) => (
-                    <option key={group} value={group}>
-                      {group}
-                    </option>
-                  ))}
-                </select>
-              </label>
-
-              <button className="btn btn-primary w-full" disabled={!selectedGroup} onClick={handleAssignToGroup}>
-                Assign to group
-              </button>
-            </section>
-
-            <section className="space-y-3 rounded-2xl border border-base-300 bg-base-100 p-4">
-              <header className="flex items-center justify-between">
-                <div>
-                  <h4 className="text-lg font-semibold">Assign to athletes</h4>
-                </div>
-              </header>
-
               <div className="max-h-72 space-y-2 overflow-y-auto pr-1">
                 {athletes.map((athlete) => (
                   <label
