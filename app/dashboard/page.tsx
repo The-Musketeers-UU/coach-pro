@@ -1,60 +1,68 @@
 "use client";
 
+import Link from "next/link";
 import { useState } from "react";
-import { programWeeks, ProgramWeek } from "@/app/data/program-weeks";
-
-const athletes = [
-  {
-    id: "ath-1",
-    name: "Jordan Vega",
-    sport: "800m",
-    program: "Camp Momentum",
-    readiness: 94,
-    status: "Green",
-  },
-  {
-    id: "ath-2",
-    name: "Mira Hwang",
-    sport: "Triathlon",
-    program: "Altitude Prep Block",
-    readiness: 88,
-    status: "Green",
-  },
-  {
-    id: "ath-3",
-    name: "Leo Brennan",
-    sport: "400m",
-    program: "Camp Momentum",
-    readiness: 72,
-    status: "Yellow",
-  },
-  {
-    id: "ath-4",
-    name: "Rafa Costa",
-    sport: "Soccer",
-    program: "Return-to-Play Ramp",
-    readiness: 65,
-    status: "Yellow",
-  },
-  {
-    id: "ath-5",
-    name: "Ada Lewis",
-    sport: "Marathon",
-    program: "Altitude Prep Block",
-    readiness: 58,
-    status: "Red",
-  },
-];
+import { athleteRoster } from "@/app/data/athletes";
+import { programWeeks } from "@/app/data/program-weeks";
 
 export default function TrainingDashboardPage() {
   const [weekIndex, setWeekIndex] = useState(0);
-  const [selectedGroup, setSelectedGroup] = useState("");
   const activeWeek = programWeeks[weekIndex];
   const weekNumber = 33 + weekIndex;
+  const groupedAthletes = athleteRoster.reduce<Record<string, typeof athleteRoster>>(
+    (acc, athlete) => {
+      if (!acc[athlete.group]) {
+        acc[athlete.group] = [];
+      }
+      acc[athlete.group].push(athlete);
+      return acc;
+    },
+    {},
+  );
 
   return (
     <div className="min-h-screen">
       <div className="mx-auto max-w-6xl space-y-10 px-4 py-10">
+        <section className="space-y-3">
+          <div className="flex flex-col gap-1">
+            <p className="text-xs font-semibold uppercase tracking-wide text-neutral">Coaching groups</p>
+            <h1 className="text-3xl font-semibold">Dashboard</h1>
+            <p className="text-sm text-base-content/70">
+              Dina grupper och vilka atleter som ingår i varje.
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+            {Object.entries(groupedAthletes).map(([groupName, athletes]) => (
+              <article
+                key={groupName}
+                className="rounded-2xl border border-base-300 bg-base-200 p-4 shadow-sm"
+              >
+                <div className="flex items-center justify-between">
+                  <h2 className="text-lg font-semibold">{groupName}</h2>
+                  <span className="badge badge-outline badge-sm">{athletes.length} atleter</span>
+                </div>
+
+                <ul className="mt-3 space-y-2">
+                  {athletes.map((athlete) => (
+                    <li key={athlete.id} className="rounded-xl bg-base-100 px-3 py-2">
+                      <Link
+                        href={`/dashboard/athletes/${athlete.id}`}
+                        className="link link-hover font-semibold"
+                      >
+                        {athlete.name}
+                      </Link>
+                      <p className="text-xs text-base-content/70">
+                        {athlete.sport} · {athlete.program}
+                      </p>
+                    </li>
+                  ))}
+                </ul>
+              </article>
+            ))}
+          </div>
+        </section>
+
         <section className="space-y-4">
           <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
             <div className="flex items-center gap-3">
@@ -159,10 +167,15 @@ export default function TrainingDashboardPage() {
                 </tr>
               </thead>
               <tbody>
-                {athletes.map((athlete) => (
+                {athleteRoster.map((athlete) => (
                   <tr key={athlete.id} className="text-sm">
                     <td>
-                      <div className="font-semibold">{athlete.name}</div>
+                      <Link
+                        href={`/dashboard/athletes/${athlete.id}`}
+                        className="link link-hover font-semibold"
+                      >
+                        {athlete.name}
+                      </Link>
                       <div className="text-xs text-base-content/60">#{athlete.id}</div>
                     </td>
                     <td>{athlete.sport}</td>

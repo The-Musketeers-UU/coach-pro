@@ -1,22 +1,40 @@
 "use client";
 
+import Link from "next/link";
 import { useState } from "react";
+import { athleteRoster } from "@/app/data/athletes";
 import { programWeeks } from "@/app/data/program-weeks";
 
-export default function AthleteSchedulePage() {
+type AthleteScheduleProps = {
+  params: {
+    athleteId: string;
+  };
+};
+
+export default function CoachAthleteSchedulePage({ params }: AthleteScheduleProps) {
   const [weekIndex, setWeekIndex] = useState(0);
   const activeWeek = programWeeks[weekIndex];
   const weekNumber = 33 + weekIndex;
+  const athlete = athleteRoster.find((item) => item.id === params.athleteId);
+  const athleteName = athlete?.name ?? "Atlet";
 
   return (
     <div className="min-h-screen">
       <div className="mx-auto max-w-6xl space-y-8 px-4 py-10">
         <header className="rounded-3xl border border-base-300 bg-base-200 p-6 shadow-sm">
-          <div className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
+          <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
             <div>
-              <h1 className="text-3xl font-semibold">Anna&apos;s Schedules</h1>
-              <p className="text-sm text-base-content/70">Shared by coach Benke.</p>
+              <p className="text-xs font-semibold uppercase tracking-wide text-neutral">Coach view</p>
+              <h1 className="text-3xl font-semibold">{athleteName}&apos;s Schedules</h1>
+              <p className="text-sm text-base-content/70">
+                {athlete
+                  ? `${athlete.program} · ${athlete.group}`
+                  : "Atleten kunde inte hittas i ditt roster."}
+              </p>
             </div>
+            <Link href="/dashboard" className="btn btn-outline btn-sm">
+              Till dashboard
+            </Link>
           </div>
         </header>
 
@@ -39,6 +57,7 @@ export default function AthleteSchedulePage() {
                 &gt;
               </button>
             </div>
+            <button className="btn btn-outline btn-sm btn-secondary">Edit program</button>
           </div>
 
           <div className="card border border-base-300 bg-base-200 shadow-sm">
