@@ -1,21 +1,22 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
+import { use, useState } from "react";
 import { athleteRoster } from "@/app/data/athletes";
 import { programWeeks } from "@/app/data/program-weeks";
 
 type AthleteScheduleProps = {
-  params: {
+  params: Promise<{
     athleteId: string;
-  };
+  }>;
 };
 
 export default function CoachAthleteSchedulePage({ params }: AthleteScheduleProps) {
+  const { athleteId } = use(params);
   const [weekIndex, setWeekIndex] = useState(0);
   const activeWeek = programWeeks[weekIndex];
   const weekNumber = 33 + weekIndex;
-  const athlete = athleteRoster.find((item) => item.id === params.athleteId);
+  const athlete = athleteRoster.find((item) => item.id === athleteId);
   const athleteName = athlete?.name ?? "Atlet";
 
   return (
