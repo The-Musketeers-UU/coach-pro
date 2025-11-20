@@ -82,6 +82,8 @@ export default function GroupDashboardPage({ params }: { params: { groupName: st
     (athlete) => normalizeGroupName(athlete.group) === normalizedGroupName,
   );
   const groupAthletes = rosterMatches.length > 0 ? rosterMatches : fallbackMatches;
+  const displayGroupName =
+    rosterMatches[0]?.group ?? fallbackMatches[0]?.group ?? decodedGroupName;
   const allGroups = useMemo(() => {
     const groups = new Set(
       [...athleteRoster, ...fallbackGroupAthletes].map((athlete) => athlete.group),
@@ -96,19 +98,24 @@ export default function GroupDashboardPage({ params }: { params: { groupName: st
         <header className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
           <div>
             <p className="text-xs font-semibold uppercase tracking-wide text-neutral">Coaching group</p>
-            <h1 className="text-3xl font-semibold">{decodedGroupName}</h1>
+            <h1 className="text-3xl font-semibold">{displayGroupName}</h1>
             <p className="text-sm text-base-content/70">Athletes and shared plan for this group.</p>
           </div>
           <div className="flex flex-wrap gap-2">
-            {allGroups.map((groupName) => (
-              <Link
-                key={groupName}
-                href={`/dashboard/groups/${encodeURIComponent(groupName)}`}
-                className={`btn btn-outline btn-primary btn-sm ${groupName === decodedGroupName ? "btn-active" : ""}`}
-              >
-                {groupName}
-              </Link>
-            ))}
+            {allGroups.map((groupName) => {
+              const isCurrentGroup = normalizeGroupName(groupName) === normalizedGroupName;
+              return (
+                <Link
+                  key={groupName}
+                  href={`/dashboard/groups/${encodeURIComponent(groupName)}`}
+                  className={`btn btn-sm rounded-full px-4 ${
+                    isCurrentGroup ? "btn-primary" : "btn-outline btn-primary"
+                  }`}
+                >
+                  {groupName}
+                </Link>
+              );
+            })}
           </div>
         </header>
 
