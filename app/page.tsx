@@ -23,7 +23,6 @@ type Athlete = {
   id: string;
   name: string;
   sport: string;
-  program: string;
 };
 
 const initialModules: Module[] = [
@@ -136,7 +135,6 @@ const athletes: Athlete[] = [
     id: "ath-1",
     name: "Jordan Vega",
     sport: "800m",
-    program: "Camp Momentum",
   },
 ];
 
