@@ -48,32 +48,8 @@ const athletes = [
 
 export default function TrainingDashboardPage() {
   const [activeWeekId, setActiveWeekId] = useState<ProgramWeek["id"]>(programWeeks[0].id);
-  const [isAssignModalOpen, setIsAssignModalOpen] = useState(false);
   const [selectedGroup, setSelectedGroup] = useState("");
-  const [selectedAthletes, setSelectedAthletes] = useState<string[]>([]);
-
-  const groups = useMemo(() => Array.from(new Set(athletes.map((athlete) => athlete.program))), []);
   const activeWeek = programWeeks.find((week) => week.id === activeWeekId) ?? programWeeks[0];
-
-  const toggleAthleteSelection = (athleteId: string) => {
-    setSelectedAthletes((prev) =>
-      prev.includes(athleteId) ? prev.filter((id) => id !== athleteId) : [...prev, athleteId],
-    );
-  };
-
-  const handleAssignToGroup = () => {
-    if (!selectedGroup) {
-      return;
-    }
-
-    setSelectedGroup("");
-    setIsAssignModalOpen(false);
-  };
-
-  const handleAssignToAthletes = () => {
-    setSelectedAthletes([]);
-    setIsAssignModalOpen(false);
-  };
 
   return (
     <div className="min-h-screen">
@@ -102,13 +78,6 @@ export default function TrainingDashboardPage() {
                       <h3 className="text-2xl font-semibold">{activeWeek.label}</h3>
                       <p className="text-sm text-base-content/70">Focus: {activeWeek.focus}</p>
                     </div>
-
-                    <button
-                      className="btn btn-primary btn-sm"
-                      onClick={() => setIsAssignModalOpen(true)}
-                    >
-                      Assign schedule
-                    </button>
                   </div>
 
               <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
@@ -197,99 +166,6 @@ export default function TrainingDashboardPage() {
             </table>
           </div>
         </section>
-
-        <dialog className={`modal ${isAssignModalOpen ? "modal-open" : ""}`}>
-          <div className="modal-box max-w-2xl space-y-6">
-            <div className="flex items-start justify-between gap-4">
-              <div>
-                <h3 className="text-xl font-semibold">Assign schedule</h3>
-                <p className="text-sm text-base-content/70">
-                  Share this week&apos;s plan with a full group or select individual athletes.
-                </p>
-              </div>
-              <button className="btn btn-circle btn-ghost btn-sm" onClick={() => setIsAssignModalOpen(false)}>
-                ✕
-              </button>
-            </div>
-
-            <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-              <section className="space-y-3 rounded-2xl border border-base-300 bg-base-100 p-4">
-                <header className="flex items-center justify-between">
-                  <div>
-                    <p className="text-xs font-semibold uppercase tracking-wide text-neutral">Groups</p>
-                    <h4 className="text-lg font-semibold">Assign to group</h4>
-                  </div>
-                  <span className="badge badge-outline">{groups.length} available</span>
-                </header>
-
-                <label className="form-control w-full">
-                  <div className="label">
-                    <span className="label-text">Select group</span>
-                  </div>
-                  <select
-                    className="select select-bordered"
-                    value={selectedGroup}
-                    onChange={(event) => setSelectedGroup(event.target.value)}
-                  >
-                    <option value="" disabled>
-                      Choose a group
-                    </option>
-                    {groups.map((group) => (
-                      <option key={group} value={group}>
-                        {group}
-                      </option>
-                    ))}
-                  </select>
-                </label>
-
-                <button className="btn btn-primary w-full" disabled={!selectedGroup} onClick={handleAssignToGroup}>
-                  Assign to group
-                </button>
-              </section>
-
-              <section className="space-y-3 rounded-2xl border border-base-300 bg-base-100 p-4">
-                <header className="flex items-center justify-between">
-                  <div>
-                    <p className="text-xs font-semibold uppercase tracking-wide text-neutral">Individuals</p>
-                    <h4 className="text-lg font-semibold">Assign to athletes</h4>
-                  </div>
-                  <span className="badge badge-outline">{selectedAthletes.length} selected</span>
-                </header>
-
-                <div className="max-h-72 space-y-2 overflow-y-auto pr-1">
-                  {athletes.map((athlete) => (
-                    <label
-                      key={athlete.id}
-                      className="flex cursor-pointer items-center justify-between gap-2 rounded-xl border border-base-200 bg-base-50 px-3 py-2 text-sm hover:border-base-300"
-                    >
-                      <div>
-                        <p className="font-semibold">{athlete.name}</p>
-                        <p className="text-xs text-base-content/60">{athlete.sport}</p>
-                      </div>
-                      <input
-                        type="checkbox"
-                        className="checkbox"
-                        checked={selectedAthletes.includes(athlete.id)}
-                        onChange={() => toggleAthleteSelection(athlete.id)}
-                      />
-                    </label>
-                  ))}
-                </div>
-
-                <button
-                  className="btn btn-secondary w-full"
-                  disabled={selectedAthletes.length === 0}
-                  onClick={handleAssignToAthletes}
-                >
-                  Assign to selected athletes
-                </button>
-              </section>
-            </div>
-          </div>
-          <form method="dialog" className="modal-backdrop" onSubmit={() => setIsAssignModalOpen(false)}>
-            <button>close</button>
-          </form>
-        </dialog>
       </div>
     </div>
   );

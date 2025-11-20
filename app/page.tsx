@@ -20,6 +20,7 @@ type Athlete = {
   name: string;
   sport: string;
   program: string;
+	group: string;
 };
 
 const initialModules: Module[] = [
@@ -113,30 +114,35 @@ const athletes: Athlete[] = [
     name: "Jordan Vega",
     sport: "800m",
     program: "Camp Momentum",
+		group: "Group 1"
   },
   {
     id: "ath-2",
     name: "Mira Hwang",
     sport: "Triathlon",
     program: "Altitude Prep Block",
+		group: "Group 2"
   },
   {
     id: "ath-3",
     name: "Leo Brennan",
     sport: "400m",
     program: "Camp Momentum",
+		group: "Group 3"
   },
   {
     id: "ath-4",
     name: "Rafa Costa",
     sport: "Soccer",
     program: "Return-to-Play Ramp",
+		group: "Group 1"
   },
   {
     id: "ath-5",
     name: "Ada Lewis",
     sport: "Marathon",
     program: "Altitude Prep Block",
+		group: "Group 2"
   },
 ];
 
@@ -175,7 +181,7 @@ export default function CoachDashboard() {
     (option): option is Module["focus"] => option !== "All",
   );
 
-  const groups = useMemo(() => Array.from(new Set(athletes.map((athlete) => athlete.program))), []);
+  const groups = useMemo(() => Array.from(new Set(athletes.map((athlete) => athlete.group))), []);
 
   const handleDrop = (dayId: string) => {
     if (!activeDrag) return;
@@ -389,7 +395,7 @@ export default function CoachDashboard() {
                   <h2 className="text-3xl font-semibold">Camp Momentum · Week 43</h2>
                 </div>
 
-                <button className="btn btn-primary btn-sm" onClick={() => setIsAssignModalOpen(true)}>
+                <button className="btn btn-secondary btn-sm" onClick={() => setIsAssignModalOpen(true)}>
                   Assign schedule
                 </button>
               </header>
@@ -466,10 +472,8 @@ export default function CoachDashboard() {
             <section className="space-y-3 rounded-2xl border border-base-300 bg-base-100 p-4">
               <header className="flex items-center justify-between">
                 <div>
-                  <p className="text-xs font-semibold uppercase tracking-wide text-neutral">Groups</p>
                   <h4 className="text-lg font-semibold">Assign to group</h4>
                 </div>
-                <span className="badge badge-outline">{groups.length} available</span>
               </header>
 
               <label className="form-control w-full">
@@ -500,10 +504,8 @@ export default function CoachDashboard() {
             <section className="space-y-3 rounded-2xl border border-base-300 bg-base-100 p-4">
               <header className="flex items-center justify-between">
                 <div>
-                  <p className="text-xs font-semibold uppercase tracking-wide text-neutral">Individuals</p>
                   <h4 className="text-lg font-semibold">Assign to athletes</h4>
                 </div>
-                <span className="badge badge-outline">{selectedAthletes.length} selected</span>
               </header>
 
               <div className="max-h-72 space-y-2 overflow-y-auto pr-1">
