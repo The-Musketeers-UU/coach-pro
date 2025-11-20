@@ -1,6 +1,6 @@
 "use client";
 
-import { FormEvent, useMemo, useState } from "react";
+import { FormEvent, useMemo, useRef, useState } from "react";
 
 type ModuleAttribute = {
   id: string;
@@ -16,6 +16,10 @@ type Module = {
 };
 
 type DaySchedule = Record<string, Module[]>;
+
+type EditingContext =
+  | { type: "library"; moduleId: string }
+  | { type: "schedule"; moduleId: string; dayId: string; moduleIndex: number };
 
 type ModuleForm = Omit<Module, "id">;
 
@@ -152,11 +156,14 @@ export default function CoachDashboard() {
   const [isAddModuleExpanded, setIsAddModuleExpanded] = useState(false);
   const [isAssignModalOpen, setIsAssignModalOpen] = useState(false);
   const [selectedAthletes, setSelectedAthletes] = useState<string[]>([]);
-  const [editingModuleId, setEditingModuleId] = useState<string | null>(null);
+  const [editingContext, setEditingContext] = useState<EditingContext | null>(
+    null
+  );
   const [editingModuleForm, setEditingModuleForm] = useState<ModuleForm | null>(
     null
   );
   const [editFormError, setEditFormError] = useState<string | null>(null);
+  const scheduledModuleCounter = useRef(0);
 
   const filteredModules = useMemo(() => {
     return moduleLibrary.filter((module) => {
@@ -167,12 +174,16 @@ export default function CoachDashboard() {
     });
   }, [moduleLibrary, search]);
 
-  const cloneModuleForSchedule = (module: Module): Module => ({
-    id: `scheduled-${module.id}-${Date.now()}`,
-    title: module.title,
-    description: module.description,
-    attributes: module.attributes.map((attribute) => ({ ...attribute })),
-  });
+  const cloneModuleForSchedule = (module: Module): Module => {
+    scheduledModuleCounter.current += 1;
+
+    return {
+      id: `scheduled-${module.id}-${scheduledModuleCounter.current}`,
+      title: module.title,
+      description: module.description,
+      attributes: module.attributes.map((attribute) => ({ ...attribute })),
+    };
+  };
 
   const handleDrop = (dayId: string) => {
     if (!activeDrag) return;
@@ -196,14 +207,14 @@ export default function CoachDashboard() {
   };
 
   const closeEditModal = () => {
-    setEditingModuleId(null);
+    setEditingContext(null);
     setEditingModuleForm(null);
     setEditFormError(null);
   };
 
-  const startEditingModule = (module: Module) => {
+  const startEditingModule = (module: Module, context: EditingContext) => {
     setEditFormError(null);
-    setEditingModuleId(module.id);
+    setEditingContext(context);
     setEditingModuleForm({
       title: module.title,
       description: module.description,
@@ -264,9 +275,11 @@ export default function CoachDashboard() {
   const handleSaveEditedModule = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
 
-    if (!editingModuleId || !editingModuleForm) return;
-
-    const result = prepareModuleToSave(editingModuleForm, editingModuleId);
+    if (!editingContext || !editingModuleForm) return;
+    const result = prepareModuleToSave(
+      editingModuleForm,
+      editingContext.moduleId
+    );
 
     if (result.error) {
       setEditFormError(result.error);
@@ -275,11 +288,25 @@ export default function CoachDashboard() {
 
     if (!result.module) return;
 
-    setModuleLibrary((prev) =>
-      prev.map((module) =>
-        module.id === editingModuleId ? result.module! : module
-      )
-    );
+    if (editingContext.type === "library") {
+      setModuleLibrary((prev) =>
+        prev.map((module) =>
+          module.id === editingContext.moduleId ? result.module! : module
+        )
+      );
+    }
+
+    if (editingContext.type === "schedule") {
+      setSchedule((prev) => ({
+        ...prev,
+        [editingContext.dayId]: prev[editingContext.dayId].map(
+          (module, index) =>
+            index === editingContext.moduleIndex
+              ? { ...result.module!, id: module.id }
+              : module
+        ),
+      }));
+    }
 
     closeEditModal();
   };
@@ -505,7 +532,12 @@ export default function CoachDashboard() {
                     draggable
                     onDragStart={() => setActiveDrag(module)}
                     onDragEnd={() => setActiveDrag(null)}
-                    onClick={() => startEditingModule(module)}
+                    onClick={() =>
+                      startEditingModule(module, {
+                        type: "library",
+                        moduleId: module.id,
+                      })
+                    }
                     className="card cursor-grab border border-base-200 bg-base-100 transition hover:border-primary"
                   >
                     <div className="card-body space-y-2 p-4">
@@ -583,6 +615,14 @@ export default function CoachDashboard() {
                       {schedule[day.id].map((module, index) => (
                         <div
                           key={`${module.id}-${index}`}
+                          onClick={() =>
+                            startEditingModule(module, {
+                              type: "schedule",
+                              moduleId: module.id,
+                              dayId: day.id,
+                              moduleIndex: index,
+                            })
+                          }
                           className="w-full rounded-xl border border-base-200 bg-base-100 p-3 transition"
                         >
                           <div className="flex items-start justify-between gap-2">
@@ -603,7 +643,10 @@ export default function CoachDashboard() {
                             </div>
                             <button
                               type="button"
-                              onClick={() => handleRemoveModule(day.id, index)}
+                              onClick={(event) => {
+                                event.stopPropagation();
+                                handleRemoveModule(day.id, index);
+                              }}
                               className="btn btn-ghost btn-xs text-error"
                               aria-label={`Delete ${module.title}`}
                             >
@@ -678,12 +721,14 @@ export default function CoachDashboard() {
         </form>
       </dialog>
 
-      <dialog className={`modal ${editingModuleId ? "modal-open" : ""}`}>
+      <dialog className={`modal ${editingContext ? "modal-open" : ""}`}>
         <div className="modal-box max-w-2xl space-y-6">
           <div className="flex items-start justify-between gap-4">
             <div>
               <p className="text-xs font-semibold uppercase tracking-wide text-neutral">
-                Edit reusable block
+                {editingContext?.type === "schedule"
+                  ? "Edit scheduled block"
+                  : "Edit reusable block"}
               </p>
               <h3 className="text-xl font-semibold">
                 {editingModuleForm?.title}
@@ -846,7 +891,11 @@ export default function CoachDashboard() {
               </div>
 
               <div className="flex gap-2 sm:flex-col">
-								<p className="text-sm">Changes will affect only the reusable block template, no blocks in schedules will be affected.</p>
+                <p className="text-sm">
+                  {editingContext?.type === "schedule"
+                    ? "Changes will apply only to this block in the schedule. Reusable templates and other scheduled blocks remain unchanged."
+                    : "Changes will affect only the reusable block template, no blocks in schedules will be affected."}
+                </p>
                 <button type="submit" className="btn btn-secondary w-full">
                   Save changes
                 </button>
