@@ -147,6 +147,8 @@ export default function CoachDashboard() {
   const [isAssignModalOpen, setIsAssignModalOpen] = useState(false);
   const [selectedAthletes, setSelectedAthletes] = useState<string[]>([]);
   const [editingModuleId, setEditingModuleId] = useState<string | null>(null);
+  const [editingModuleForm, setEditingModuleForm] = useState<ModuleForm | null>(null);
+  const [editFormError, setEditFormError] = useState<string | null>(null);
 
   const filteredModules = useMemo(() => {
     return moduleLibrary.filter((module) => {
@@ -173,68 +175,99 @@ export default function CoachDashboard() {
 
   const resetModuleForm = () => {
     setNewModule(createInitialFormState());
-    setEditingModuleId(null);
     setFormError(null);
   };
 
+  const closeEditModal = () => {
+    setEditingModuleId(null);
+    setEditingModuleForm(null);
+    setEditFormError(null);
+  };
+
   const startEditingModule = (module: Module) => {
-    setIsAddModuleExpanded(true);
-    setFormError(null);
+    setEditFormError(null);
     setEditingModuleId(module.id);
-    setNewModule({
+    setEditingModuleForm({
       title: module.title,
       description: module.description,
       attributes: module.attributes.map((attribute) => ({ ...attribute })),
     });
   };
 
-  const handleAddModule = (event: FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
-
-    const trimmedTitle = newModule.title.trim();
-    const trimmedDescription = newModule.description.trim();
-    const completedAttributes = newModule.attributes.filter((attribute) =>
-      attribute.key.trim() && attribute.value.trim(),
+  const prepareModuleToSave = (
+    formState: ModuleForm,
+    moduleId?: string,
+  ): { module?: Module; error?: string } => {
+    const trimmedTitle = formState.title.trim();
+    const trimmedDescription = formState.description.trim();
+    const completedAttributes = formState.attributes.filter(
+      (attribute) => attribute.key.trim() && attribute.value.trim(),
     );
-    const hasIncompleteAttribute = newModule.attributes.some(
+    const hasIncompleteAttribute = formState.attributes.some(
       (attribute) => (attribute.key.trim() && !attribute.value.trim()) || (!attribute.key.trim() && attribute.value.trim()),
     );
 
     if (!trimmedTitle || !trimmedDescription) {
-      setFormError("Title and description are required.");
-      return;
+      return { error: "Title and description are required." };
     }
 
     if (hasIncompleteAttribute) {
-      setFormError("Complete or remove any partial key/value pairs.");
+      return { error: "Complete or remove any partial key/value pairs." };
+    }
+
+    return {
+      module: {
+        id: moduleId ?? `mod-${Date.now()}`,
+        title: trimmedTitle,
+        description: trimmedDescription,
+        attributes: completedAttributes,
+      },
+    };
+  };
+
+  const handleAddModule = (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+
+    const result = prepareModuleToSave(newModule);
+
+    if (result.error) {
+      setFormError(result.error);
       return;
     }
 
-    const moduleToSave: Module = {
-      id: editingModuleId ?? `mod-${Date.now()}`,
-      title: trimmedTitle,
-      description: trimmedDescription,
-      attributes: completedAttributes,
-    };
+    if (!result.module) return;
 
-    if (editingModuleId) {
-      setModuleLibrary((prev) =>
-        prev.map((module) => (module.id === editingModuleId ? moduleToSave : module)),
-      );
-      setSchedule((prev) => {
-        const updatedSchedule: DaySchedule = {} as DaySchedule;
-        days.forEach((day) => {
-          updatedSchedule[day.id] = prev[day.id].map((scheduledModule) =>
-            scheduledModule.id === editingModuleId ? moduleToSave : scheduledModule,
-          );
-        });
-        return updatedSchedule;
-      });
-    } else {
-      setModuleLibrary((prev) => [moduleToSave, ...prev]);
-    }
+    setModuleLibrary((prev) => [result.module as Module, ...prev]);
 
     resetModuleForm();
+  };
+
+  const handleSaveEditedModule = (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+
+    if (!editingModuleId || !editingModuleForm) return;
+
+    const result = prepareModuleToSave(editingModuleForm, editingModuleId);
+
+    if (result.error) {
+      setEditFormError(result.error);
+      return;
+    }
+
+    if (!result.module) return;
+
+    setModuleLibrary((prev) => prev.map((module) => (module.id === editingModuleId ? result.module! : module)));
+    setSchedule((prev) => {
+      const updatedSchedule: DaySchedule = {} as DaySchedule;
+      days.forEach((day) => {
+        updatedSchedule[day.id] = prev[day.id].map((scheduledModule) =>
+          scheduledModule.id === editingModuleId ? result.module! : scheduledModule,
+        );
+      });
+      return updatedSchedule;
+    });
+
+    closeEditModal();
   };
 
   const toggleAthleteSelection = (athleteId: string) => {
@@ -378,17 +411,15 @@ export default function CoachDashboard() {
 
                     <div className="flex flex-col gap-2 sm:flex-row">
                       <button type="submit" className="btn btn-secondary w-full">
-                        {editingModuleId ? "Save changes" : "Add block to library"}
+                        Add block to library
                       </button>
-                      {editingModuleId && (
-                        <button
-                          type="button"
-                          className="btn btn-ghost w-full"
-                          onClick={resetModuleForm}
-                        >
-                          Cancel editing
-                        </button>
-                      )}
+                      <button
+                        type="button"
+                        className="btn btn-ghost w-full"
+                        onClick={resetModuleForm}
+                      >
+                        Clear form
+                      </button>
                     </div>
                   </form>
                 </>
@@ -558,6 +589,159 @@ export default function CoachDashboard() {
           </div>
         </div>
         <form method="dialog" className="modal-backdrop" onSubmit={() => setIsAssignModalOpen(false)}>
+          <button>close</button>
+        </form>
+      </dialog>
+
+      <dialog className={`modal ${editingModuleId ? "modal-open" : ""}`}>
+        <div className="modal-box max-w-2xl space-y-6">
+          <div className="flex items-start justify-between gap-4">
+            <div>
+              <p className="text-xs font-semibold uppercase tracking-wide text-neutral">Edit reusable block</p>
+              <h3 className="text-xl font-semibold">{editingModuleForm?.title}</h3>
+            </div>
+            <button className="btn btn-circle btn-ghost btn-sm" onClick={closeEditModal}>
+              ✕
+            </button>
+          </div>
+
+          {editFormError && <div className="alert alert-error text-sm">{editFormError}</div>}
+
+          {editingModuleForm && (
+            <form className="space-y-3" onSubmit={handleSaveEditedModule}>
+              <label className="form-control">
+                <span className="label-text">Title</span>
+                <input
+                  type="text"
+                  value={editingModuleForm.title}
+                  onChange={(event) =>
+                    setEditingModuleForm((prev) =>
+                      prev
+                        ? {
+                            ...prev,
+                            title: event.target.value,
+                          }
+                        : prev,
+                    )
+                  }
+                  className="input input-bordered"
+                  placeholder="Explosive Acceleration"
+                />
+              </label>
+
+              <label className="form-control">
+                <span className="label-text">Description</span>
+                <textarea
+                  className="textarea textarea-bordered"
+                  rows={3}
+                  placeholder="What's the intent?"
+                  value={editingModuleForm.description}
+                  onChange={(event) =>
+                    setEditingModuleForm((prev) =>
+                      prev
+                        ? {
+                            ...prev,
+                            description: event.target.value,
+                          }
+                        : prev,
+                    )
+                  }
+                />
+              </label>
+
+              <div className="space-y-2 rounded-xl border border-base-300 bg-base-100 p-3">
+                <div className="flex items-center justify-between gap-2">
+                  <span className="text-sm font-semibold">Key/value pairs</span>
+                  <button
+                    type="button"
+                    className="btn btn-ghost btn-xs"
+                    onClick={() =>
+                      setEditingModuleForm((prev) =>
+                        prev
+                          ? {
+                              ...prev,
+                              attributes: [
+                                ...prev.attributes,
+                                { id: `attr-${Date.now()}-${prev.attributes.length}`, key: "", value: "" },
+                              ],
+                            }
+                          : prev,
+                      )
+                    }
+                  >
+                    + Add pair
+                  </button>
+                </div>
+
+                <div className="space-y-3">
+                  {editingModuleForm.attributes.map((attribute, index) => (
+                    <div key={attribute.id} className="grid grid-cols-1 gap-2 md:grid-cols-2">
+                      <label className="form-control">
+                        <span className="label-text">Key</span>
+                        <input
+                          type="text"
+                          className="input input-bordered"
+                          value={attribute.key}
+                          onChange={(event) => {
+                            const updated = [...editingModuleForm.attributes];
+                            updated[index] = { ...attribute, key: event.target.value };
+                            setEditingModuleForm((prev) => (prev ? { ...prev, attributes: updated } : prev));
+                          }}
+                          placeholder="e.g. Focus"
+                        />
+                      </label>
+                      <label className="form-control">
+                        <span className="label-text">Value</span>
+                        <div className="flex gap-2">
+                          <input
+                            type="text"
+                            className="input input-bordered flex-1"
+                            value={attribute.value}
+                            onChange={(event) => {
+                              const updated = [...editingModuleForm.attributes];
+                              updated[index] = { ...attribute, value: event.target.value };
+                              setEditingModuleForm((prev) => (prev ? { ...prev, attributes: updated } : prev));
+                            }}
+                            placeholder="e.g. Moderate"
+                          />
+                          {editingModuleForm.attributes.length > 0 && (
+                            <button
+                              type="button"
+                              className="btn btn-ghost btn-square"
+                              aria-label="Remove pair"
+                              onClick={() =>
+                                setEditingModuleForm((prev) =>
+                                  prev
+                                    ? {
+                                        ...prev,
+                                        attributes: prev.attributes.filter((_, attrIndex) => attrIndex !== index),
+                                      }
+                                    : prev,
+                                )
+                              }
+                            >
+                              ✕
+                            </button>
+                          )}
+                        </div>
+                      </label>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              <div className="flex flex-col gap-2 sm:flex-row">
+                <button type="submit" className="btn btn-secondary w-full">
+                  Save changes
+                </button>
+                <button type="button" className="btn btn-ghost w-full" onClick={closeEditModal}>
+                  Cancel
+                </button>
+              </div>
+            </form>
+          )}
+        </div>
+        <form method="dialog" className="modal-backdrop" onSubmit={closeEditModal}>
           <button>close</button>
         </form>
       </dialog>
