@@ -59,7 +59,7 @@ export default function TrainingDashboardPage() {
           <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
             <div className="flex items-center gap-3">
               <button
-                className="btn btn-outline btn-sm"
+                className="btn btn-outline btn-primary btn-xs"
                 onClick={() => setWeekIndex((prev) => prev - 1)}
                 aria-label="Previous week"
               >
@@ -67,7 +67,7 @@ export default function TrainingDashboardPage() {
               </button>
               <p className="text-sm font-semibold uppercase tracking-wide text-neutral">Vecka {weekNumber}</p>
               <button
-                className="btn btn-outline btn-sm"
+                className="btn btn-outline btn-xs btn-primary"
                 onClick={() => setWeekIndex((prev) => prev + 1)}
                 aria-label="Next week"
               >
