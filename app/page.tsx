@@ -2,13 +2,17 @@
 
 import { FormEvent, useMemo, useState } from "react";
 
+type ModuleAttribute = {
+  id: string;
+  key: string;
+  value: string;
+};
+
 type Module = {
   id: string;
   title: string;
-  focus: "Strength" | "Conditioning" | "Mobility" | "Mindset" | "Recovery";
-  duration: string;
-  intensity: "Low" | "Moderate" | "High";
   description: string;
+  attributes: ModuleAttribute[];
 };
 
 type DaySchedule = Record<string, Module[]>;
@@ -26,75 +30,89 @@ const initialModules: Module[] = [
   {
     id: "mod-1",
     title: "Explosive Power Circuit",
-    focus: "Strength",
-    duration: "45 min",
-    intensity: "High",
     description: "Olympic lifts, sled pushes, and plyometrics to prime neuromuscular output.",
+    attributes: [
+      { id: "attr-1", key: "Focus", value: "Strength" },
+      { id: "attr-2", key: "Duration", value: "45 min" },
+      { id: "attr-3", key: "Intensity", value: "High" },
+    ],
   },
   {
     id: "mod-2",
     title: "Tempo Endurance Ride",
-    focus: "Conditioning",
-    duration: "60 min",
-    intensity: "Moderate",
     description: "Zone 3 tempo ride with cadence holds for sustainable power.",
+    attributes: [
+      { id: "attr-1", key: "Focus", value: "Conditioning" },
+      { id: "attr-2", key: "Duration", value: "60 min" },
+      { id: "attr-3", key: "Intensity", value: "Moderate" },
+    ],
   },
   {
     id: "mod-3",
     title: "Mobility & Prehab Flow",
-    focus: "Mobility",
-    duration: "25 min",
-    intensity: "Low",
     description: "Thoracic opener, hip cars, and ankle sequencing for joint prep.",
+    attributes: [
+      { id: "attr-1", key: "Focus", value: "Mobility" },
+      { id: "attr-2", key: "Duration", value: "25 min" },
+      { id: "attr-3", key: "Intensity", value: "Low" },
+    ],
   },
   {
     id: "mod-4",
     title: "Race Visualization",
-    focus: "Mindset",
-    duration: "15 min",
-    intensity: "Low",
     description: "Guided visualization script focusing on strategic decision-making.",
+    attributes: [
+      { id: "attr-1", key: "Focus", value: "Mindset" },
+      { id: "attr-2", key: "Duration", value: "15 min" },
+      { id: "attr-3", key: "Intensity", value: "Low" },
+    ],
   },
   {
     id: "mod-5",
     title: "Threshold Track Session",
-    focus: "Conditioning",
-    duration: "50 min",
-    intensity: "High",
     description: "5x1k repeats @ 10k pace with 90s recoveries to raise lactate threshold.",
+    attributes: [
+      { id: "attr-1", key: "Focus", value: "Conditioning" },
+      { id: "attr-2", key: "Duration", value: "50 min" },
+      { id: "attr-3", key: "Intensity", value: "High" },
+    ],
   },
   {
     id: "mod-6",
     title: "Contrast Recovery",
-    focus: "Recovery",
-    duration: "30 min",
-    intensity: "Low",
     description: "Contrast bath protocol paired with diaphragmatic breathing reset.",
+    attributes: [
+      { id: "attr-1", key: "Focus", value: "Recovery" },
+      { id: "attr-2", key: "Duration", value: "30 min" },
+      { id: "attr-3", key: "Intensity", value: "Low" },
+    ],
   },
   {
     id: "mod-7",
     title: "Strength Foundations",
-    focus: "Strength",
-    duration: "40 min",
-    intensity: "Moderate",
     description: "Tempo squats, pull variations, and single-leg stability primer.",
+    attributes: [
+      { id: "attr-1", key: "Focus", value: "Strength" },
+      { id: "attr-2", key: "Duration", value: "40 min" },
+      { id: "attr-3", key: "Intensity", value: "Moderate" },
+    ],
   },
   {
     id: "mod-8",
     title: "Track Strides",
-    focus: "Conditioning",
-    duration: "20 min",
-    intensity: "Moderate",
     description: "8x120m strides with buildups to reinforce running mechanics.",
+    attributes: [
+      { id: "attr-1", key: "Focus", value: "Conditioning" },
+      { id: "attr-2", key: "Duration", value: "20 min" },
+      { id: "attr-3", key: "Intensity", value: "Moderate" },
+    ],
   },
 ];
 
 const createInitialFormState = (): ModuleForm => ({
   title: "",
-  focus: "Strength",
-  duration: "",
-  intensity: "Moderate",
   description: "",
+  attributes: [],
 });
 
 const days = [
@@ -118,7 +136,6 @@ const athletes: Athlete[] = [
 
 export default function CoachDashboard() {
   const [search, setSearch] = useState("");
-  const focusFilter = "All";
   const [activeDrag, setActiveDrag] = useState<Module | null>(null);
   const [moduleLibrary, setModuleLibrary] = useState<Module[]>(initialModules);
   const [schedule, setSchedule] = useState<DaySchedule>(() =>
@@ -133,22 +150,9 @@ export default function CoachDashboard() {
   const filteredModules = useMemo(() => {
     return moduleLibrary.filter((module) => {
       const matchesSearch = module.title.toLowerCase().includes(search.toLowerCase());
-      const matchesFocus = focusFilter === "All" || module.focus === focusFilter;
-      return matchesSearch && matchesFocus;
+      return matchesSearch;
     });
-  }, [moduleLibrary, search, focusFilter]);
-
-  const focusOptions: ("All" | Module["focus"])[] = [
-    "All",
-    "Strength",
-    "Conditioning",
-    "Mobility",
-    "Mindset",
-    "Recovery",
-  ];
-  const focusValues = focusOptions.filter(
-    (option): option is Module["focus"] => option !== "All",
-  );
+  }, [moduleLibrary, search]);
 
   const handleDrop = (dayId: string) => {
     if (!activeDrag) return;
@@ -168,14 +172,31 @@ export default function CoachDashboard() {
 
   const handleAddModule = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    if (!newModule.title.trim() || !newModule.duration.trim() || !newModule.description.trim()) {
-      setFormError("Title, duration, and description are required.");
+
+    const trimmedTitle = newModule.title.trim();
+    const trimmedDescription = newModule.description.trim();
+    const completedAttributes = newModule.attributes.filter((attribute) =>
+      attribute.key.trim() && attribute.value.trim(),
+    );
+    const hasIncompleteAttribute = newModule.attributes.some(
+      (attribute) => (attribute.key.trim() && !attribute.value.trim()) || (!attribute.key.trim() && attribute.value.trim()),
+    );
+
+    if (!trimmedTitle || !trimmedDescription) {
+      setFormError("Title and description are required.");
+      return;
+    }
+
+    if (hasIncompleteAttribute) {
+      setFormError("Complete or remove any partial key/value pairs.");
       return;
     }
 
     const moduleToAdd: Module = {
       id: `mod-${Date.now()}`,
-      ...newModule,
+      title: trimmedTitle,
+      description: trimmedDescription,
+      attributes: completedAttributes,
     };
 
     setModuleLibrary((prev) => [moduleToAdd, ...prev]);
@@ -232,53 +253,6 @@ export default function CoachDashboard() {
                       />
                     </label>
 
-                    <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
-                      <label className="form-control">
-                        <span className="label-text">Focus</span>
-                        <select
-                          className="select select-bordered"
-                          value={newModule.focus}
-                          onChange={(event) =>
-                            setNewModule((prev) => ({ ...prev, focus: event.target.value as Module["focus"] }))
-                          }
-                        >
-                          {focusValues.map((focus) => (
-                            <option key={focus} value={focus}>
-                              {focus}
-                            </option>
-                          ))}
-                        </select>
-                      </label>
-
-                      <label className="form-control">
-                        <span className="label-text">Intensity</span>
-                        <select
-                          className="select select-bordered"
-                          value={newModule.intensity}
-                          onChange={(event) =>
-                            setNewModule((prev) => ({ ...prev, intensity: event.target.value as Module["intensity"] }))
-                          }
-                        >
-                          {["Low", "Moderate", "High"].map((level) => (
-                            <option key={level} value={level}>
-                              {level}
-                            </option>
-                          ))}
-                        </select>
-                      </label>
-                    </div>
-
-                    <label className="form-control">
-                      <span className="label-text">Duration</span>
-                      <input
-                        type="text"
-                        className="input input-bordered"
-                        placeholder="45 min"
-                        value={newModule.duration}
-                        onChange={(event) => setNewModule((prev) => ({ ...prev, duration: event.target.value }))}
-                      />
-                    </label>
-
                     <label className="form-control">
                       <span className="label-text">Description</span>
                       <textarea
@@ -289,6 +263,79 @@ export default function CoachDashboard() {
                         onChange={(event) => setNewModule((prev) => ({ ...prev, description: event.target.value }))}
                       />
                     </label>
+
+                    <div className="space-y-2 rounded-xl border border-base-300 bg-base-100 p-3">
+                      <div className="flex items-center justify-between gap-2">
+                        <span className="text-sm font-semibold">Key/value pairs</span>
+                        <button
+                          type="button"
+                          className="btn btn-ghost btn-xs"
+                          onClick={() =>
+                            setNewModule((prev) => ({
+                              ...prev,
+                              attributes: [
+                                ...prev.attributes,
+                                { id: `attr-${Date.now()}-${prev.attributes.length}`, key: "", value: "" },
+                              ],
+                            }))
+                          }
+                        >
+                          + Add pair
+                        </button>
+                      </div>
+
+                      <div className="space-y-3">
+                        {newModule.attributes.map((attribute, index) => (
+                          <div key={attribute.id} className="grid grid-cols-1 gap-2 md:grid-cols-2">
+                            <label className="form-control">
+                              <span className="label-text">Key</span>
+                              <input
+                                type="text"
+                                className="input input-bordered"
+                                value={attribute.key}
+                                onChange={(event) => {
+                                  const updated = [...newModule.attributes];
+                                  updated[index] = { ...attribute, key: event.target.value };
+                                  setNewModule((prev) => ({ ...prev, attributes: updated }));
+                                }}
+                                placeholder="e.g. Focus"
+                              />
+                            </label>
+                            <label className="form-control">
+                              <span className="label-text">Value</span>
+                              <div className="flex gap-2">
+                                <input
+                                  type="text"
+                                  className="input input-bordered flex-1"
+                                  value={attribute.value}
+                                  onChange={(event) => {
+                                    const updated = [...newModule.attributes];
+                                    updated[index] = { ...attribute, value: event.target.value };
+                                    setNewModule((prev) => ({ ...prev, attributes: updated }));
+                                  }}
+                                  placeholder="e.g. Moderate"
+                                />
+                                {newModule.attributes.length > 0 && (
+                                  <button
+                                    type="button"
+                                    className="btn btn-ghost btn-square"
+                                    aria-label="Remove pair"
+                                    onClick={() =>
+                                      setNewModule((prev) => ({
+                                        ...prev,
+                                        attributes: prev.attributes.filter((_, attrIndex) => attrIndex !== index),
+                                      }))
+                                    }
+                                  >
+                                    ✕
+                                  </button>
+                                )}
+                              </div>
+                            </label>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
 
                     <button type="submit" className="btn btn-secondary w-full">
                       Add block to library
@@ -323,13 +370,15 @@ export default function CoachDashboard() {
                     className="card cursor-grab border border-base-200 bg-base-100 transition hover:border-primary"
                   >
                     <div className="card-body space-y-2 p-4">
-                      <div className="flex items-center justify-between text-xs text-base-content/60">
-                        <span className="badge badge-outline badge-sm">{module.focus}</span>
-                        <span>{module.duration}</span>
-                      </div>
                       <h2 className="font-semibold">{module.title}</h2>
                       <p className="text-sm text-base-content/70">{module.description}</p>
-                      <div className="badge badge-primary badge-sm">Intensity · {module.intensity}</div>
+                      <div className="flex flex-wrap gap-2">
+                        {module.attributes.map((attribute) => (
+                          <span key={attribute.id} className="badge badge-outline badge-sm">
+                            {attribute.key}: {attribute.value}
+                          </span>
+                        ))}
+                      </div>
                     </div>
                   </article>
                 ))}
@@ -384,13 +433,15 @@ export default function CoachDashboard() {
                           className="w-full rounded-xl border border-base-200 bg-base-100 p-3 transition"
                         >
                           <div className="flex items-start justify-between gap-2">
-                            <div className="text-xs text-base-content/60">
-                              <div className="flex items-center gap-2">
-                                <span>{module.focus}</span>
-                                <span className="text-base-content/50">·</span>
-                                <span>{module.duration}</span>
+                            <div className="space-y-1 text-xs text-base-content/60">
+                              <p className="font-semibold text-base-content">{module.title}</p>
+                              <div className="flex flex-wrap gap-1">
+                                {module.attributes.map((attribute) => (
+                                  <span key={attribute.id} className="badge badge-outline badge-xs">
+                                    {attribute.key}: {attribute.value}
+                                  </span>
+                                ))}
                               </div>
-                              <p className="mt-1 font-semibold text-base-content">{module.title}</p>
                             </div>
                             <button
                               type="button"
