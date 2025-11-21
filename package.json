@@ -10,6 +10,7 @@
   },
   "dependencies": {
     "@prisma/client": "^6.19.0",
+    "daisyui": "^5.5.5",
     "next": "16.0.3",
     "prisma": "^6.19.0",
     "react": "19.2.0",

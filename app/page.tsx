@@ -1,95 +1,547 @@
 "use client";
-import { useRouter } from "next/navigation";
 
-export default function LoginPage() {
-	const router = useRouter();
+import { FormEvent, useMemo, useState } from "react";
 
-	return (
-		<main className="min-h-screen flex items-center justify-center bg-base-200">
-			<div className="card w-full max-w-md bg-base-100 shadow-xl">
-				<div className="card-body">
-					<h1 className="text-2xl font-bold text-center">Logga in</h1>
+type Module = {
+  id: string;
+  title: string;
+  focus: "Strength" | "Conditioning" | "Mobility" | "Mindset" | "Recovery";
+  duration: string;
+  intensity: "Low" | "Moderate" | "High";
+  description: string;
+};
 
-					<p className="text-sm text-center mb-4">Välkommen tillbaka 👋</p>
+type DaySchedule = Record<string, Module[]>;
 
-					<form className="space-y-4">
-						<div className="form-control">
-							<label className="label">
-								<span className="label-text">E-post</span>
-							</label>
-							<input
-								type="email"
-								placeholder="du@exempel.se"
-								className="input input-bordered w-full"
-								required
-							/>
-						</div>
+type ModuleForm = Omit<Module, "id">;
 
-						<div className="form-control">
-							<label className="label">
-								<span className="label-text">Lösenord</span>
-							</label>
-							<input
-								type="password"
-								placeholder="••••••••"
-								className="input input-bordered w-full"
-								required
-							/>
-							<label className="label">
-								<a href="#" className="label-text-alt link link-hover">
-									Glömt lösenord?
-								</a>
-							</label>
-						</div>
+type Athlete = {
+  id: string;
+  name: string;
+  sport: string;
+  program: string;
+	group: string;
+};
 
-						<div className="form-control mt-2">
-							<button type="submit" className="btn btn-primary w-full" onClick={() => router.push("/dashboard")}>
-								Logga in
-							</button>
-						</div>
-					</form>
+const initialModules: Module[] = [
+  {
+    id: "mod-1",
+    title: "Explosive Power Circuit",
+    focus: "Strength",
+    duration: "45 min",
+    intensity: "High",
+    description: "Olympic lifts, sled pushes, and plyometrics to prime neuromuscular output.",
+  },
+  {
+    id: "mod-2",
+    title: "Tempo Endurance Ride",
+    focus: "Conditioning",
+    duration: "60 min",
+    intensity: "Moderate",
+    description: "Zone 3 tempo ride with cadence holds for sustainable power.",
+  },
+  {
+    id: "mod-3",
+    title: "Mobility & Prehab Flow",
+    focus: "Mobility",
+    duration: "25 min",
+    intensity: "Low",
+    description: "Thoracic opener, hip cars, and ankle sequencing for joint prep.",
+  },
+  {
+    id: "mod-4",
+    title: "Race Visualization",
+    focus: "Mindset",
+    duration: "15 min",
+    intensity: "Low",
+    description: "Guided visualization script focusing on strategic decision-making.",
+  },
+  {
+    id: "mod-5",
+    title: "Threshold Track Session",
+    focus: "Conditioning",
+    duration: "50 min",
+    intensity: "High",
+    description: "5x1k repeats @ 10k pace with 90s recoveries to raise lactate threshold.",
+  },
+  {
+    id: "mod-6",
+    title: "Contrast Recovery",
+    focus: "Recovery",
+    duration: "30 min",
+    intensity: "Low",
+    description: "Contrast bath protocol paired with diaphragmatic breathing reset.",
+  },
+  {
+    id: "mod-7",
+    title: "Strength Foundations",
+    focus: "Strength",
+    duration: "40 min",
+    intensity: "Moderate",
+    description: "Tempo squats, pull variations, and single-leg stability primer.",
+  },
+  {
+    id: "mod-8",
+    title: "Track Strides",
+    focus: "Conditioning",
+    duration: "20 min",
+    intensity: "Moderate",
+    description: "8x120m strides with buildups to reinforce running mechanics.",
+  },
+];
 
-					<div className="divider">eller</div>
+const createInitialFormState = (): ModuleForm => ({
+  title: "",
+  focus: "Strength",
+  duration: "",
+  intensity: "Moderate",
+  description: "",
+});
 
-					<button className="btn bg-white text-black border-[#e5e5e5]">
-						<svg
-							aria-label="Google logo"
-							width="16"
-							height="16"
-							xmlns="http://www.w3.org/2000/svg"
-							viewBox="0 0 512 512"
-						>
-							<g>
-								<path d="m0 0H512V512H0" fill="#fff"></path>
-								<path
-									fill="#34a853"
-									d="M153 292c30 82 118 95 171 60h62v48A192 192 0 0190 341"
-								></path>
-								<path
-									fill="#4285f4"
-									d="m386 400a140 175 0 0053-179H260v74h102q-7 37-38 57"
-								></path>
-								<path
-									fill="#fbbc02"
-									d="m90 341a208 200 0 010-171l63 49q-12 37 0 73"
-								></path>
-								<path
-									fill="#ea4335"
-									d="m153 219c22-69 116-109 179-50l55-54c-78-75-230-72-297 55"
-								></path>
-							</g>
-						</svg>
-						Logga in med Google
-					</button>
+const days = [
+  { id: "mon", label: "Monday" },
+  { id: "tue", label: "Tuesday" },
+  { id: "wed", label: "Wednesday" },
+  { id: "thu", label: "Thursday" },
+  { id: "fri", label: "Friday" },
+  { id: "sat", label: "Saturday" },
+  { id: "sun", label: "Sunday" },
+];
 
-					<p className="text-center text-sm mt-4">
-						Har du inget konto?{" "}
-						<a href="#" className="link link-primary">
-							Skapa ett konto
-						</a>
-					</p>
-				</div>
-			</div>
-		</main>
-	);
+const athletes: Athlete[] = [
+  {
+    id: "ath-1",
+    name: "Jordan Vega",
+    sport: "800m",
+    program: "Camp Momentum",
+		group: "Group 1"
+  },
+  {
+    id: "ath-2",
+    name: "Mira Hwang",
+    sport: "Triathlon",
+    program: "Altitude Prep Block",
+		group: "Group 2"
+  },
+  {
+    id: "ath-3",
+    name: "Leo Brennan",
+    sport: "400m",
+    program: "Camp Momentum",
+		group: "Group 3"
+  },
+  {
+    id: "ath-4",
+    name: "Rafa Costa",
+    sport: "Soccer",
+    program: "Return-to-Play Ramp",
+		group: "Group 1"
+  },
+  {
+    id: "ath-5",
+    name: "Ada Lewis",
+    sport: "Marathon",
+    program: "Altitude Prep Block",
+		group: "Group 2"
+  },
+];
+
+export default function CoachDashboard() {
+  const [search, setSearch] = useState("");
+  const focusFilter = "All";
+  const [activeDrag, setActiveDrag] = useState<Module | null>(null);
+  const [moduleLibrary, setModuleLibrary] = useState<Module[]>(initialModules);
+  const [schedule, setSchedule] = useState<DaySchedule>(() =>
+    days.reduce((acc, day) => ({ ...acc, [day.id]: [] }), {} as DaySchedule),
+  );
+  const [newModule, setNewModule] = useState<ModuleForm>(() => createInitialFormState());
+  const [formError, setFormError] = useState<string | null>(null);
+  const [isAddModuleExpanded, setIsAddModuleExpanded] = useState(false);
+  const [isAssignModalOpen, setIsAssignModalOpen] = useState(false);
+  const [selectedGroup, setSelectedGroup] = useState("");
+  const [selectedAthletes, setSelectedAthletes] = useState<string[]>([]);
+
+  const filteredModules = useMemo(() => {
+    return moduleLibrary.filter((module) => {
+      const matchesSearch = module.title.toLowerCase().includes(search.toLowerCase());
+      const matchesFocus = focusFilter === "All" || module.focus === focusFilter;
+      return matchesSearch && matchesFocus;
+    });
+  }, [moduleLibrary, search, focusFilter]);
+
+  const focusOptions: ("All" | Module["focus"])[] = [
+    "All",
+    "Strength",
+    "Conditioning",
+    "Mobility",
+    "Mindset",
+    "Recovery",
+  ];
+  const focusValues = focusOptions.filter(
+    (option): option is Module["focus"] => option !== "All",
+  );
+
+  const groups = useMemo(() => Array.from(new Set(athletes.map((athlete) => athlete.group))), []);
+
+  const handleDrop = (dayId: string) => {
+    if (!activeDrag) return;
+    setSchedule((prev) => ({
+      ...prev,
+      [dayId]: [...prev[dayId], activeDrag],
+    }));
+    setActiveDrag(null);
+  };
+
+  const handleRemoveModule = (dayId: string, moduleIndex: number) => {
+    setSchedule((prev) => ({
+      ...prev,
+      [dayId]: prev[dayId].filter((_, index) => index !== moduleIndex),
+    }));
+  };
+
+  const handleAddModule = (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    if (!newModule.title.trim() || !newModule.duration.trim() || !newModule.description.trim()) {
+      setFormError("Title, duration, and description are required.");
+      return;
+    }
+
+    const moduleToAdd: Module = {
+      id: `mod-${Date.now()}`,
+      ...newModule,
+    };
+
+    setModuleLibrary((prev) => [moduleToAdd, ...prev]);
+    setNewModule(createInitialFormState());
+    setFormError(null);
+  };
+
+  const toggleAthleteSelection = (athleteId: string) => {
+    setSelectedAthletes((prev) =>
+      prev.includes(athleteId) ? prev.filter((id) => id !== athleteId) : [...prev, athleteId],
+    );
+  };
+
+  const handleAssignToGroup = () => {
+    if (!selectedGroup) {
+      return;
+    }
+
+    setSelectedGroup("");
+    setIsAssignModalOpen(false);
+  };
+
+  const handleAssignToAthletes = () => {
+    setSelectedAthletes([]);
+    setIsAssignModalOpen(false);
+  };
+
+  return (
+    <div className="min-h-screen">
+      <div className="mx-auto flex max-w-7xl flex-col gap-6 px-4 py-10 lg:flex-row">
+        <aside className="w-full space-y-6 lg:w-1/3">
+          <div className="card bg-base-200 shadow-md border border-base-300">
+            <div className="card-body space-y-4">
+              <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                <div>
+                  <h2 className="card-title text-lg">Create a new block</h2>
+                  <p className="text-sm text-base-content/70">
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setIsAddModuleExpanded((prev) => !prev)}
+                  className="btn btn-secondary btn-outline btn-sm"
+                  aria-expanded={isAddModuleExpanded}
+                >
+                  {isAddModuleExpanded ? "Hide form" : "Add block"}
+                </button>
+              </div>
+
+              {isAddModuleExpanded && (
+                <>
+                  {formError && <div className="alert alert-error text-sm">{formError}</div>}
+
+                  <form className="space-y-3" onSubmit={handleAddModule}>
+                    <label className="form-control">
+                      <span className="label-text">Title</span>
+                      <input
+                        type="text"
+                        value={newModule.title}
+                        onChange={(event) => setNewModule((prev) => ({ ...prev, title: event.target.value }))}
+                        className="input input-bordered"
+                        placeholder="Explosive Acceleration"
+                      />
+                    </label>
+
+                    <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
+                      <label className="form-control">
+                        <span className="label-text">Focus</span>
+                        <select
+                          className="select select-bordered"
+                          value={newModule.focus}
+                          onChange={(event) =>
+                            setNewModule((prev) => ({ ...prev, focus: event.target.value as Module["focus"] }))
+                          }
+                        >
+                          {focusValues.map((focus) => (
+                            <option key={focus} value={focus}>
+                              {focus}
+                            </option>
+                          ))}
+                        </select>
+                      </label>
+
+                      <label className="form-control">
+                        <span className="label-text">Intensity</span>
+                        <select
+                          className="select select-bordered"
+                          value={newModule.intensity}
+                          onChange={(event) =>
+                            setNewModule((prev) => ({ ...prev, intensity: event.target.value as Module["intensity"] }))
+                          }
+                        >
+                          {["Low", "Moderate", "High"].map((level) => (
+                            <option key={level} value={level}>
+                              {level}
+                            </option>
+                          ))}
+                        </select>
+                      </label>
+                    </div>
+
+                    <label className="form-control">
+                      <span className="label-text">Duration</span>
+                      <input
+                        type="text"
+                        className="input input-bordered"
+                        placeholder="45 min"
+                        value={newModule.duration}
+                        onChange={(event) => setNewModule((prev) => ({ ...prev, duration: event.target.value }))}
+                      />
+                    </label>
+
+                    <label className="form-control">
+                      <span className="label-text">Description</span>
+                      <textarea
+                        className="textarea textarea-bordered"
+                        rows={3}
+                        placeholder="What's the intent?"
+                        value={newModule.description}
+                        onChange={(event) => setNewModule((prev) => ({ ...prev, description: event.target.value }))}
+                      />
+                    </label>
+
+                    <button type="submit" className="btn btn-secondary w-full">
+                      Add block to library
+                    </button>
+                  </form>
+                </>
+              )}
+            </div>
+          </div>
+
+          <div className="card bg-base-200 border border-base-300 shadow-md">
+            <div className="card-body">
+              <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                <p className="text-xs font-semibold uppercase tracking-wide text-neutral">Reusable blocks</p>
+                <label className="input input-bordered input-sm flex items-center gap-2 sm:max-w-xs">
+                  <input
+                    type="search"
+                    value={search}
+                    onChange={(event) => setSearch(event.target.value)}
+                    placeholder="Search blocks"
+                    className="grow"
+                  />
+                </label>
+              </div>
+              <div className="mt-3 max-h-[30rem] space-y-3 overflow-y-auto pr-1">
+                {filteredModules.map((module) => (
+                  <article
+                    key={module.id}
+                    draggable
+                    onDragStart={() => setActiveDrag(module)}
+                    onDragEnd={() => setActiveDrag(null)}
+                    className="card cursor-grab border border-base-200 bg-base-100 transition hover:border-primary"
+                  >
+                    <div className="card-body space-y-2 p-4">
+                      <div className="flex items-center justify-between text-xs text-base-content/60">
+                        <span className="badge badge-outline badge-sm">{module.focus}</span>
+                        <span>{module.duration}</span>
+                      </div>
+                      <h2 className="font-semibold">{module.title}</h2>
+                      <p className="text-sm text-base-content/70">{module.description}</p>
+                      <div className="badge badge-primary badge-sm">Intensity · {module.intensity}</div>
+                    </div>
+                  </article>
+                ))}
+
+                {filteredModules.length === 0 && (
+                  <p className="rounded-2xl border border-dashed border-base-200 p-6 text-center text-sm text-base-content/60">
+                    No modules match your search. Clear filters to see more.
+                  </p>
+                )}
+              </div>
+            </div>
+          </div>
+        </aside>
+
+        <section className="w-full space-y-6 lg:w-2/3">
+          <div className="card bg-base-200 border border-base-300 shadow-md">
+            <div className="card-body gap-6">
+              <header className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+                <div>
+                  <p className="text-xs font-semibold uppercase tracking-wide text-neutral">Schedule in progress</p>
+                  <h2 className="text-3xl font-semibold">Camp Momentum · Week 43</h2>
+                </div>
+
+                <button className="btn btn-secondary btn-sm" onClick={() => setIsAssignModalOpen(true)}>
+                  Assign schedule
+                </button>
+              </header>
+              <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
+                {days.map((day) => (
+                  <div
+                    key={day.id}
+                    onDragOver={(event) => event.preventDefault()}
+                    onDrop={() => handleDrop(day.id)}
+                    className="flex min-h-[220px] flex-col rounded-2xl border border-dashed border-base-200 bg-base-300 p-4"
+                  >
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <p className="text-xs font-semibold uppercase tracking-wide text-neutral">{day.label}</p>
+                      </div>
+                    </div>
+
+                    <div className="mt-3 flex-1 space-y-3">
+                      {schedule[day.id].length === 0 && (
+                        <div className="flex h-full items-center justify-center rounded-xl border border-dashed border-base-200 bg-base-100/60 p-4 text-center text-xs text-base-content/60">
+                          Drag a module to begin
+                        </div>
+                      )}
+
+                      {schedule[day.id].map((module, index) => (
+                        <div
+                          key={`${module.id}-${index}`}
+                          className="w-full rounded-xl border border-base-200 bg-base-100 p-3 transition"
+                        >
+                          <div className="flex items-start justify-between gap-2">
+                            <div className="text-xs text-base-content/60">
+                              <div className="flex items-center gap-2">
+                                <span>{module.focus}</span>
+                                <span className="text-base-content/50">·</span>
+                                <span>{module.duration}</span>
+                              </div>
+                              <p className="mt-1 font-semibold text-base-content">{module.title}</p>
+                            </div>
+                            <button
+                              type="button"
+                              onClick={() => handleRemoveModule(day.id, index)}
+                              className="btn btn-ghost btn-xs text-error"
+                              aria-label={`Delete ${module.title}`}
+                            >
+                              Delete
+                            </button>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        </section>
+      </div>
+
+      <dialog className={`modal ${isAssignModalOpen ? "modal-open" : ""}`}>
+        <div className="modal-box max-w-2xl space-y-6">
+          <div className="flex items-start justify-between gap-4">
+            <div>
+              <h3 className="text-xl font-semibold">Assign schedule</h3>
+              <p className="text-sm text-base-content/70">
+                Share this week&apos;s plan with a full group or select individual athletes.
+              </p>
+            </div>
+            <button className="btn btn-circle btn-ghost btn-sm" onClick={() => setIsAssignModalOpen(false)}>
+              ✕
+            </button>
+          </div>
+
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+            <section className="space-y-3 rounded-2xl border border-base-300 bg-base-100 p-4">
+              <header className="flex items-center justify-between">
+                <div>
+                  <h4 className="text-lg font-semibold">Assign to group</h4>
+                </div>
+              </header>
+
+              <label className="form-control w-full">
+                <div className="label">
+                  <span className="label-text">Select group</span>
+                </div>
+                <select
+                  className="select select-bordered"
+                  value={selectedGroup}
+                  onChange={(event) => setSelectedGroup(event.target.value)}
+                >
+                  <option value="" disabled>
+                    Choose a group
+                  </option>
+                  {groups.map((group) => (
+                    <option key={group} value={group}>
+                      {group}
+                    </option>
+                  ))}
+                </select>
+              </label>
+
+              <button className="btn btn-primary w-full" disabled={!selectedGroup} onClick={handleAssignToGroup}>
+                Assign to group
+              </button>
+            </section>
+
+            <section className="space-y-3 rounded-2xl border border-base-300 bg-base-100 p-4">
+              <header className="flex items-center justify-between">
+                <div>
+                  <h4 className="text-lg font-semibold">Assign to athletes</h4>
+                </div>
+              </header>
+
+              <div className="max-h-72 space-y-2 overflow-y-auto pr-1">
+                {athletes.map((athlete) => (
+                  <label
+                    key={athlete.id}
+                    className="flex cursor-pointer items-center justify-between gap-2 rounded-xl border border-base-200 bg-base-50 px-3 py-2 text-sm hover:border-base-300"
+                  >
+                    <div>
+                      <p className="font-semibold">{athlete.name}</p>
+                      <p className="text-xs text-base-content/60">{athlete.sport}</p>
+                    </div>
+                    <input
+                      type="checkbox"
+                      className="checkbox"
+                      checked={selectedAthletes.includes(athlete.id)}
+                      onChange={() => toggleAthleteSelection(athlete.id)}
+                    />
+                  </label>
+                ))}
+              </div>
+
+              <button
+                className="btn btn-secondary w-full"
+                disabled={selectedAthletes.length === 0}
+                onClick={handleAssignToAthletes}
+              >
+                Assign to selected athletes
+              </button>
+            </section>
+          </div>
+        </div>
+        <form method="dialog" className="modal-backdrop" onSubmit={() => setIsAssignModalOpen(false)}>
+          <button>close</button>
+        </form>
+      </dialog>
+    </div>
+  );
 }
