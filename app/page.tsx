@@ -1,6 +1,6 @@
 "use client";
 
-import { FormEvent, useMemo, useRef, useState } from "react";
+import { type DragEvent, FormEvent, useMemo, useRef, useState } from "react";
 
 type Category = "warmup" | "kondition" | "styrka";
 
@@ -17,6 +17,10 @@ type Module = {
 };
 
 type DaySchedule = Record<string, Module[]>;
+
+type ActiveDrag =
+  | { source: { type: "library" }; module: Module }
+  | { source: { type: "schedule"; dayId: string; moduleIndex: number }; module: Module };
 
 type EditingContext =
   | { type: "library"; moduleId: string }
@@ -136,7 +140,7 @@ const athletes: Athlete[] = [
 
 export default function CoachDashboard() {
   const [search, setSearch] = useState("");
-  const [activeDrag, setActiveDrag] = useState<Module | null>(null);
+  const [activeDrag, setActiveDrag] = useState<ActiveDrag | null>(null);
   const [moduleLibrary, setModuleLibrary] = useState<Module[]>(initialModules);
   const [schedule, setSchedule] = useState<DaySchedule>(() =>
     days.reduce((acc, day) => ({ ...acc, [day.id]: [] }), {} as DaySchedule)
@@ -155,8 +159,25 @@ export default function CoachDashboard() {
     null
   );
   const [editFormError, setEditFormError] = useState<string | null>(null);
+  const [dropPreview, setDropPreview] = useState<
+    { dayId: string; index: number } | null
+  >(null);
   const libraryModuleCounter = useRef(initialModules.length);
   const scheduledModuleCounter = useRef(0);
+  const dragPointerOffsetY = useRef<number | null>(null);
+  const scheduleCardRefs = useRef<Record<string, (HTMLDivElement | null)[]>>({});
+
+  const registerScheduleCardRef = (
+    dayId: string,
+    index: number,
+    el: HTMLDivElement | null
+  ) => {
+    if (!scheduleCardRefs.current[dayId]) {
+      scheduleCardRefs.current[dayId] = [];
+    }
+
+    scheduleCardRefs.current[dayId][index] = el;
+  };
 
   const filteredModules = useMemo(() => {
     return moduleLibrary.filter((module) => {
@@ -183,14 +204,84 @@ export default function CoachDashboard() {
     };
   };
 
-  const handleDrop = (dayId: string) => {
+  const allowDrop = (event: DragEvent) => {
+    event.preventDefault();
+  };
+
+  const updateDropPreviewFromDragTop = (dayId: string, dragTop: number) => {
+    const cards = scheduleCardRefs.current[dayId] ?? [];
+
+    let targetIndex = cards.length;
+
+    for (let index = 0; index < cards.length; index += 1) {
+      const card = cards[index];
+      if (!card) continue;
+
+      const rect = card.getBoundingClientRect();
+
+      if (dragTop < rect.top + rect.height / 2) {
+        targetIndex = index;
+        break;
+      }
+    }
+
+    setDropPreview({ dayId, index: targetIndex });
+  };
+
+  const handleDayDragOver = (event: DragEvent<HTMLElement>, dayId: string) => {
+    allowDrop(event);
+
     if (!activeDrag) return;
-    setSchedule((prev) => ({
-      ...prev,
-      [dayId]: [...prev[dayId], cloneModuleForSchedule(activeDrag)],
-    }));
+
+    const offsetFromPointer = dragPointerOffsetY.current ?? 0;
+    const dragTop = event.clientY - offsetFromPointer;
+
+    updateDropPreviewFromDragTop(dayId, dragTop);
+  };
+
+  const handleDrop = (dayId: string, targetIndex?: number) => {
+    if (!activeDrag) return;
+
+    setDropPreview(null);
+
+    setSchedule((prev) => {
+      const insertAt = targetIndex ?? prev[dayId].length;
+
+      if (activeDrag.source.type === "library") {
+        const nextModules = [...prev[dayId]];
+        nextModules.splice(insertAt, 0, cloneModuleForSchedule(activeDrag.module));
+        return {
+          ...prev,
+          [dayId]: nextModules,
+        };
+      }
+
+      const { dayId: sourceDayId, moduleIndex } = activeDrag.source;
+      const movingModule = prev[sourceDayId][moduleIndex];
+      if (!movingModule) return prev;
+
+      const updatedSchedule = { ...prev };
+      updatedSchedule[sourceDayId] = prev[sourceDayId].filter(
+        (_, index) => index !== moduleIndex
+      );
+
+      const adjustedInsertAt =
+        sourceDayId === dayId && moduleIndex < insertAt
+          ? Math.max(0, insertAt - 1)
+          : insertAt;
+
+      const destinationModules = [...updatedSchedule[dayId]];
+      destinationModules.splice(adjustedInsertAt, 0, movingModule);
+      updatedSchedule[dayId] = destinationModules;
+
+      return updatedSchedule;
+    });
+
     setActiveDrag(null);
   };
+
+  const isPreviewLocation = (dayId: string, index: number) =>
+    dropPreview?.dayId === dayId && dropPreview.index === index;
 
   const handleRemoveModule = (dayId: string, moduleIndex: number) => {
     setSchedule((prev) => ({
@@ -436,8 +527,17 @@ export default function CoachDashboard() {
                   {days.map((day) => (
                     <div
                       key={day.id}
-                      onDragOver={(event) => event.preventDefault()}
+                      onDragOver={(event) => handleDayDragOver(event, day.id)}
                       onDrop={() => handleDrop(day.id)}
+                      onDragLeave={(event) => {
+                        if (
+                          !(event.currentTarget as HTMLElement).contains(
+                            event.relatedTarget as Node
+                          )
+                        ) {
+                          setDropPreview(null);
+                        }
+                      }}
                       className="flex min-h-[600px] flex-col rounded-2xl border border-dashed border-base-200 bg-base-300 p-2"
                     >
                       <div className="flex items-center justify-between">
@@ -456,75 +556,140 @@ export default function CoachDashboard() {
                         )}
 
                         {schedule[day.id].map((module, index) => (
-                          <div
-                            key={`${module.id}-${index}`}
-                            onClick={() =>
-                              startEditingModule(module, {
-                                type: "schedule",
-                                moduleId: module.id,
-                                dayId: day.id,
-                                moduleIndex: index,
-                              })
-                            }
-                            className="w-full rounded-xl border border-base-200 bg-base-100 p-3 transition"
-                          >
-                            <div className="flex items-start justify-between gap-2">
-                              <div className="space-y-1 text-xs text-base-content/60">
-                                <div className="flex flex-row justify-between">
-                                  <p className="font-semibold text-base-content">
-                                    {module.title}
+                          <div key={`${module.id}-${index}`} className="space-y-2">
+                            <div
+                              onDragOver={allowDrop}
+                              onDrop={(event) => {
+                                event.stopPropagation();
+                                handleDrop(day.id, index);
+                              }}
+                              onDragEnter={(event) => {
+                                event.stopPropagation();
+                                const dragTop =
+                                  event.clientY - (dragPointerOffsetY.current ?? 0);
+                                updateDropPreviewFromDragTop(day.id, dragTop);
+                              }}
+                              className={`h-2 w-full rounded-full transition-all duration-150 ${
+                                isPreviewLocation(day.id, index)
+                                  ? "bg-primary shadow-[0_0_0_2px] shadow-primary/30"
+                                  : "bg-transparent"
+                              }`}
+                            />
+                            <div
+                              draggable
+                              onDragOver={allowDrop}
+                              onDrop={(event) => {
+                                event.stopPropagation();
+                                handleDrop(day.id, index);
+                              }}
+                              onDragStart={(event) => {
+                                const rect =
+                                  (event.currentTarget as HTMLDivElement).getBoundingClientRect();
+                                dragPointerOffsetY.current = event.clientY - rect.top;
+
+                                setActiveDrag({
+                                  module,
+                                  source: {
+                                    type: "schedule",
+                                    dayId: day.id,
+                                    moduleIndex: index,
+                                  },
+                                });
+                              }}
+                              onDragEnd={() => {
+                                setActiveDrag(null);
+                                setDropPreview(null);
+                              }}
+                              onClick={() =>
+                                startEditingModule(module, {
+                                  type: "schedule",
+                                  moduleId: module.id,
+                                  dayId: day.id,
+                                  moduleIndex: index,
+                                })
+                              }
+                              ref={(el) => registerScheduleCardRef(day.id, index, el)}
+                              className="w-full rounded-xl border border-base-200 bg-base-100 p-3 transition hover:border-primary cursor-grab active:cursor-grabbing"
+                            >
+                              <div className="flex items-start justify-between gap-2">
+                                <div className="space-y-1 text-xs text-base-content/60">
+                                  <div className="flex flex-row justify-between">
+                                    <p className="font-semibold text-base-content">
+                                      {module.title}
+                                    </p>
+                                    <button
+                                      type="button"
+                                      onClick={(event) => {
+                                        event.stopPropagation();
+                                        handleRemoveModule(day.id, index);
+                                      }}
+                                      className="btn btn-ghost btn-xs text-error"
+                                      aria-label={`Delete ${module.title}`}
+                                    >
+                                      Delete
+                                    </button>
+                                  </div>
+                                  <p className="text-xs text-base-content/70">
+                                    {module.description}
                                   </p>
-                                  <button
-                                    type="button"
-                                    onClick={(event) => {
-                                      event.stopPropagation();
-                                      handleRemoveModule(day.id, index);
-                                    }}
-                                    className="btn btn-ghost btn-xs text-error"
-                                    aria-label={`Delete ${module.title}`}
-                                  >
-                                    Delete
-                                  </button>
-                                </div>
-                                <p className="text-xs text-base-content/70">
-                                  {module.description}
-                                </p>
-                                <div className="flex flex-wrap gap-1">
-                                  <span className="badge badge-outline badge-xs capitalize">
-                                    {module.category}
-                                  </span>
-                                  {module.subcategory && (
-                                    <span className="badge badge-outline badge-xs">
-                                      Underkategori: {module.subcategory}
+                                  <div className="flex flex-wrap gap-1">
+                                    <span className="badge badge-outline badge-xs capitalize">
+                                      {module.category}
                                     </span>
-                                  )}
-                                  {module.distanceMeters !== undefined && (
-                                    <span className="badge badge-outline badge-xs">
-                                      Distans: {module.distanceMeters} m
-                                    </span>
-                                  )}
-                                  {formatDuration(
-                                    module.durationMinutes,
-                                    module.durationSeconds
-                                  ) && (
-                                    <span className="badge badge-outline badge-xs">
-                                      Tid:{" "}
-                                      {formatDuration(
-                                        module.durationMinutes,
-                                        module.durationSeconds
-                                      )}
-                                    </span>
-                                  )}
-                                  {module.weightKg !== undefined && (
-                                    <span className="badge badge-outline badge-xs">
-                                      Vikt: {module.weightKg} kg
-                                    </span>
-                                  )}
+                                    {module.subcategory && (
+                                      <span className="badge badge-outline badge-xs">
+                                        Underkategori: {module.subcategory}
+                                      </span>
+                                    )}
+                                    {module.distanceMeters !== undefined && (
+                                      <span className="badge badge-outline badge-xs">
+                                        Distans: {module.distanceMeters} m
+                                      </span>
+                                    )}
+                                    {formatDuration(
+                                      module.durationMinutes,
+                                      module.durationSeconds
+                                    ) && (
+                                      <span className="badge badge-outline badge-xs">
+                                        Tid:{" "}
+                                        {formatDuration(
+                                          module.durationMinutes,
+                                          module.durationSeconds
+                                        )}
+                                      </span>
+                                    )}
+                                    {module.weightKg !== undefined && (
+                                      <span className="badge badge-outline badge-xs">
+                                        Vikt: {module.weightKg} kg
+                                      </span>
+                                    )}
+                                  </div>
                                 </div>
                               </div>
                             </div>
                           </div>
                         ))}
+
+                        {schedule[day.id].length > 0 && (
+                          <div
+                            onDragOver={(event) => handleDayDragOver(event, day.id)}
+                            onDrop={(event) => {
+                              event.stopPropagation();
+                              handleDrop(day.id, schedule[day.id].length);
+                            }}
+                            onDragEnter={(event) => {
+                              event.stopPropagation();
+                              const dragTop =
+                                event.clientY - (dragPointerOffsetY.current ?? 0);
+                              updateDropPreviewFromDragTop(day.id, dragTop);
+                            }}
+                            className={`h-2 w-full rounded-full transition-all duration-150 ${
+                              isPreviewLocation(day.id, schedule[day.id].length)
+                                ? "bg-primary shadow-[0_0_0_2px] shadow-primary/30"
+                                : "bg-transparent"
+                            }`}
+                          />
+                        )}
                       </div>
                     </div>
                   ))}
@@ -1046,8 +1211,20 @@ export default function CoachDashboard() {
               <article
                 key={module.id}
                 draggable
-                onDragStart={() => setActiveDrag(module)}
-                onDragEnd={() => setActiveDrag(null)}
+                onDragStart={(event) => {
+                  const rect =
+                    (event.currentTarget as HTMLDivElement).getBoundingClientRect();
+                  dragPointerOffsetY.current = event.clientY - rect.top;
+
+                  setActiveDrag({
+                    module,
+                    source: { type: "library" },
+                  });
+                }}
+                onDragEnd={() => {
+                  setActiveDrag(null);
+                  setDropPreview(null);
+                }}
                 onClick={() =>
                   startEditingModule(module, {
                     type: "library",
