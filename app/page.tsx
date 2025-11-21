@@ -670,26 +670,24 @@ export default function CoachDashboard() {
                           </div>
                         ))}
 
-                        {schedule[day.id].length > 0 && (
-                          <div
-                            onDragOver={(event) => handleDayDragOver(event, day.id)}
-                            onDrop={(event) => {
-                              event.stopPropagation();
-                              handleDrop(day.id, schedule[day.id].length);
-                            }}
-                            onDragEnter={(event) => {
-                              event.stopPropagation();
-                              const dragTop =
-                                event.clientY - (dragPointerOffsetY.current ?? 0);
-                              updateDropPreviewFromDragTop(day.id, dragTop);
-                            }}
-                            className={`h-2 w-full rounded-full transition-all duration-150 ${
-                              isPreviewLocation(day.id, schedule[day.id].length)
-                                ? "bg-primary shadow-[0_0_0_2px] shadow-primary/30"
-                                : "bg-transparent"
-                            }`}
-                          />
-                        )}
+                        <div
+                          onDragOver={(event) => handleDayDragOver(event, day.id)}
+                          onDrop={(event) => {
+                            event.stopPropagation();
+                            handleDrop(day.id, schedule[day.id].length);
+                          }}
+                          onDragEnter={(event) => {
+                            event.stopPropagation();
+                            const dragTop =
+                              event.clientY - (dragPointerOffsetY.current ?? 0);
+                            updateDropPreviewFromDragTop(day.id, dragTop);
+                          }}
+                          className={`h-2 w-full rounded-full transition-all duration-150 ${
+                            isPreviewLocation(day.id, schedule[day.id].length)
+                              ? "bg-primary shadow-[0_0_0_2px] shadow-primary/30"
+                              : "bg-transparent"
+                          }`}
+                        />
                       </div>
                     </div>
                   ))}
