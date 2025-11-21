@@ -159,6 +159,9 @@ export default function CoachDashboard() {
     null
   );
   const [editFormError, setEditFormError] = useState<string | null>(null);
+  const [dropPreview, setDropPreview] = useState<
+    { dayId: string; index: number } | null
+  >(null);
   const libraryModuleCounter = useRef(initialModules.length);
   const scheduledModuleCounter = useRef(0);
 
@@ -193,6 +196,8 @@ export default function CoachDashboard() {
 
   const handleDrop = (dayId: string, targetIndex?: number) => {
     if (!activeDrag) return;
+
+    setDropPreview(null);
 
     setSchedule((prev) => {
       const insertAt = targetIndex ?? prev[dayId].length;
@@ -229,6 +234,9 @@ export default function CoachDashboard() {
 
     setActiveDrag(null);
   };
+
+  const isPreviewLocation = (dayId: string, index: number) =>
+    dropPreview?.dayId === dayId && dropPreview.index === index;
 
   const handleRemoveModule = (dayId: string, moduleIndex: number) => {
     setSchedule((prev) => ({
@@ -476,6 +484,15 @@ export default function CoachDashboard() {
                       key={day.id}
                       onDragOver={allowDrop}
                       onDrop={() => handleDrop(day.id)}
+                      onDragLeave={(event) => {
+                        if (
+                          !(event.currentTarget as HTMLElement).contains(
+                            event.relatedTarget as Node
+                          )
+                        ) {
+                          setDropPreview(null);
+                        }
+                      }}
                       className="flex min-h-[600px] flex-col rounded-2xl border border-dashed border-base-200 bg-base-300 p-2"
                     >
                       <div className="flex items-center justify-between">
@@ -501,7 +518,15 @@ export default function CoachDashboard() {
                                 event.stopPropagation();
                                 handleDrop(day.id, index);
                               }}
-                              className="h-2 w-full"
+                              onDragEnter={(event) => {
+                                event.stopPropagation();
+                                setDropPreview({ dayId: day.id, index });
+                              }}
+                              className={`h-2 w-full rounded-full transition-all duration-150 ${
+                                isPreviewLocation(day.id, index)
+                                  ? "bg-primary shadow-[0_0_0_2px] shadow-primary/30"
+                                  : "bg-transparent"
+                              }`}
                             />
                             <div
                               draggable
@@ -520,7 +545,10 @@ export default function CoachDashboard() {
                                   },
                                 })
                               }
-                              onDragEnd={() => setActiveDrag(null)}
+                              onDragEnd={() => {
+                                setActiveDrag(null);
+                                setDropPreview(null);
+                              }}
                               onClick={() =>
                                 startEditingModule(module, {
                                   type: "schedule",
@@ -597,7 +625,18 @@ export default function CoachDashboard() {
                               event.stopPropagation();
                               handleDrop(day.id, schedule[day.id].length);
                             }}
-                            className="h-2 w-full"
+                            onDragEnter={(event) => {
+                              event.stopPropagation();
+                              setDropPreview({
+                                dayId: day.id,
+                                index: schedule[day.id].length,
+                              });
+                            }}
+                            className={`h-2 w-full rounded-full transition-all duration-150 ${
+                              isPreviewLocation(day.id, schedule[day.id].length)
+                                ? "bg-primary shadow-[0_0_0_2px] shadow-primary/30"
+                                : "bg-transparent"
+                            }`}
                           />
                         )}
                       </div>
@@ -1127,7 +1166,10 @@ export default function CoachDashboard() {
                     source: { type: "library" },
                   })
                 }
-                onDragEnd={() => setActiveDrag(null)}
+                onDragEnd={() => {
+                  setActiveDrag(null);
+                  setDropPreview(null);
+                }}
                 onClick={() =>
                   startEditingModule(module, {
                     type: "library",
