@@ -529,7 +529,7 @@ export default function CoachDashboard() {
                                   moduleIndex: index,
                                 })
                               }
-                              className="w-full rounded-xl border border-base-200 bg-base-100 p-3 transition"
+                              className="w-full rounded-xl border border-base-200 bg-base-100 p-3 transition hover:border-primary cursor-grab active:cursor-grabbing"
                             >
                               <div className="flex items-start justify-between gap-2">
                                 <div className="space-y-1 text-xs text-base-content/60">
