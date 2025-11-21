@@ -15,147 +15,68 @@ generator client {
   provider = "prisma-client-js"
 }
 
-/// Defines the user's role for access control.
-enum UserRole {
-  ADMIN
-  COACH
-  ATHLETE
-}
-
-/// Training module focus areas surfaced in the UI.
-enum ModuleFocus {
-  STRENGTH
-  CONDITIONING
-  MOBILITY
-  MINDSET
-  RECOVERY
-}
-
-/// How challenging a module is intended to be.
-enum ModuleIntensity {
-  LOW
-  MODERATE
-  HIGH
-}
-
-/// Athlete readiness states shown in dashboards.
-enum AthleteStatus {
-  GREEN
-  YELLOW
-  RED
-}
-
 model User {
-  id         String   @id @default(uuid())
-  name       String
-  email      String   @unique
-  role       UserRole
-  dateJoined DateTime @default(now()) @map("date_joined")
+  id       BigInt  @id @default(autoincrement()) @db.BigInt
+  name     String  @db.Text
+  email    String  @unique @db.Text
+  isCoach  Boolean @default(false)
 
-  groupId String? @map("group_id")
-  group   Group?  @relation(fields: [groupId], references: [id])
+  // Relations
+  modules      Module[]       @relation("UserModules")
+  ownedWeeks   ScheduleWeek[] @relation("CoachWeeks")
+  athleteWeeks ScheduleWeek[] @relation("AthleteWeeks")
 
-  createdModules   TrainingModule[]
-  createdSchedules TrainingSchedule[]
-
-  @@map("users")
+  @@map("user") // map to table name "user"
 }
 
-model Group {
-  id   String @id @default(uuid())
-  name String @unique
+model Module {
+  id              BigInt  @id @default(autoincrement()) @db.BigInt
+  ownerId         BigInt  @map("owner") @db.BigInt
+  owner           User    @relation("UserModules", fields: [ownerId], references: [id])
 
-  athletes  Athlete[]
-  schedules TrainingSchedule[]
-  users     User[]
+  name            String  @db.Text
+  category        String  @db.Text
+  subCategory     String? @db.Text
+  distance        Int?
+  durationSeconds Int?
+  durationMinutes Int?
+  weight          Int?
+  description     String? @db.Text
 
-  @@map("groups")
+  // A module can be used in many schedule days
+  scheduleDays    ScheduleDay[]
+
+  @@map("module")
 }
 
-model Athlete {
-  id        String        @id @default(uuid())
-  name      String
-  sport     String
-  program   String
-  readiness Int
-  status    AthleteStatus @default(GREEN)
+// One week, for one athlete, owned by one coach
+model ScheduleWeek {
+  id        BigInt @id @default(autoincrement()) @db.BigInt
 
-  groupId String? @map("group_id")
-  group   Group?  @relation(fields: [groupId], references: [id])
+  ownerId   BigInt @map("owner")   @db.BigInt
+  owner     User   @relation("CoachWeeks", fields: [ownerId],   references: [id])
 
-  assignments ScheduleAssignment[]
+  athleteId BigInt @map("athlete") @db.BigInt
+  athlete   User   @relation("AthleteWeeks", fields: [athleteId], references: [id])
 
-  @@map("athletes")
+  week      Int    
+
+  // Relation: one week has many days
+  days      ScheduleDay[]
+
+  @@map("scheduleWeek")
 }
 
-model TrainingModule {
-  id              String          @id @default(uuid())
-  title           String
-  focus           ModuleFocus
-  intensity       ModuleIntensity
-  durationMinutes Int             @map("duration_minutes")
-  description     String
+model ScheduleDay {
+  id     BigInt @id @default(autoincrement()) @db.BigInt
+  day    Int    
 
-  createdById String? @map("created_by_id")
-  createdBy   User?   @relation(fields: [createdById], references: [id])
+  // Foreign key to the week this day belongs to
+  weekId BigInt?       @db.BigInt
+  week   ScheduleWeek? @relation(fields: [weekId], references: [id])
 
-  scheduledModules ScheduledModule[]
+  // Relation: a day has a list of modules (many-to-many)
+  modules Module[]
 
-  @@map("training_modules")
-}
-
-model TrainingSchedule {
-  id        String    @id @default(uuid())
-  title     String
-  startDate DateTime? @map("start_date")
-
-  groupId String? @map("group_id")
-  group   Group?  @relation(fields: [groupId], references: [id])
-
-  createdById String? @map("created_by_id")
-  createdBy   User?   @relation(fields: [createdById], references: [id])
-
-  days        TrainingDay[]
-  assignments ScheduleAssignment[]
-
-  @@map("training_schedules")
-}
-
-model TrainingDay {
-  id         String           @id @default(uuid())
-  dayOfWeek  String           @map("day_of_week")
-  scheduleId String           @map("schedule_id")
-  schedule   TrainingSchedule @relation(fields: [scheduleId], references: [id])
-
-  modules ScheduledModule[]
-
-  @@unique([scheduleId, dayOfWeek])
-  @@map("training_days")
-}
-
-model ScheduledModule {
-  id       Int     @id @default(autoincrement())
-  position Int     @default(0)
-  notes    String?
-
-  dayId String      @map("day_id")
-  day   TrainingDay @relation(fields: [dayId], references: [id])
-
-  moduleId String         @map("module_id")
-  module   TrainingModule @relation(fields: [moduleId], references: [id])
-
-  @@unique([dayId, position])
-  @@map("scheduled_modules")
-}
-
-model ScheduleAssignment {
-  id         Int    @id @default(autoincrement())
-  scheduleId String @map("schedule_id")
-  athleteId  String @map("athlete_id")
-
-  schedule TrainingSchedule @relation(fields: [scheduleId], references: [id])
-  athlete  Athlete          @relation(fields: [athleteId], references: [id])
-
-  @@unique([scheduleId, athleteId])
-  @@map("schedule_assignments")
+  @@map("scheduleDay")
 }
