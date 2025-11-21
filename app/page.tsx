@@ -383,7 +383,7 @@ export default function CoachDashboard() {
                     key={day.id}
                     onDragOver={(event) => event.preventDefault()}
                     onDrop={() => handleDrop(day.id)}
-                    className="flex min-h-[220px] flex-col rounded-2xl border border-dashed border-base-200 bg-base-300 p-2"
+                    className="flex min-h-[600px] flex-col rounded-2xl border border-dashed border-base-200 bg-base-300 p-2"
                   >
                     <div className="flex items-center justify-between">
                       <div>
