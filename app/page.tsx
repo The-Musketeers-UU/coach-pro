@@ -260,8 +260,7 @@ export default function CoachDashboard() {
 
     return {
       module: {
-        id:
-          moduleId ?? `mod-${(libraryModuleCounter.current += 1)}`,
+        id: moduleId ?? `mod-${(libraryModuleCounter.current += 1)}`,
         title: trimmedTitle,
         description: trimmedDescription,
         attributes: completedAttributes,
@@ -568,7 +567,7 @@ export default function CoachDashboard() {
                             Delete
                           </button>
                         </div>
-                        <p className="text-sm text-base-content/70">
+                        <p className="text-xs text-base-content/70">
                           {module.description}
                         </p>
                         <div className="flex flex-wrap gap-2">
@@ -616,13 +615,13 @@ export default function CoachDashboard() {
                   Assign schedule
                 </button>
               </header>
-              <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
+              <div className="grid grid-cols-1 gap-1 md:grid-cols-2 xl:grid-cols-7">
                 {days.map((day) => (
                   <div
                     key={day.id}
                     onDragOver={(event) => event.preventDefault()}
                     onDrop={() => handleDrop(day.id)}
-                    className="flex min-h-[220px] flex-col rounded-2xl border border-dashed border-base-200 bg-base-300 p-4"
+                    className="flex min-h-[220px] flex-col rounded-2xl border border-dashed border-base-200 bg-base-300 p-2"
                   >
                     <div className="flex items-center justify-between">
                       <div>
@@ -654,10 +653,23 @@ export default function CoachDashboard() {
                         >
                           <div className="flex items-start justify-between gap-2">
                             <div className="space-y-1 text-xs text-base-content/60">
-                              <p className="font-semibold text-base-content">
-                                {module.title}
-                              </p>
-                              <p className="text-sm text-base-content/70">
+                              <div className="flex flex-row justify-between">
+                                <p className="font-semibold text-base-content">
+                                  {module.title}
+                                </p>
+                                <button
+                                  type="button"
+                                  onClick={(event) => {
+                                    event.stopPropagation();
+                                    handleRemoveModule(day.id, index);
+                                  }}
+                                  className="btn btn-ghost btn-xs text-error"
+                                  aria-label={`Delete ${module.title}`}
+                                >
+                                  Delete
+                                </button>
+                              </div>
+                              <p className="text-xs text-base-content/70">
                                 {module.description}
                               </p>
                               <div className="flex flex-wrap gap-1">
@@ -671,17 +683,6 @@ export default function CoachDashboard() {
                                 ))}
                               </div>
                             </div>
-                            <button
-                              type="button"
-                              onClick={(event) => {
-                                event.stopPropagation();
-                                handleRemoveModule(day.id, index);
-                              }}
-                              className="btn btn-ghost btn-xs text-error"
-                              aria-label={`Delete ${module.title}`}
-                            >
-                              Delete
-                            </button>
                           </div>
                         </div>
                       ))}
@@ -777,7 +778,10 @@ export default function CoachDashboard() {
           )}
 
           {editingModuleForm && (
-            <form className="space-y-3 flex flex-col" onSubmit={handleSaveEditedModule}>
+            <form
+              className="space-y-3 flex flex-col"
+              onSubmit={handleSaveEditedModule}
+            >
               <label className="form-control">
                 <span className="label-text">Title</span>
                 <input
