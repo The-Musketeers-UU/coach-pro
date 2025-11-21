@@ -347,7 +347,7 @@ export default function CoachDashboard() {
     <div className="drawer lg:drawer-open">
       <input id="reusable-blocks-drawer" type="checkbox" className="drawer-toggle" />
       <div className="drawer-content min-h-screen">
-        <div className="mx-auto flex max-w-full flex-col gap-6 px-10 py-5">
+        <div className="mx-auto max-w-full px-5 py-5">
           <div className="flex items-center justify-between">
             <label
               htmlFor="reusable-blocks-drawer"
@@ -881,7 +881,7 @@ export default function CoachDashboard() {
         aria-label="close sidebar"
         className="drawer-overlay"
       ></label>
-      <div className="flex h-full w-96 min-w-[320px] flex-col gap-3 border-r border-base-300 bg-base-200 p-4">
+      <div className="flex h-full w-65 min-w-[150px] flex-col gap-3 border-r border-base-300 bg-base-200 p-4">
         <div className="flex items-center justify-between gap-2">
           <p className="text-xs font-semibold uppercase tracking-wide text-neutral">
             Reusable blocks
@@ -894,7 +894,7 @@ export default function CoachDashboard() {
           </label>
         </div>
         <div className="flex flex-col gap-2">
-          <label className="input input-bordered input-sm flex items-center gap-2 lg:min-w-[16rem]">
+          <label className="input input-bordered input-sm flex items-center gap-2 lg:min-w-[10rem]">
             <input
               type="search"
               value={search}
@@ -947,7 +947,7 @@ export default function CoachDashboard() {
                 <p className="max-h-16 overflow-hidden text-xs text-base-content/70">
                   {module.description}
                 </p>
-                <div className="mt-auto flex flex-wrap gap-2">
+                <div className="mt-auto flex flex-wrap gap-1">
                   {module.attributes.map((attribute) => (
                     <span key={attribute.id} className="badge badge-outline badge-xs">
                       {attribute.key}: {attribute.value}
