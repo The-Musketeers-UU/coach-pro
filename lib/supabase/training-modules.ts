@@ -1,54 +1,77 @@
 import { supabaseRequest } from "./client";
 
-type ModuleFocus = "STRENGTH" | "CONDITIONING" | "MOBILITY" | "MINDSET" | "RECOVERY";
-type ModuleIntensity = "LOW" | "MODERATE" | "HIGH";
-
-type TrainingModuleRow = {
+type ModuleRow = {
   id: string;
-  title: string;
-  focus: ModuleFocus;
-  intensity: ModuleIntensity;
-  duration_minutes: number;
-  description: string;
-  created_by_id: string | null;
+  owner: string;
+  name: string;
+  category: string;
+  subCategory: string | null;
+  distance: number | null;
+  durationSeconds: number | null;
+  durationMinutes: number | null;
+  weight: number | null;
+  description: string | null;
 };
 
-type TrainingDayRow = {
+type ScheduleWeekRow = {
   id: string;
-  day_of_week: string;
-  schedule_id: string;
+  owner: string;
+  athlete: string;
+  week: number;
 };
 
-type ScheduledModuleRow = {
-  id: number;
-  position: number;
-  notes: string | null;
-  day_id: string;
-  module_id: string;
+type ScheduleDayRow = {
+  id: string;
+  day: number;
+  weekId: string | null;
 };
 
-export type CreateTrainingModuleInput = {
-  title: string;
-  focus: ModuleFocus;
-  intensity: ModuleIntensity;
-  durationMinutes: number;
-  description: string;
-  createdById?: string | null;
+type ModuleScheduleDayRow = {
+  A: string;
+  B: string;
 };
 
-export const createTrainingModule = async (
-  input: CreateTrainingModuleInput,
-): Promise<TrainingModuleRow> => {
+export type CreateModuleInput = {
+  ownerId: string;
+  name: string;
+  category: string;
+  subCategory?: string;
+  distance?: number;
+  durationSeconds?: number;
+  durationMinutes?: number;
+  weight?: number;
+  description?: string;
+};
+
+export type CreateScheduleWeekInput = {
+  ownerId: string;
+  athleteId: string;
+  week: number;
+};
+
+export type AddModuleToScheduleDayInput = {
+  moduleId: string;
+  weekId: string;
+  day: number;
+};
+
+const sanitizeNumber = (value: number | undefined) =>
+  Number.isFinite(value) ? Number(value) : undefined;
+
+export const createModule = async (input: CreateModuleInput): Promise<ModuleRow> => {
   const payload = {
-    title: input.title,
-    focus: input.focus,
-    intensity: input.intensity,
-    duration_minutes: input.durationMinutes,
-    description: input.description,
-    created_by_id: input.createdById ?? null,
-  } satisfies Omit<TrainingModuleRow, "id">;
+    owner: input.ownerId,
+    name: input.name,
+    category: input.category,
+    subCategory: input.subCategory?.trim() || null,
+    distance: sanitizeNumber(input.distance) ?? null,
+    durationSeconds: sanitizeNumber(input.durationSeconds) ?? null,
+    durationMinutes: sanitizeNumber(input.durationMinutes) ?? null,
+    weight: sanitizeNumber(input.weight) ?? null,
+    description: input.description?.trim() || null,
+  } satisfies Omit<ModuleRow, "id">;
 
-  const data = await supabaseRequest<TrainingModuleRow[]>("training_modules", {
+  const data = await supabaseRequest<ModuleRow[]>("module", {
     method: "POST",
     body: payload,
     prefer: "return=representation",
@@ -57,39 +80,64 @@ export const createTrainingModule = async (
   return data[0];
 };
 
-export type AddModuleToScheduleInput = {
-  scheduleId: string;
-  dayOfWeek: string;
-  moduleId: string;
-  position?: number;
-  notes?: string;
+export const createScheduleWeek = async (
+  input: CreateScheduleWeekInput,
+): Promise<ScheduleWeekRow> => {
+  const payload = {
+    owner: input.ownerId,
+    athlete: input.athleteId,
+    week: input.week,
+  } satisfies Omit<ScheduleWeekRow, "id">;
+
+  const data = await supabaseRequest<ScheduleWeekRow[]>("scheduleWeek", {
+    method: "POST",
+    body: payload,
+    prefer: "return=representation",
+  });
+
+  return data[0];
 };
 
-export const addModuleToSchedule = async (
-  input: AddModuleToScheduleInput,
-): Promise<{ day: TrainingDayRow; scheduledModule: ScheduledModuleRow }> => {
-  const [day] = await supabaseRequest<TrainingDayRow[]>("training_days", {
-    method: "POST",
-    body: {
-      schedule_id: input.scheduleId,
-      day_of_week: input.dayOfWeek,
-    },
-    prefer: "resolution=merge-duplicates,return=representation",
+const findOrCreateScheduleDay = async (
+  weekId: string,
+  day: number,
+): Promise<ScheduleDayRow> => {
+  const [existingDay] = await supabaseRequest<ScheduleDayRow[]>("scheduleDay", {
+    method: "GET",
     searchParams: {
-      on_conflict: "schedule_id,day_of_week",
+      weekId: `eq.${weekId}`,
+      day: `eq.${day}`,
+      limit: "1",
     },
   });
 
-  const moduleRows = await supabaseRequest<ScheduledModuleRow[]>("scheduled_modules", {
+  if (existingDay) return existingDay;
+
+  const [createdDay] = await supabaseRequest<ScheduleDayRow[]>("scheduleDay", {
     method: "POST",
     body: {
-      day_id: day.id,
-      module_id: input.moduleId,
-      position: input.position ?? 0,
-      notes: input.notes ?? null,
+      weekId,
+      day,
     },
     prefer: "return=representation",
   });
 
-  return { day, scheduledModule: moduleRows[0] };
+  return createdDay;
+};
+
+export const addModuleToScheduleDay = async (
+  input: AddModuleToScheduleDayInput,
+): Promise<{ day: ScheduleDayRow; link: ModuleScheduleDayRow }> => {
+  const dayRow = await findOrCreateScheduleDay(input.weekId, input.day);
+
+  const [linkRow] = await supabaseRequest<ModuleScheduleDayRow[]>("_ModuleToScheduleDay", {
+    method: "POST",
+    body: {
+      A: input.moduleId,
+      B: dayRow.id,
+    },
+    prefer: "return=representation",
+  });
+
+  return { day: dayRow, link: linkRow };
 };
