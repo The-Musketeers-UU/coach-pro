@@ -153,7 +153,7 @@ export default function CoachDashboard() {
     createInitialFormState()
   );
   const [formError, setFormError] = useState<string | null>(null);
-  const [isAddModuleExpanded, setIsAddModuleExpanded] = useState(false);
+  const [isCreateModuleModalOpen, setIsCreateModuleModalOpen] = useState(false);
   const [isAssignModalOpen, setIsAssignModalOpen] = useState(false);
   const [selectedAthletes, setSelectedAthletes] = useState<string[]>([]);
   const [editingContext, setEditingContext] = useState<EditingContext | null>(
@@ -217,6 +217,11 @@ export default function CoachDashboard() {
   const resetModuleForm = () => {
     setNewModule(createInitialFormState());
     setFormError(null);
+  };
+
+  const closeCreateModuleModal = () => {
+    setIsCreateModuleModalOpen(false);
+    resetModuleForm();
   };
 
   const closeEditModal = () => {
@@ -283,6 +288,7 @@ export default function CoachDashboard() {
     setModuleLibrary((prev) => [result.module as Module, ...prev]);
 
     resetModuleForm();
+    setIsCreateModuleModalOpen(false);
   };
 
   const handleSaveEditedModule = (event: FormEvent<HTMLFormElement>) => {
@@ -340,201 +346,34 @@ export default function CoachDashboard() {
   return (
     <div className="min-h-screen">
       <div className="mx-auto flex max-w-7xl flex-col gap-6 px-4 py-10">
-        <div className="grid gap-6 lg:grid-cols-2">
-          <div className="card bg-base-200 shadow-md border border-base-300">
-            <div className="card-body space-y-4">
-              <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-                <div>
-                  <h2 className="card-title text-lg">Create a new block</h2>
-                  <p className="text-sm text-base-content/70"></p>
-                </div>
-                <button
-                  type="button"
-                  onClick={() =>
-                    setIsAddModuleExpanded((prev) => {
-                      const nextState = !prev;
-                      if (!nextState) resetModuleForm();
-                      return nextState;
-                    })
-                  }
-                  className="btn btn-secondary btn-outline btn-sm"
-                  aria-expanded={isAddModuleExpanded}
-                >
-                  {isAddModuleExpanded ? "Hide form" : "Add block"}
-                </button>
-              </div>
-
-              {isAddModuleExpanded && (
-                <>
-                  {formError && (
-                    <div className="alert alert-error text-sm">{formError}</div>
-                  )}
-
-                  <form className="space-y-3" onSubmit={handleAddModule}>
-                    <label className="form-control">
-                      <span className="label-text">Title</span>
-                      <input
-                        type="text"
-                        value={newModule.title}
-                        onChange={(event) =>
-                          setNewModule((prev) => ({
-                            ...prev,
-                            title: event.target.value,
-                          }))
-                        }
-                        className="input input-bordered"
-                        placeholder="Explosive Acceleration"
-                      />
-                    </label>
-
-                    <label className="form-control">
-                      <span className="label-text">Description</span>
-                      <textarea
-                        className="textarea textarea-bordered"
-                        rows={3}
-                        placeholder="What's the intent?"
-                        value={newModule.description}
-                        onChange={(event) =>
-                          setNewModule((prev) => ({
-                            ...prev,
-                            description: event.target.value,
-                          }))
-                        }
-                      />
-                    </label>
-
-                    <div className="space-y-2 rounded-xl border border-base-300 bg-base-100 p-3">
-                      <div className="flex items-center justify-between gap-2">
-                        <span className="text-sm font-semibold">
-                          Key/value pairs
-                        </span>
-                        <button
-                          type="button"
-                          className="btn btn-ghost btn-xs"
-                          onClick={() =>
-                            setNewModule((prev) => ({
-                              ...prev,
-                              attributes: [
-                                ...prev.attributes,
-                                {
-                                  id: `attr-${(attributeIdCounter.current += 1)}`,
-                                  key: "",
-                                  value: "",
-                                },
-                              ],
-                            }))
-                          }
-                        >
-                          + Add pair
-                        </button>
-                      </div>
-
-                      <div className="space-y-3">
-                        {newModule.attributes.map((attribute, index) => (
-                          <div
-                            key={attribute.id}
-                            className="grid grid-cols-1 gap-2 md:grid-cols-2"
-                          >
-                            <label className="form-control">
-                              <span className="label-text">Key</span>
-                              <input
-                                type="text"
-                                className="input input-bordered"
-                                value={attribute.key}
-                                onChange={(event) => {
-                                  const updated = [...newModule.attributes];
-                                  updated[index] = {
-                                    ...attribute,
-                                    key: event.target.value,
-                                  };
-                                  setNewModule((prev) => ({
-                                    ...prev,
-                                    attributes: updated,
-                                  }));
-                                }}
-                                placeholder="e.g. Focus"
-                              />
-                            </label>
-                            <label className="form-control">
-                              <span className="label-text">Value</span>
-                              <div className="flex gap-2">
-                                <input
-                                  type="text"
-                                  className="input input-bordered flex-1"
-                                  value={attribute.value}
-                                  onChange={(event) => {
-                                    const updated = [...newModule.attributes];
-                                    updated[index] = {
-                                      ...attribute,
-                                      value: event.target.value,
-                                    };
-                                    setNewModule((prev) => ({
-                                      ...prev,
-                                      attributes: updated,
-                                    }));
-                                  }}
-                                  placeholder="e.g. Moderate"
-                                />
-                                {newModule.attributes.length > 0 && (
-                                  <button
-                                    type="button"
-                                    className="btn btn-ghost btn-square"
-                                    aria-label="Remove pair"
-                                    onClick={() =>
-                                      setNewModule((prev) => ({
-                                        ...prev,
-                                        attributes: prev.attributes.filter(
-                                          (_, attrIndex) => attrIndex !== index
-                                        ),
-                                      }))
-                                    }
-                                  >
-                                    ✕
-                                  </button>
-                                )}
-                              </div>
-                            </label>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-
-                    <div className="flex flex-col gap-2 sm:flex-row">
-                      <button
-                        type="submit"
-                        className="btn btn-secondary w-full"
-                      >
-                        Add block to library
-                      </button>
-                      <button
-                        type="button"
-                        className="btn btn-ghost w-full"
-                        onClick={resetModuleForm}
-                      >
-                        Clear form
-                      </button>
-                    </div>
-                  </form>
-                </>
-              )}
-            </div>
-          </div>
-
+        <div className="grid gap-6">
           <div className="card bg-base-200 border border-base-300 shadow-md">
             <div className="card-body">
-              <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+              <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
                 <p className="text-xs font-semibold uppercase tracking-wide text-neutral">
                   Reusable blocks
                 </p>
-                <label className="input input-bordered input-sm flex items-center gap-2 sm:max-w-xs">
-                  <input
-                    type="search"
-                    value={search}
-                    onChange={(event) => setSearch(event.target.value)}
-                    placeholder="Search blocks"
-                    className="grow"
-                  />
-                </label>
+                <div className="flex flex-col gap-2 lg:flex-row lg:items-center lg:gap-3">
+                  <label className="input input-bordered input-sm flex items-center gap-2 lg:min-w-[16rem]">
+                    <input
+                      type="search"
+                      value={search}
+                      onChange={(event) => setSearch(event.target.value)}
+                      placeholder="Search blocks"
+                      className="grow"
+                    />
+                  </label>
+                  <button
+                    type="button"
+                    className="btn btn-secondary btn-sm self-end lg:self-auto"
+                    onClick={() => {
+                      resetModuleForm();
+                      setIsCreateModuleModalOpen(true);
+                    }}
+                  >
+                    Create block
+                  </button>
+                </div>
               </div>
               <div className="mt-3 space-y-3">
                 <div className="flex gap-3 overflow-x-auto pb-2">
@@ -694,6 +533,174 @@ export default function CoachDashboard() {
           </div>
         </section>
       </div>
+
+      <dialog
+        className={`modal ${isCreateModuleModalOpen ? "modal-open" : ""}`}
+      >
+        <div className="modal-box max-w-2xl space-y-4">
+          <div className="flex items-start justify-between gap-4">
+            <div>
+              <h3 className="text-xl font-semibold">Create a new block</h3>
+              <p className="text-sm text-base-content/70"></p>
+            </div>
+            <button
+              className="btn btn-circle btn-ghost btn-sm"
+              onClick={closeCreateModuleModal}
+            >
+              ✕
+            </button>
+          </div>
+
+          {formError && (
+            <div className="alert alert-error text-sm">{formError}</div>
+          )}
+
+          <form className="space-y-3" onSubmit={handleAddModule}>
+            <label className="form-control">
+              <span className="label-text">Title</span>
+              <input
+                type="text"
+                value={newModule.title}
+                onChange={(event) =>
+                  setNewModule((prev) => ({
+                    ...prev,
+                    title: event.target.value,
+                  }))
+                }
+                className="input input-bordered"
+                placeholder="Explosive Acceleration"
+              />
+            </label>
+
+            <label className="form-control">
+              <span className="label-text">Description</span>
+              <textarea
+                className="textarea textarea-bordered"
+                rows={3}
+                placeholder="What's the intent?"
+                value={newModule.description}
+                onChange={(event) =>
+                  setNewModule((prev) => ({
+                    ...prev,
+                    description: event.target.value,
+                  }))
+                }
+              />
+            </label>
+
+            <div className="space-y-2 rounded-xl border border-base-300 bg-base-100 p-3">
+              <div className="flex items-center justify-between gap-2">
+                <span className="text-sm font-semibold">Key/value pairs</span>
+                <button
+                  type="button"
+                  className="btn btn-ghost btn-xs"
+                  onClick={() =>
+                    setNewModule((prev) => ({
+                      ...prev,
+                      attributes: [
+                        ...prev.attributes,
+                        {
+                          id: `attr-${(attributeIdCounter.current += 1)}`,
+                          key: "",
+                          value: "",
+                        },
+                      ],
+                    }))
+                  }
+                >
+                  + Add pair
+                </button>
+              </div>
+
+              <div className="space-y-3">
+                {newModule.attributes.map((attribute, index) => (
+                  <div
+                    key={attribute.id}
+                    className="grid grid-cols-1 gap-2 md:grid-cols-2"
+                  >
+                    <label className="form-control">
+                      <span className="label-text">Key</span>
+                      <input
+                        type="text"
+                        value={attribute.key}
+                        onChange={(event) =>
+                          setNewModule((prev) => {
+                            const nextAttributes = [...prev.attributes];
+                            nextAttributes[index] = {
+                              ...nextAttributes[index],
+                              key: event.target.value,
+                            };
+                            return { ...prev, attributes: nextAttributes };
+                          })
+                        }
+                        placeholder="e.g., Focus"
+                        className="input input-bordered"
+                      />
+                    </label>
+
+                    <label className="form-control">
+                      <span className="label-text">Value</span>
+                      <input
+                        type="text"
+                        value={attribute.value}
+                        onChange={(event) =>
+                          setNewModule((prev) => {
+                            const nextAttributes = [...prev.attributes];
+                            nextAttributes[index] = {
+                              ...nextAttributes[index],
+                              value: event.target.value,
+                            };
+                            return { ...prev, attributes: nextAttributes };
+                          })
+                        }
+                        placeholder="e.g., Strength"
+                        className="input input-bordered"
+                      />
+                    </label>
+
+                    <div className="flex items-center justify-end gap-2 md:col-span-2">
+                      <button
+                        type="button"
+                        className="btn btn-ghost btn-xs"
+                        onClick={() =>
+                          setNewModule((prev) => ({
+                            ...prev,
+                            attributes: prev.attributes.filter(
+                              (_, attrIndex) => attrIndex !== index
+                            ),
+                          }))
+                        }
+                      >
+                        Remove
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            <div className="flex flex-col gap-2 sm:flex-row">
+              <button type="submit" className="btn btn-secondary w-full">
+                Add block to library
+              </button>
+              <button
+                type="button"
+                className="btn btn-ghost w-full"
+                onClick={resetModuleForm}
+              >
+                Clear form
+              </button>
+            </div>
+          </form>
+        </div>
+        <form
+          method="dialog"
+          className="modal-backdrop"
+          onSubmit={closeCreateModuleModal}
+        >
+          <button>close</button>
+        </form>
+      </dialog>
 
       <dialog className={`modal ${isAssignModalOpen ? "modal-open" : ""}`}>
         <div className="modal-box max-w-l space-y-6">
