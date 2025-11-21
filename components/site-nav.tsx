@@ -12,6 +12,7 @@ const viewOptions = [
 const coachLinks = [
   { href: "/", label: "Program Builder" },
   { href: "/dashboard", label: "Training Dashboard" },
+  { href: "/login", label: "Login" },
 ];
 
 const athleteLinks = [{ href: "/athlete", label: "My Schedules" }];

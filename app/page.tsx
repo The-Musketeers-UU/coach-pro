@@ -6,13 +6,12 @@ import {
   addModuleToScheduleDay,
   createModule,
   createScheduleWeek,
+  getAthletes,
+  getCoaches,
   type AddModuleToScheduleDayInput,
   type AthleteRow,
   type CreateModuleInput,
   type CreateScheduleWeekInput,
-  getAthletes,
-  getScheduleWeeksByAthlete,
-  type ScheduleWeekRow,
 } from "@/lib/supabase/training-modules";
 
 const createDefaultModuleForm = (): CreateModuleInput => ({
@@ -48,10 +47,8 @@ export default function CoachDashboard() {
     createDefaultScheduleDayForm,
   );
   const [athletes, setAthletes] = useState<AthleteRow[]>([]);
-  const [isLoadingAthletes, setIsLoadingAthletes] = useState(false);
-  const [selectedAthleteId, setSelectedAthleteId] = useState<string | null>(null);
-  const [athleteSchedules, setAthleteSchedules] = useState<ScheduleWeekRow[]>([]);
-  const [isLoadingSchedules, setIsLoadingSchedules] = useState(false);
+  const [coaches, setCoaches] = useState<AthleteRow[]>([]);
+  const [isLoadingOptions, setIsLoadingOptions] = useState(false);
   const [isSubmittingModule, setIsSubmittingModule] = useState(false);
   const [isSubmittingWeek, setIsSubmittingWeek] = useState(false);
   const [isSubmittingScheduleDay, setIsSubmittingScheduleDay] = useState(false);
@@ -62,12 +59,16 @@ export default function CoachDashboard() {
   const [listError, setListError] = useState<string | null>(null);
 
   useEffect(() => {
-    const fetchAthletes = async () => {
-      setIsLoadingAthletes(true);
+    const fetchPeople = async () => {
+      setIsLoadingOptions(true);
       setListError(null);
       try {
-        const athleteRows = await getAthletes();
+        const [athleteRows, coachRows] = await Promise.all([
+          getAthletes(),
+          getCoaches(),
+        ]);
         setAthletes(athleteRows);
+        setCoaches(coachRows);
       } catch (supabaseError) {
         setListError(
           supabaseError instanceof Error
@@ -75,30 +76,12 @@ export default function CoachDashboard() {
             : String(supabaseError),
         );
       } finally {
-        setIsLoadingAthletes(false);
+        setIsLoadingOptions(false);
       }
     };
 
-    void fetchAthletes();
+    void fetchPeople();
   }, []);
-
-  const handleSelectAthlete = async (athleteId: string) => {
-    setSelectedAthleteId(athleteId);
-    setIsLoadingSchedules(true);
-    setListError(null);
-
-    try {
-      const weeks = await getScheduleWeeksByAthlete(athleteId);
-      setAthleteSchedules(weeks);
-    } catch (supabaseError) {
-      setListError(
-        supabaseError instanceof Error ? supabaseError.message : String(supabaseError),
-      );
-      setAthleteSchedules([]);
-    } finally {
-      setIsLoadingSchedules(false);
-    }
-  };
 
   const handleCreateModule = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -184,11 +167,10 @@ export default function CoachDashboard() {
     <div className="min-h-screen">
       <div className="mx-auto flex max-w-5xl flex-col gap-6 px-4 py-10">
         <header className="space-y-2">
-          <p className="text-xs font-semibold uppercase tracking-wide text-neutral">Supabase tooling</p>
-          <h1 className="text-3xl font-semibold">Training modules + schedules</h1>
+          <p className="text-xs font-semibold uppercase tracking-wide text-neutral">Program builder</p>
+          <h1 className="text-3xl font-semibold">Create modules + assign schedules</h1>
           <p className="text-base text-base-content/70">
-            Create reusable training modules and attach them to schedule days that match the Prisma schema in
-            <code className="mx-1 font-mono text-sm">prisma/schema.prisma</code>.
+            Build reusable training modules, create weeks, and link modules to specific days using data stored in Supabase.
           </p>
         </header>
 
@@ -197,66 +179,60 @@ export default function CoachDashboard() {
         <section className="card border border-base-300 bg-base-200 shadow-sm">
           <div className="card-body space-y-4">
             <header className="space-y-1">
-              <p className="text-xs font-semibold uppercase tracking-wide text-neutral">Athletes</p>
-              <h2 className="text-xl font-semibold">Browse athletes + schedules</h2>
+              <p className="text-xs font-semibold uppercase tracking-wide text-neutral">People</p>
+              <h2 className="text-xl font-semibold">Coach + athlete IDs</h2>
               <p className="text-sm text-base-content/70">
-                Select an athlete to load all schedule weeks attached to them.
+                Use these IDs when filling out the forms below to assign ownership and schedules.
               </p>
             </header>
 
             {listError && <div className="alert alert-error">{listError}</div>}
 
-            <div className="flex flex-wrap gap-3">
-              {isLoadingAthletes ? (
-                <span className="loading loading-spinner" aria-label="Loading athletes" />
-              ) : athletes.length ? (
-                athletes.map((athlete) => (
-                  <button
-                    key={athlete.id}
-                    type="button"
-                    className={`btn ${
-                      athlete.id === selectedAthleteId ? "btn-primary" : "btn-outline"
-                    }`}
-                    onClick={() => handleSelectAthlete(athlete.id)}
-                  >
-                    <span className="font-semibold">{athlete.name}</span>
-                    <span className="text-xs font-normal text-base-content/80">{athlete.email}</span>
-                  </button>
-                ))
-              ) : (
-                <p className="text-sm text-base-content/70">No athletes found.</p>
-              )}
-            </div>
-
-            {selectedAthleteId && (
-              <div className="space-y-3">
-                <div className="flex items-center justify-between gap-3">
-                  <h3 className="text-lg font-semibold">Schedule weeks</h3>
-                  {isLoadingSchedules && (
-                    <span className="loading loading-spinner" aria-label="Loading schedules" />
+            <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+              <div className="space-y-2">
+                <div className="flex items-center gap-2">
+                  <p className="text-sm font-semibold">Coaches</p>
+                  {isLoadingOptions && (
+                    <span className="loading loading-spinner loading-xs" aria-label="Loading coaches" />
                   )}
                 </div>
-
-                {athleteSchedules.length ? (
-                  <ul className="space-y-2">
-                    {athleteSchedules.map((week) => (
-                      <li
-                        key={week.id}
-                        className="flex items-center justify-between rounded-lg border border-base-300 bg-base-100 px-4 py-3"
-                      >
-                        <div className="space-y-1">
-                          <p className="text-sm font-semibold">Week {week.week}</p>
-                          <p className="text-xs text-base-content/70">Schedule ID: {week.id}</p>
-                        </div>
-                        <span className="badge badge-neutral">Coach: {week.owner}</span>
-                      </li>
-                    ))}
-                  </ul>
-                ) : isLoadingSchedules ? null : (
-                  <p className="text-sm text-base-content/70">No schedules for this athlete yet.</p>
-                )}
+                <div className="flex flex-wrap gap-2">
+                  {coaches.length ? (
+                    coaches.map((coach) => (
+                      <span key={coach.id} className="badge badge-outline" title={coach.email}>
+                        {coach.name} · {coach.id}
+                      </span>
+                    ))
+                  ) : (
+                    <p className="text-xs text-base-content/70">No coaches found yet.</p>
+                  )}
+                </div>
               </div>
-            )}
+
+              <div className="space-y-2">
+                <div className="flex items-center gap-2">
+                  <p className="text-sm font-semibold">Athletes</p>
+                  {isLoadingOptions && (
+                    <span className="loading loading-spinner loading-xs" aria-label="Loading athletes" />
+                  )}
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  {athletes.length ? (
+                    athletes.map((athlete) => (
+                      <span key={athlete.id} className="badge badge-outline" title={athlete.email}>
+                        {athlete.name} · {athlete.id}
+                      </span>
+                    ))
+                  ) : (
+                    <p className="text-xs text-base-content/70">No athletes found yet.</p>
+                  )}
+                </div>
+              </div>
+            </div>
+
+            <p className="text-xs text-base-content/60">
+              Tip: start with the login page to seed coaches and athletes, then paste their IDs into the builder.
+            </p>
           </div>
         </section>
 
@@ -386,6 +362,7 @@ export default function CoachDashboard() {
                     <span className="label-text">Owner ID</span>
                     <input
                       type="text"
+                      list="coach-options"
                       className="input input-bordered"
                       required
                       value={moduleForm.ownerId}
@@ -395,7 +372,7 @@ export default function CoachDashboard() {
                           ownerId: event.target.value,
                         }))
                       }
-                      placeholder="coach id"
+                      placeholder="Select a coach id"
                     />
                   </label>
                 </div>
@@ -436,13 +413,14 @@ export default function CoachDashboard() {
                     <span className="label-text">Owner ID</span>
                     <input
                       type="text"
+                      list="coach-options"
                       className="input input-bordered"
                       required
                       value={weekForm.ownerId}
                       onChange={(event) =>
                         setWeekForm((prev) => ({ ...prev, ownerId: event.target.value }))
                       }
-                      placeholder="coach id"
+                      placeholder="Select a coach id"
                     />
                   </label>
 
@@ -450,13 +428,14 @@ export default function CoachDashboard() {
                     <span className="label-text">Athlete ID</span>
                     <input
                       type="text"
+                      list="athlete-options"
                       className="input input-bordered"
                       required
                       value={weekForm.athleteId}
                       onChange={(event) =>
                         setWeekForm((prev) => ({ ...prev, athleteId: event.target.value }))
                       }
-                      placeholder="athlete id"
+                      placeholder="Select an athlete id"
                     />
                   </label>
                 </div>
@@ -549,6 +528,22 @@ export default function CoachDashboard() {
             </div>
           </section>
         </div>
+
+        <datalist id="coach-options">
+          {coaches.map((coach) => (
+            <option key={coach.id} value={coach.id}>
+              {coach.name} ({coach.email})
+            </option>
+          ))}
+        </datalist>
+
+        <datalist id="athlete-options">
+          {athletes.map((athlete) => (
+            <option key={athlete.id} value={athlete.id}>
+              {athlete.name} ({athlete.email})
+            </option>
+          ))}
+        </datalist>
       </div>
     </div>
   );
