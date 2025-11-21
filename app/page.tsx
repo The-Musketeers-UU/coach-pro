@@ -1,14 +1,18 @@
 "use client";
 
-import { FormEvent, useState } from "react";
+import { FormEvent, useEffect, useState } from "react";
 
 import {
   addModuleToScheduleDay,
   createModule,
   createScheduleWeek,
   type AddModuleToScheduleDayInput,
+  type AthleteRow,
   type CreateModuleInput,
   type CreateScheduleWeekInput,
+  getAthletes,
+  getScheduleWeeksByAthlete,
+  type ScheduleWeekRow,
 } from "@/lib/supabase/training-modules";
 
 const createDefaultModuleForm = (): CreateModuleInput => ({
@@ -43,6 +47,11 @@ export default function CoachDashboard() {
   const [scheduleDayForm, setScheduleDayForm] = useState<AddModuleToScheduleDayInput>(
     createDefaultScheduleDayForm,
   );
+  const [athletes, setAthletes] = useState<AthleteRow[]>([]);
+  const [isLoadingAthletes, setIsLoadingAthletes] = useState(false);
+  const [selectedAthleteId, setSelectedAthleteId] = useState<string | null>(null);
+  const [athleteSchedules, setAthleteSchedules] = useState<ScheduleWeekRow[]>([]);
+  const [isLoadingSchedules, setIsLoadingSchedules] = useState(false);
   const [isSubmittingModule, setIsSubmittingModule] = useState(false);
   const [isSubmittingWeek, setIsSubmittingWeek] = useState(false);
   const [isSubmittingScheduleDay, setIsSubmittingScheduleDay] = useState(false);
@@ -50,6 +59,46 @@ export default function CoachDashboard() {
   const [weekResult, setWeekResult] = useState<string | null>(null);
   const [scheduleResult, setScheduleResult] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [listError, setListError] = useState<string | null>(null);
+
+  useEffect(() => {
+    const fetchAthletes = async () => {
+      setIsLoadingAthletes(true);
+      setListError(null);
+      try {
+        const athleteRows = await getAthletes();
+        setAthletes(athleteRows);
+      } catch (supabaseError) {
+        setListError(
+          supabaseError instanceof Error
+            ? supabaseError.message
+            : String(supabaseError),
+        );
+      } finally {
+        setIsLoadingAthletes(false);
+      }
+    };
+
+    void fetchAthletes();
+  }, []);
+
+  const handleSelectAthlete = async (athleteId: string) => {
+    setSelectedAthleteId(athleteId);
+    setIsLoadingSchedules(true);
+    setListError(null);
+
+    try {
+      const weeks = await getScheduleWeeksByAthlete(athleteId);
+      setAthleteSchedules(weeks);
+    } catch (supabaseError) {
+      setListError(
+        supabaseError instanceof Error ? supabaseError.message : String(supabaseError),
+      );
+      setAthleteSchedules([]);
+    } finally {
+      setIsLoadingSchedules(false);
+    }
+  };
 
   const handleCreateModule = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -144,6 +193,72 @@ export default function CoachDashboard() {
         </header>
 
         {error && <div className="alert alert-error">{error}</div>}
+
+        <section className="card border border-base-300 bg-base-200 shadow-sm">
+          <div className="card-body space-y-4">
+            <header className="space-y-1">
+              <p className="text-xs font-semibold uppercase tracking-wide text-neutral">Athletes</p>
+              <h2 className="text-xl font-semibold">Browse athletes + schedules</h2>
+              <p className="text-sm text-base-content/70">
+                Select an athlete to load all schedule weeks attached to them.
+              </p>
+            </header>
+
+            {listError && <div className="alert alert-error">{listError}</div>}
+
+            <div className="flex flex-wrap gap-3">
+              {isLoadingAthletes ? (
+                <span className="loading loading-spinner" aria-label="Loading athletes" />
+              ) : athletes.length ? (
+                athletes.map((athlete) => (
+                  <button
+                    key={athlete.id}
+                    type="button"
+                    className={`btn ${
+                      athlete.id === selectedAthleteId ? "btn-primary" : "btn-outline"
+                    }`}
+                    onClick={() => handleSelectAthlete(athlete.id)}
+                  >
+                    <span className="font-semibold">{athlete.name}</span>
+                    <span className="text-xs font-normal text-base-content/80">{athlete.email}</span>
+                  </button>
+                ))
+              ) : (
+                <p className="text-sm text-base-content/70">No athletes found.</p>
+              )}
+            </div>
+
+            {selectedAthleteId && (
+              <div className="space-y-3">
+                <div className="flex items-center justify-between gap-3">
+                  <h3 className="text-lg font-semibold">Schedule weeks</h3>
+                  {isLoadingSchedules && (
+                    <span className="loading loading-spinner" aria-label="Loading schedules" />
+                  )}
+                </div>
+
+                {athleteSchedules.length ? (
+                  <ul className="space-y-2">
+                    {athleteSchedules.map((week) => (
+                      <li
+                        key={week.id}
+                        className="flex items-center justify-between rounded-lg border border-base-300 bg-base-100 px-4 py-3"
+                      >
+                        <div className="space-y-1">
+                          <p className="text-sm font-semibold">Week {week.week}</p>
+                          <p className="text-xs text-base-content/70">Schedule ID: {week.id}</p>
+                        </div>
+                        <span className="badge badge-neutral">Coach: {week.owner}</span>
+                      </li>
+                    ))}
+                  </ul>
+                ) : isLoadingSchedules ? null : (
+                  <p className="text-sm text-base-content/70">No schedules for this athlete yet.</p>
+                )}
+              </div>
+            )}
+          </div>
+        </section>
 
         <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
           <section className="card border border-base-300 bg-base-200 shadow-sm">
