@@ -3,53 +3,51 @@
 import { FormEvent, useState } from "react";
 
 import {
-  addModuleToSchedule,
-  createTrainingModule,
-  type AddModuleToScheduleInput,
-  type CreateTrainingModuleInput,
+  addModuleToScheduleDay,
+  createModule,
+  createScheduleWeek,
+  type AddModuleToScheduleDayInput,
+  type CreateModuleInput,
+  type CreateScheduleWeekInput,
 } from "@/lib/supabase/training-modules";
 
-const moduleFocusOptions: CreateTrainingModuleInput["focus"][] = [
-  "STRENGTH",
-  "CONDITIONING",
-  "MOBILITY",
-  "MINDSET",
-  "RECOVERY",
-];
-
-const moduleIntensityOptions: CreateTrainingModuleInput["intensity"][] = [
-  "LOW",
-  "MODERATE",
-  "HIGH",
-];
-
-const createDefaultModuleForm = (): CreateTrainingModuleInput => ({
-  title: "",
-  focus: "STRENGTH",
-  intensity: "MODERATE",
-  durationMinutes: 30,
+const createDefaultModuleForm = (): CreateModuleInput => ({
+  ownerId: "",
+  name: "",
+  category: "",
+  subCategory: "",
+  distance: undefined,
+  durationMinutes: undefined,
+  durationSeconds: undefined,
+  weight: undefined,
   description: "",
-  createdById: "",
 });
 
-const createDefaultScheduleForm = (): AddModuleToScheduleInput => ({
-  scheduleId: "",
-  dayOfWeek: "MONDAY",
+const createDefaultWeekForm = (): CreateScheduleWeekInput => ({
+  ownerId: "",
+  athleteId: "",
+  week: 1,
+});
+
+const createDefaultScheduleDayForm = (): AddModuleToScheduleDayInput => ({
   moduleId: "",
-  notes: "",
-  position: 0,
+  weekId: "",
+  day: 1,
 });
 
 export default function CoachDashboard() {
-  const [moduleForm, setModuleForm] = useState<CreateTrainingModuleInput>(
+  const [moduleForm, setModuleForm] = useState<CreateModuleInput>(
     createDefaultModuleForm,
   );
-  const [scheduleForm, setScheduleForm] = useState<AddModuleToScheduleInput>(
-    createDefaultScheduleForm,
+  const [weekForm, setWeekForm] = useState<CreateScheduleWeekInput>(createDefaultWeekForm);
+  const [scheduleDayForm, setScheduleDayForm] = useState<AddModuleToScheduleDayInput>(
+    createDefaultScheduleDayForm,
   );
   const [isSubmittingModule, setIsSubmittingModule] = useState(false);
-  const [isSubmittingSchedule, setIsSubmittingSchedule] = useState(false);
+  const [isSubmittingWeek, setIsSubmittingWeek] = useState(false);
+  const [isSubmittingScheduleDay, setIsSubmittingScheduleDay] = useState(false);
   const [moduleResult, setModuleResult] = useState<string | null>(null);
+  const [weekResult, setWeekResult] = useState<string | null>(null);
   const [scheduleResult, setScheduleResult] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
@@ -60,12 +58,24 @@ export default function CoachDashboard() {
     setModuleResult(null);
 
     try {
-      const sanitizedInput: CreateTrainingModuleInput = {
+      const sanitizedInput: CreateModuleInput = {
         ...moduleForm,
-        createdById: moduleForm.createdById?.trim() || null,
+        ownerId: moduleForm.ownerId.trim(),
+        name: moduleForm.name.trim(),
+        category: moduleForm.category.trim(),
+        subCategory: moduleForm.subCategory?.trim() || undefined,
+        description: moduleForm.description?.trim() || undefined,
+        distance: Number.isFinite(moduleForm.distance) ? Number(moduleForm.distance) : undefined,
+        durationMinutes: Number.isFinite(moduleForm.durationMinutes)
+          ? Number(moduleForm.durationMinutes)
+          : undefined,
+        durationSeconds: Number.isFinite(moduleForm.durationSeconds)
+          ? Number(moduleForm.durationSeconds)
+          : undefined,
+        weight: Number.isFinite(moduleForm.weight) ? Number(moduleForm.weight) : undefined,
       };
-      const createdModule = await createTrainingModule(sanitizedInput);
-      setModuleResult(`Created module “${createdModule.title}” with id ${createdModule.id}.`);
+      const createdModule = await createModule(sanitizedInput);
+      setModuleResult(`Created module “${createdModule.name}” with id ${createdModule.id}.`);
       setModuleForm(createDefaultModuleForm());
     } catch (supabaseError) {
       setError(supabaseError instanceof Error ? supabaseError.message : String(supabaseError));
@@ -74,29 +84,50 @@ export default function CoachDashboard() {
     }
   };
 
-  const handleAddToSchedule = async (event: FormEvent<HTMLFormElement>) => {
+  const handleCreateWeek = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    setIsSubmittingSchedule(true);
+    setIsSubmittingWeek(true);
+    setError(null);
+    setWeekResult(null);
+
+    try {
+      const weekInput: CreateScheduleWeekInput = {
+        ownerId: weekForm.ownerId.trim(),
+        athleteId: weekForm.athleteId.trim(),
+        week: Number(weekForm.week) || 0,
+      };
+      const createdWeek = await createScheduleWeek(weekInput);
+      setWeekResult(
+        `Created week ${createdWeek.week} for athlete ${createdWeek.athlete} owned by ${createdWeek.owner} (id ${createdWeek.id}).`,
+      );
+      setWeekForm(createDefaultWeekForm());
+    } catch (supabaseError) {
+      setError(supabaseError instanceof Error ? supabaseError.message : String(supabaseError));
+    } finally {
+      setIsSubmittingWeek(false);
+    }
+  };
+
+  const handleAddToScheduleDay = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    setIsSubmittingScheduleDay(true);
     setError(null);
     setScheduleResult(null);
 
     try {
-      const { day, scheduledModule } = await addModuleToSchedule({
-        ...scheduleForm,
-        position: Number.isFinite(scheduleForm.position)
-          ? Number(scheduleForm.position)
-          : undefined,
-        notes: scheduleForm.notes?.trim() || undefined,
+      const { day, link } = await addModuleToScheduleDay({
+        ...scheduleDayForm,
+        day: Number.isFinite(scheduleDayForm.day) ? Number(scheduleDayForm.day) : 0,
       });
 
       setScheduleResult(
-        `Added module ${scheduledModule.module_id} to ${day.day_of_week} (day ${day.id}) at position ${scheduledModule.position}.`,
+        `Linked module ${link.A} to day ${day.day} in week ${day.weekId ?? "(unassigned)"}.`,
       );
-      setScheduleForm(createDefaultScheduleForm());
+      setScheduleDayForm(createDefaultScheduleDayForm());
     } catch (supabaseError) {
       setError(supabaseError instanceof Error ? supabaseError.message : String(supabaseError));
     } finally {
-      setIsSubmittingSchedule(false);
+      setIsSubmittingScheduleDay(false);
     }
   };
 
@@ -107,8 +138,8 @@ export default function CoachDashboard() {
           <p className="text-xs font-semibold uppercase tracking-wide text-neutral">Supabase tooling</p>
           <h1 className="text-3xl font-semibold">Training modules + schedules</h1>
           <p className="text-base text-base-content/70">
-            Create new reusable training modules and attach them to Supabase-backed schedules without relying on
-            placeholder data.
+            Create reusable training modules and attach them to schedule days that match the Prisma schema in
+            <code className="mx-1 font-mono text-sm">prisma/schema.prisma</code>.
           </p>
         </header>
 
@@ -119,94 +150,137 @@ export default function CoachDashboard() {
             <div className="card-body space-y-4">
               <header className="space-y-1">
                 <p className="text-xs font-semibold uppercase tracking-wide text-neutral">Modules</p>
-                <h2 className="text-xl font-semibold">Create a training module</h2>
-                <p className="text-sm text-base-content/70">
-                  Save a reusable building block directly to Supabase with focus, intensity, and duration metadata.
-                </p>
+                <h2 className="text-xl font-semibold">Create a module</h2>
+                <p className="text-sm text-base-content/70">Save a reusable block tied to a specific coach/owner.</p>
               </header>
 
               <form className="space-y-3" onSubmit={handleCreateModule}>
                 <label className="form-control">
-                  <span className="label-text">Title</span>
+                  <span className="label-text">Name</span>
                   <input
                     type="text"
                     className="input input-bordered"
                     required
-                    value={moduleForm.title}
-                    onChange={(event) => setModuleForm((prev) => ({ ...prev, title: event.target.value }))}
+                    value={moduleForm.name}
+                    onChange={(event) => setModuleForm((prev) => ({ ...prev, name: event.target.value }))}
                     placeholder="Acceleration mechanics"
                   />
                 </label>
 
                 <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
                   <label className="form-control">
-                    <span className="label-text">Focus</span>
-                    <select
-                      className="select select-bordered"
-                      value={moduleForm.focus}
-                      onChange={(event) =>
-                        setModuleForm((prev) => ({ ...prev, focus: event.target.value as CreateTrainingModuleInput["focus"] }))
-                      }
-                    >
-                      {moduleFocusOptions.map((focus) => (
-                        <option key={focus} value={focus}>
-                          {focus}
-                        </option>
-                      ))}
-                    </select>
-                  </label>
-
-                  <label className="form-control">
-                    <span className="label-text">Intensity</span>
-                    <select
-                      className="select select-bordered"
-                      value={moduleForm.intensity}
+                    <span className="label-text">Category</span>
+                    <input
+                      type="text"
+                      className="input input-bordered"
+                      required
+                      value={moduleForm.category}
                       onChange={(event) =>
                         setModuleForm((prev) => ({
                           ...prev,
-                          intensity: event.target.value as CreateTrainingModuleInput["intensity"],
+                          category: event.target.value,
                         }))
                       }
-                    >
-                      {moduleIntensityOptions.map((intensity) => (
-                        <option key={intensity} value={intensity}>
-                          {intensity}
-                        </option>
-                      ))}
-                    </select>
+                      placeholder="Conditioning"
+                    />
+                  </label>
+
+                  <label className="form-control">
+                    <span className="label-text">Sub-category (optional)</span>
+                    <input
+                      type="text"
+                      className="input input-bordered"
+                      value={moduleForm.subCategory ?? ""}
+                      onChange={(event) =>
+                        setModuleForm((prev) => ({
+                          ...prev,
+                          subCategory: event.target.value,
+                        }))
+                      }
+                      placeholder="Tempo work"
+                    />
                   </label>
                 </div>
 
                 <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
                   <label className="form-control">
-                    <span className="label-text">Duration (minutes)</span>
+                    <span className="label-text">Distance (meters)</span>
                     <input
                       type="number"
-                      min={1}
                       className="input input-bordered"
-                      value={moduleForm.durationMinutes}
+                      value={moduleForm.distance ?? ""}
                       onChange={(event) =>
                         setModuleForm((prev) => ({
                           ...prev,
-                          durationMinutes: Number(event.target.value) || 0,
+                          distance: event.target.value ? Number(event.target.value) : undefined,
                         }))
                       }
                     />
                   </label>
 
                   <label className="form-control">
-                    <span className="label-text">Created by (optional)</span>
+                    <span className="label-text">Weight (kg)</span>
                     <input
-                      type="text"
+                      type="number"
                       className="input input-bordered"
-                      value={moduleForm.createdById ?? ""}
+                      value={moduleForm.weight ?? ""}
                       onChange={(event) =>
                         setModuleForm((prev) => ({
                           ...prev,
-                          createdById: event.target.value,
+                          weight: event.target.value ? Number(event.target.value) : undefined,
                         }))
                       }
-                      placeholder="coach_user_id"
+                    />
+                  </label>
+                </div>
+
+                <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
+                  <label className="form-control">
+                    <span className="label-text">Duration (minutes)</span>
+                    <input
+                      type="number"
+                      min={0}
+                      className="input input-bordered"
+                      value={moduleForm.durationMinutes ?? ""}
+                      onChange={(event) =>
+                        setModuleForm((prev) => ({
+                          ...prev,
+                          durationMinutes: event.target.value ? Number(event.target.value) : undefined,
+                        }))
+                      }
+                    />
+                  </label>
+
+                  <label className="form-control">
+                    <span className="label-text">Duration (seconds)</span>
+                    <input
+                      type="number"
+                      min={0}
+                      className="input input-bordered"
+                      value={moduleForm.durationSeconds ?? ""}
+                      onChange={(event) =>
+                        setModuleForm((prev) => ({
+                          ...prev,
+                          durationSeconds: event.target.value ? Number(event.target.value) : undefined,
+                        }))
+                      }
+                    />
+                  </label>
+
+                  <label className="form-control">
+                    <span className="label-text">Owner ID</span>
+                    <input
+                      type="text"
+                      className="input input-bordered"
+                      required
+                      value={moduleForm.ownerId}
+                      onChange={(event) =>
+                        setModuleForm((prev) => ({
+                          ...prev,
+                          ownerId: event.target.value,
+                        }))
+                      }
+                      placeholder="coach id"
                     />
                   </label>
                 </div>
@@ -216,8 +290,7 @@ export default function CoachDashboard() {
                   <textarea
                     className="textarea textarea-bordered"
                     rows={4}
-                    required
-                    value={moduleForm.description}
+                    value={moduleForm.description ?? ""}
                     onChange={(event) =>
                       setModuleForm((prev) => ({ ...prev, description: event.target.value }))
                     }
@@ -238,39 +311,102 @@ export default function CoachDashboard() {
             <div className="card-body space-y-4">
               <header className="space-y-1">
                 <p className="text-xs font-semibold uppercase tracking-wide text-neutral">Schedules</p>
-                <h2 className="text-xl font-semibold">Attach a module to a schedule</h2>
-                <p className="text-sm text-base-content/70">
-                  Use the new Supabase REST helpers to connect a module to a weekly schedule and training day.
-                </p>
+                <h2 className="text-xl font-semibold">Create a schedule week</h2>
+                <p className="text-sm text-base-content/70">Add a week for an athlete owned by a coach.</p>
               </header>
 
-              <form className="space-y-3" onSubmit={handleAddToSchedule}>
+              <form className="space-y-3" onSubmit={handleCreateWeek}>
                 <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
                   <label className="form-control">
-                    <span className="label-text">Schedule ID</span>
+                    <span className="label-text">Owner ID</span>
                     <input
                       type="text"
                       className="input input-bordered"
                       required
-                      value={scheduleForm.scheduleId}
+                      value={weekForm.ownerId}
                       onChange={(event) =>
-                        setScheduleForm((prev) => ({ ...prev, scheduleId: event.target.value }))
+                        setWeekForm((prev) => ({ ...prev, ownerId: event.target.value }))
                       }
-                      placeholder="schedule_uuid"
+                      placeholder="coach id"
                     />
                   </label>
 
                   <label className="form-control">
-                    <span className="label-text">Day of week</span>
+                    <span className="label-text">Athlete ID</span>
                     <input
                       type="text"
                       className="input input-bordered"
                       required
-                      value={scheduleForm.dayOfWeek}
+                      value={weekForm.athleteId}
                       onChange={(event) =>
-                        setScheduleForm((prev) => ({ ...prev, dayOfWeek: event.target.value.toUpperCase() }))
+                        setWeekForm((prev) => ({ ...prev, athleteId: event.target.value }))
                       }
-                      placeholder="MONDAY"
+                      placeholder="athlete id"
+                    />
+                  </label>
+                </div>
+
+                <label className="form-control">
+                  <span className="label-text">Week number</span>
+                  <input
+                    type="number"
+                    className="input input-bordered"
+                    required
+                    min={1}
+                    value={weekForm.week}
+                    onChange={(event) =>
+                      setWeekForm((prev) => ({ ...prev, week: Number(event.target.value) || 1 }))
+                    }
+                    placeholder="1"
+                  />
+                </label>
+
+                <button className="btn btn-secondary w-full" type="submit" disabled={isSubmittingWeek}>
+                  {isSubmittingWeek ? "Saving week..." : "Save schedule week"}
+                </button>
+              </form>
+
+              {weekResult && <div className="alert alert-success text-sm">{weekResult}</div>}
+            </div>
+          </section>
+
+          <section className="card border border-base-300 bg-base-200 shadow-sm">
+            <div className="card-body space-y-4">
+              <header className="space-y-1">
+                <p className="text-xs font-semibold uppercase tracking-wide text-neutral">Schedule days</p>
+                <h2 className="text-xl font-semibold">Attach a module to a day</h2>
+                <p className="text-sm text-base-content/70">Create or reuse a day in a week and link a module.</p>
+              </header>
+
+              <form className="space-y-3" onSubmit={handleAddToScheduleDay}>
+                <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
+                  <label className="form-control">
+                    <span className="label-text">Week ID</span>
+                    <input
+                      type="text"
+                      className="input input-bordered"
+                      required
+                      value={scheduleDayForm.weekId}
+                      onChange={(event) =>
+                        setScheduleDayForm((prev) => ({ ...prev, weekId: event.target.value }))
+                      }
+                      placeholder="scheduleWeek id"
+                    />
+                  </label>
+
+                  <label className="form-control">
+                    <span className="label-text">Day (1-7)</span>
+                    <input
+                      type="number"
+                      className="input input-bordered"
+                      required
+                      min={1}
+                      max={7}
+                      value={scheduleDayForm.day}
+                      onChange={(event) =>
+                        setScheduleDayForm((prev) => ({ ...prev, day: Number(event.target.value) || 1 }))
+                      }
+                      placeholder="1"
                     />
                   </label>
                 </div>
@@ -281,46 +417,16 @@ export default function CoachDashboard() {
                     type="text"
                     className="input input-bordered"
                     required
-                    value={scheduleForm.moduleId}
+                    value={scheduleDayForm.moduleId}
                     onChange={(event) =>
-                      setScheduleForm((prev) => ({ ...prev, moduleId: event.target.value }))
+                      setScheduleDayForm((prev) => ({ ...prev, moduleId: event.target.value }))
                     }
-                    placeholder="module_uuid"
+                    placeholder="module id"
                   />
                 </label>
 
-                <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
-                  <label className="form-control">
-                    <span className="label-text">Position (optional)</span>
-                    <input
-                      type="number"
-                      className="input input-bordered"
-                      value={scheduleForm.position ?? 0}
-                      onChange={(event) =>
-                        setScheduleForm((prev) => ({
-                          ...prev,
-                          position: Number(event.target.value) || 0,
-                        }))
-                      }
-                    />
-                  </label>
-
-                  <label className="form-control">
-                    <span className="label-text">Notes (optional)</span>
-                    <input
-                      type="text"
-                      className="input input-bordered"
-                      value={scheduleForm.notes ?? ""}
-                      onChange={(event) =>
-                        setScheduleForm((prev) => ({ ...prev, notes: event.target.value }))
-                      }
-                      placeholder="Context for this placement"
-                    />
-                  </label>
-                </div>
-
-                <button className="btn btn-secondary w-full" type="submit" disabled={isSubmittingSchedule}>
-                  {isSubmittingSchedule ? "Saving to schedule..." : "Add module to schedule"}
+                <button className="btn btn-secondary w-full" type="submit" disabled={isSubmittingScheduleDay}>
+                  {isSubmittingScheduleDay ? "Saving to day..." : "Add module to schedule day"}
                 </button>
               </form>
 
