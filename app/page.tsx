@@ -61,7 +61,8 @@ const initialModules: Module[] = [
   {
     id: "mod-3",
     title: "Back to basics styrka",
-    description: "Knäböj, bänkpress och rodd med fokus på kontrollerade 3-1-1-tempon.",
+    description:
+      "Knäböj, bänkpress och rodd med fokus på kontrollerade 3-1-1-tempon.",
     category: "styrka",
     subcategory: "Baslyft",
     weightKg: 60,
@@ -80,7 +81,8 @@ const initialModules: Module[] = [
   {
     id: "mod-5",
     title: "Explosiv kettlebell",
-    description: "Svingar, clean & press och farmers walks för helkroppsathleticism.",
+    description:
+      "Svingar, clean & press och farmers walks för helkroppsathleticism.",
     category: "styrka",
     subcategory: "Explosivitet",
     weightKg: 24,
@@ -233,7 +235,9 @@ export default function CoachDashboard() {
       category: module.category,
       subcategory: module.subcategory ?? "",
       distanceMeters:
-        module.distanceMeters !== undefined ? String(module.distanceMeters) : "",
+        module.distanceMeters !== undefined
+          ? String(module.distanceMeters)
+          : "",
       durationMinutes:
         module.durationMinutes !== undefined
           ? String(module.durationMinutes)
@@ -242,8 +246,7 @@ export default function CoachDashboard() {
         module.durationSeconds !== undefined
           ? String(module.durationSeconds)
           : "",
-      weightKg:
-        module.weightKg !== undefined ? String(module.weightKg) : "",
+      weightKg: module.weightKg !== undefined ? String(module.weightKg) : "",
     });
   };
 
@@ -393,7 +396,11 @@ export default function CoachDashboard() {
 
   return (
     <div className="drawer lg:drawer-open">
-      <input id="reusable-blocks-drawer" type="checkbox" className="drawer-toggle" />
+      <input
+        id="reusable-blocks-drawer"
+        type="checkbox"
+        className="drawer-toggle"
+      />
       <div className="drawer-content min-h-screen">
         <div className="mx-auto max-w-full px-5 py-5">
           <div className="flex items-center justify-between">
@@ -426,672 +433,691 @@ export default function CoachDashboard() {
                   </button>
                 </header>
                 <div className="grid grid-cols-1 gap-1 md:grid-cols-2 xl:grid-cols-7">
-                {days.map((day) => (
-                  <div
-                    key={day.id}
-                    onDragOver={(event) => event.preventDefault()}
-                    onDrop={() => handleDrop(day.id)}
-                    className="flex min-h-[600px] flex-col rounded-2xl border border-dashed border-base-200 bg-base-300 p-2"
-                  >
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <p className="text-xs font-semibold uppercase tracking-wide text-neutral">
-                          {day.label}
-                        </p>
-                      </div>
-                    </div>
-
-                    <div className="mt-3 flex-1 space-y-3">
-                      {schedule[day.id].length === 0 && (
-                        <div className="flex h-full items-center justify-center rounded-xl border border-dashed border-base-200 bg-base-100/60 p-4 text-center text-xs text-base-content/60">
-                          Drag a module to begin
+                  {days.map((day) => (
+                    <div
+                      key={day.id}
+                      onDragOver={(event) => event.preventDefault()}
+                      onDrop={() => handleDrop(day.id)}
+                      className="flex min-h-[600px] flex-col rounded-2xl border border-dashed border-base-200 bg-base-300 p-2"
+                    >
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <p className="text-xs font-semibold uppercase tracking-wide text-neutral">
+                            {day.label}
+                          </p>
                         </div>
-                      )}
+                      </div>
 
-                      {schedule[day.id].map((module, index) => (
-                        <div
-                          key={`${module.id}-${index}`}
-                          onClick={() =>
-                            startEditingModule(module, {
-                              type: "schedule",
-                              moduleId: module.id,
-                              dayId: day.id,
-                              moduleIndex: index,
-                            })
-                          }
-                          className="w-full rounded-xl border border-base-200 bg-base-100 p-3 transition"
-                        >
-                          <div className="flex items-start justify-between gap-2">
-                            <div className="space-y-1 text-xs text-base-content/60">
-                              <div className="flex flex-row justify-between">
-                                <p className="font-semibold text-base-content">
-                                  {module.title}
+                      <div className="mt-3 flex-1 space-y-3">
+                        {schedule[day.id].length === 0 && (
+                          <div className="flex h-full items-center justify-center rounded-xl border border-dashed border-base-200 bg-base-100/60 p-4 text-center text-xs text-base-content/60">
+                            Drag a module to begin
+                          </div>
+                        )}
+
+                        {schedule[day.id].map((module, index) => (
+                          <div
+                            key={`${module.id}-${index}`}
+                            onClick={() =>
+                              startEditingModule(module, {
+                                type: "schedule",
+                                moduleId: module.id,
+                                dayId: day.id,
+                                moduleIndex: index,
+                              })
+                            }
+                            className="w-full rounded-xl border border-base-200 bg-base-100 p-3 transition"
+                          >
+                            <div className="flex items-start justify-between gap-2">
+                              <div className="space-y-1 text-xs text-base-content/60">
+                                <div className="flex flex-row justify-between">
+                                  <p className="font-semibold text-base-content">
+                                    {module.title}
+                                  </p>
+                                  <button
+                                    type="button"
+                                    onClick={(event) => {
+                                      event.stopPropagation();
+                                      handleRemoveModule(day.id, index);
+                                    }}
+                                    className="btn btn-ghost btn-xs text-error"
+                                    aria-label={`Delete ${module.title}`}
+                                  >
+                                    Delete
+                                  </button>
+                                </div>
+                                <p className="text-xs text-base-content/70">
+                                  {module.description}
                                 </p>
-                                <button
-                                  type="button"
-                                  onClick={(event) => {
-                                    event.stopPropagation();
-                                    handleRemoveModule(day.id, index);
-                                  }}
-                                  className="btn btn-ghost btn-xs text-error"
-                                  aria-label={`Delete ${module.title}`}
-                                >
-                                  Delete
-                                </button>
-                              </div>
-                              <p className="text-xs text-base-content/70">
-                                {module.description}
-                              </p>
-                              <div className="flex flex-wrap gap-1">
-                                <span className="badge badge-outline badge-xs capitalize">
-                                  {module.category}
-                                </span>
-                                {module.subcategory && (
-                                  <span className="badge badge-outline badge-xs">
-                                    Underkategori: {module.subcategory}
+                                <div className="flex flex-wrap gap-1">
+                                  <span className="badge badge-outline badge-xs capitalize">
+                                    {module.category}
                                   </span>
-                                )}
-                                {module.distanceMeters !== undefined && (
-                                  <span className="badge badge-outline badge-xs">
-                                    Distans: {module.distanceMeters} m
-                                  </span>
-                                )}
-                                {formatDuration(
-                                  module.durationMinutes,
-                                  module.durationSeconds
-                                ) && (
-                                  <span className="badge badge-outline badge-xs">
-                                    Tid:
-                                    {" "}
-                                    {formatDuration(
-                                      module.durationMinutes,
-                                      module.durationSeconds
-                                    )}
-                                  </span>
-                                )}
-                                {module.weightKg !== undefined && (
-                                  <span className="badge badge-outline badge-xs">
-                                    Vikt: {module.weightKg} kg
-                                  </span>
-                                )}
+                                  {module.subcategory && (
+                                    <span className="badge badge-outline badge-xs">
+                                      Underkategori: {module.subcategory}
+                                    </span>
+                                  )}
+                                  {module.distanceMeters !== undefined && (
+                                    <span className="badge badge-outline badge-xs">
+                                      Distans: {module.distanceMeters} m
+                                    </span>
+                                  )}
+                                  {formatDuration(
+                                    module.durationMinutes,
+                                    module.durationSeconds
+                                  ) && (
+                                    <span className="badge badge-outline badge-xs">
+                                      Tid:{" "}
+                                      {formatDuration(
+                                        module.durationMinutes,
+                                        module.durationSeconds
+                                      )}
+                                    </span>
+                                  )}
+                                  {module.weightKg !== undefined && (
+                                    <span className="badge badge-outline badge-xs">
+                                      Vikt: {module.weightKg} kg
+                                    </span>
+                                  )}
+                                </div>
                               </div>
                             </div>
                           </div>
-                        </div>
-                      ))}
+                        ))}
+                      </div>
                     </div>
-                  </div>
-                ))}
+                  ))}
+                </div>
               </div>
             </div>
-          </div>
-        </section>
-      </div>
-
-      <dialog
-        className={`modal ${isCreateModuleModalOpen ? "modal-open" : ""}`}
-      >
-        <div className="modal-box max-w-2xl space-y-4">
-          <div className="flex items-start justify-between gap-4">
-            <div>
-              <h3 className="text-xl font-semibold">Skapa nytt block</h3>
-              <p className="text-sm text-base-content/70">Fyll i detaljerna nedan.</p>
-            </div>
-            <button
-              className="btn btn-circle btn-ghost btn-sm"
-              onClick={closeCreateModuleModal}
-            >
-              ✕
-            </button>
-          </div>
-
-          {formError && (
-            <div className="alert alert-error text-sm">{formError}</div>
-          )}
-
-          <form className="space-y-3" onSubmit={handleAddModule}>
-            <label className="form-control">
-              <span className="label-text">Titel</span>
-              <input
-                type="text"
-                value={newModule.title}
-                onChange={(event) =>
-                  setNewModule((prev) => ({
-                    ...prev,
-                    title: event.target.value,
-                  }))
-                }
-                className="input input-bordered"
-                placeholder="t.ex. Explosiv acceleration"
-              />
-            </label>
-
-            <label className="form-control">
-              <span className="label-text">Beskrivning</span>
-              <textarea
-                className="textarea textarea-bordered"
-                rows={3}
-                placeholder="Vad är syftet med blocket?"
-                value={newModule.description}
-                onChange={(event) =>
-                  setNewModule((prev) => ({
-                    ...prev,
-                    description: event.target.value,
-                  }))
-                }
-              />
-            </label>
-
-            <label className="form-control">
-              <span className="label-text">Kategori</span>
-              <select
-                className="select select-bordered"
-                value={newModule.category}
-                onChange={(event) =>
-                  setNewModule((prev) => ({
-                    ...prev,
-                    category: event.target.value as Category,
-                  }))
-                }
-                required
-              >
-                <option value="" disabled>
-                  Välj kategori
-                </option>
-                <option value="warmup">Uppvärmning</option>
-                <option value="kondition">Kondition</option>
-                <option value="styrka">Styrka</option>
-              </select>
-            </label>
-
-            <label className="form-control">
-              <span className="label-text">Underkategori (valfritt)</span>
-              <input
-                type="text"
-                className="input input-bordered"
-                value={newModule.subcategory}
-                onChange={(event) =>
-                  setNewModule((prev) => ({
-                    ...prev,
-                    subcategory: event.target.value,
-                  }))
-                }
-                placeholder="t.ex. Intervaller, baslyft"
-              />
-            </label>
-
-            <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
-              <label className="form-control">
-                <span className="label-text">Distans (meter, valfritt)</span>
-                <input
-                  type="number"
-                  min="0"
-                  className="input input-bordered"
-                  value={newModule.distanceMeters}
-                  onChange={(event) =>
-                    setNewModule((prev) => ({
-                      ...prev,
-                      distanceMeters: event.target.value,
-                    }))
-                  }
-                  placeholder="t.ex. 5000"
-                />
-              </label>
-
-              <label className="form-control">
-                <span className="label-text">Vikt (kg, valfritt)</span>
-                <input
-                  type="number"
-                  min="0"
-                  className="input input-bordered"
-                  value={newModule.weightKg}
-                  onChange={(event) =>
-                    setNewModule((prev) => ({
-                      ...prev,
-                      weightKg: event.target.value,
-                    }))
-                  }
-                  placeholder="t.ex. 20"
-                />
-              </label>
-            </div>
-
-            <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
-              <label className="form-control">
-                <span className="label-text">Tid (minuter, valfritt)</span>
-                <input
-                  type="number"
-                  min="0"
-                  className="input input-bordered"
-                  value={newModule.durationMinutes}
-                  onChange={(event) =>
-                    setNewModule((prev) => ({
-                      ...prev,
-                      durationMinutes: event.target.value,
-                    }))
-                  }
-                  placeholder="t.ex. 30"
-                />
-              </label>
-
-              <label className="form-control">
-                <span className="label-text">Tid (sekunder, valfritt)</span>
-                <input
-                  type="number"
-                  min="0"
-                  max="59"
-                  className="input input-bordered"
-                  value={newModule.durationSeconds}
-                  onChange={(event) =>
-                    setNewModule((prev) => ({
-                      ...prev,
-                      durationSeconds: event.target.value,
-                    }))
-                  }
-                  placeholder="0-59"
-                />
-              </label>
-            </div>
-
-            <div className="flex flex-col gap-2 sm:flex-row">
-              <button type="submit" className="btn btn-secondary w-full">
-                Lägg till block i biblioteket
-              </button>
-              <button
-                type="button"
-                className="btn btn-ghost w-full"
-                onClick={resetModuleForm}
-              >
-                Rensa formulär
-              </button>
-            </div>
-          </form>
+          </section>
         </div>
-        <form
-          method="dialog"
-          className="modal-backdrop"
-          onSubmit={closeCreateModuleModal}
+
+        <dialog
+          className={`modal ${isCreateModuleModalOpen ? "modal-open" : ""}`}
         >
-          <button>close</button>
-        </form>
-      </dialog>
-
-      <dialog className={`modal ${isAssignModalOpen ? "modal-open" : ""}`}>
-        <div className="modal-box max-w-l space-y-6">
-          <div className="flex items-start justify-between gap-4">
-            <div>
-              <h3 className="text-xl font-semibold">Assign schedule</h3>
+          <div className="modal-box max-w-md space-y-4">
+            <div className="flex items-start justify-between gap-4">
+              <div>
+                <h3 className="text-xl font-semibold">Skapa nytt block</h3>
+              </div>
+              <button
+                className="btn btn-circle btn-ghost btn-sm"
+                onClick={closeCreateModuleModal}
+              >
+                ✕
+              </button>
             </div>
-            <button
-              className="btn btn-circle btn-ghost btn-sm"
-              onClick={() => setIsAssignModalOpen(false)}
-            >
-              ✕
-            </button>
-          </div>
 
-          <div className="grid grid-cols-1 gap-4 md:grid-cols-1">
-            <section className="space-y-3 rounded-2xl border border-base-300 bg-base-100 p-4">
-              <div className="max-h-72 space-y-2 overflow-y-auto pr-1">
-                {athletes.map((athlete) => (
-                  <label
-                    key={athlete.id}
-                    className="flex cursor-pointer items-center justify-between gap-2 rounded-xl border border-base-200 bg-base-50 px-3 py-2 text-sm hover:border-base-300"
+            {formError && (
+              <div className="alert alert-error text-sm">{formError}</div>
+            )}
+
+            <form className="space-y-3" onSubmit={handleAddModule}>
+              <div className="flex flex-col gap-2">
+                <label className="form-control flex flex-col gap-1">
+                  <span className="label-text text-sm">Titel:</span>
+                  <input
+                    type="text"
+                    value={newModule.title}
+                    onChange={(event) =>
+                      setNewModule((prev) => ({
+                        ...prev,
+                        title: event.target.value,
+                      }))
+                    }
+                    className="input input-sm input-bordered w-full"
+                    placeholder="t.ex. Explosiv acceleration"
+                  />
+                </label>
+
+                <label className="form-control flex-col flex gap-1">
+                  <span className="label-text text-sm">Beskrivning:</span>
+                  <textarea
+                    className="textarea textarea-bordered w-full"
+                    rows={3}
+                    placeholder="Vad är syftet med blocket?"
+                    value={newModule.description}
+                    onChange={(event) =>
+                      setNewModule((prev) => ({
+                        ...prev,
+                        description: event.target.value,
+                      }))
+                    }
+                  />
+                </label>
+
+                <label className="form-control flex flex-col gap-1">
+                  <span className="label-text text-sm">Kategori:</span>
+                  <select
+                    className="select select-bordered select-sm"
+                    value={newModule.category}
+                    onChange={(event) =>
+                      setNewModule((prev) => ({
+                        ...prev,
+                        category: event.target.value as Category,
+                      }))
+                    }
+                    required
                   >
-                    <div>
-                      <p className="font-semibold">{athlete.name}</p>
-                      <p className="text-xs text-base-content/60">
-                        {athlete.sport}
-                      </p>
-                    </div>
+                    <option value="" disabled>
+                      Välj kategori
+                    </option>
+                    <option value="warmup">Uppvärmning</option>
+                    <option value="kondition">Kondition</option>
+                    <option value="styrka">Styrka</option>
+                  </select>
+                </label>
+
+                <label className="form-control flex flex-col gap-1">
+                  <span className="label-text text-sm">Underkategori:</span>
+                  <input
+                    type="text"
+                    className="input input-sm input-bordered"
+                    value={newModule.subcategory}
+                    onChange={(event) =>
+                      setNewModule((prev) => ({
+                        ...prev,
+                        subcategory: event.target.value,
+                      }))
+                    }
+                    placeholder="t.ex. Intervaller, baslyft"
+                  />
+                </label>
+                <label className="form-control flex gap-4 items-end">
+                  <span className="label-text text-sm">Distans (m):</span>
+                  <input
+                    type="number"
+                    min="0"
+                    className="input input-sm input-bordered w-20"
+                    value={newModule.distanceMeters}
+                    onChange={(event) =>
+                      setNewModule((prev) => ({
+                        ...prev,
+                        distanceMeters: event.target.value,
+                      }))
+                    }
+                    placeholder=""
+                  />
+                </label>
+
+                <label className="form-control flex gap-4 items-end">
+                  <span className="label-text text-sm">Vikt (kg):</span>
+                  <input
+                    type="number"
+                    min="0"
+                    className="input input-sm input-bordered w-20"
+                    value={newModule.weightKg}
+                    onChange={(event) =>
+                      setNewModule((prev) => ({
+                        ...prev,
+                        weightKg: event.target.value,
+                      }))
+                    }
+                    placeholder=""
+                  />
+                </label>
+                <div className="flex flex-row gap-2 items-end">
+                  <label className="form-control flex gap-4 items-end">
+                    <span className="label-text text-sm">Tid: </span>
                     <input
-                      type="checkbox"
-                      className="checkbox"
-                      checked={selectedAthletes.includes(athlete.id)}
-                      onChange={() => toggleAthleteSelection(athlete.id)}
+                      type="number"
+                      min="0"
+                      className="input input-sm input-bordered w-20"
+                      value={newModule.durationMinutes}
+                      onChange={(event) =>
+                        setNewModule((prev) => ({
+                          ...prev,
+                          durationMinutes: event.target.value,
+                        }))
+                      }
+                      placeholder=""
                     />
                   </label>
-                ))}
+
+                  <p className="text-sm">min</p>
+
+                  <label className="form-control">
+                    <span className="label-text text-sm"></span>
+                    <input
+                      type="number"
+                      min="0"
+                      max="59"
+                      className="input input-sm input-bordered w-20"
+                      value={newModule.durationSeconds}
+                      onChange={(event) =>
+                        setNewModule((prev) => ({
+                          ...prev,
+                          durationSeconds: event.target.value,
+                        }))
+                      }
+                      placeholder=""
+                    />
+                  </label>
+                  <p className="text-sm">sek</p>
+                </div>
               </div>
 
-              <button
-                className="btn btn-secondary w-full"
-                disabled={selectedAthletes.length === 0}
-                onClick={handleAssignToAthletes}
-              >
-                Assign to selected athletes
-              </button>
-            </section>
-          </div>
-        </div>
-        <form
-          method="dialog"
-          className="modal-backdrop"
-          onSubmit={() => setIsAssignModalOpen(false)}
-        >
-          <button>close</button>
-        </form>
-      </dialog>
-
-      <dialog className={`modal ${editingContext ? "modal-open" : ""}`}>
-        <div className="modal-box max-w-2xl space-y-6">
-          <div className="flex items-start justify-between gap-4">
-            <div>
-              <p className="text-xs font-semibold uppercase tracking-wide text-neutral">
-                {editingContext?.type === "schedule"
-                  ? "Redigera schemalagt block"
-                  : "Redigera återanvändbart block"}
-              </p>
-              <h3 className="text-xl font-semibold">
-                {editingModuleForm?.title}
-              </h3>
-            </div>
-            <button
-              className="btn btn-circle btn-ghost btn-sm"
-              onClick={closeEditModal}
-            >
-              ✕
-            </button>
-          </div>
-
-          {editFormError && (
-            <div className="alert alert-error text-sm">{editFormError}</div>
-          )}
-
-          {editingModuleForm && (
-            <form
-              className="space-y-3 flex flex-col"
-              onSubmit={handleSaveEditedModule}
-            >
-              <label className="form-control">
-                <span className="label-text">Titel</span>
-                <input
-                  type="text"
-                  value={editingModuleForm.title}
-                  onChange={(event) =>
-                    setEditingModuleForm((prev) =>
-                      prev
-                        ? {
-                            ...prev,
-                            title: event.target.value,
-                          }
-                        : prev
-                    )
-                  }
-                  className="input input-bordered"
-                  placeholder="t.ex. Explosiv acceleration"
-                />
-              </label>
-
-              <label className="form-control">
-                <span className="label-text">Beskrivning</span>
-                <textarea
-                  className="textarea textarea-bordered"
-                  rows={3}
-                  placeholder="Vad är syftet med blocket?"
-                  value={editingModuleForm.description}
-                  onChange={(event) =>
-                    setEditingModuleForm((prev) =>
-                      prev
-                        ? {
-                            ...prev,
-                            description: event.target.value,
-                          }
-                        : prev
-                    )
-                  }
-                />
-              </label>
-
-              <label className="form-control">
-                <span className="label-text">Kategori</span>
-                <select
-                  className="select select-bordered"
-                  value={editingModuleForm.category}
-                  onChange={(event) =>
-                    setEditingModuleForm((prev) =>
-                      prev
-                        ? { ...prev, category: event.target.value as Category }
-                        : prev
-                    )
-                  }
-                  required
-                >
-                  <option value="" disabled>
-                    Välj kategori
-                  </option>
-                  <option value="warmup">Uppvärmning</option>
-                  <option value="kondition">Kondition</option>
-                  <option value="styrka">Styrka</option>
-                </select>
-              </label>
-
-              <label className="form-control">
-                <span className="label-text">Underkategori (valfritt)</span>
-                <input
-                  type="text"
-                  className="input input-bordered"
-                  value={editingModuleForm.subcategory}
-                  onChange={(event) =>
-                    setEditingModuleForm((prev) =>
-                      prev
-                        ? { ...prev, subcategory: event.target.value }
-                        : prev
-                    )
-                  }
-                  placeholder="t.ex. Intervaller, baslyft"
-                />
-              </label>
-
-              <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
-                <label className="form-control">
-                  <span className="label-text">Distans (meter, valfritt)</span>
-                  <input
-                    type="number"
-                    min="0"
-                    className="input input-bordered"
-                    value={editingModuleForm.distanceMeters}
-                    onChange={(event) =>
-                      setEditingModuleForm((prev) =>
-                        prev
-                          ? { ...prev, distanceMeters: event.target.value }
-                          : prev
-                      )
-                    }
-                    placeholder="t.ex. 5000"
-                  />
-                </label>
-
-                <label className="form-control">
-                  <span className="label-text">Vikt (kg, valfritt)</span>
-                  <input
-                    type="number"
-                    min="0"
-                    className="input input-bordered"
-                    value={editingModuleForm.weightKg}
-                    onChange={(event) =>
-                      setEditingModuleForm((prev) =>
-                        prev
-                          ? { ...prev, weightKg: event.target.value }
-                          : prev
-                      )
-                    }
-                    placeholder="t.ex. 20"
-                  />
-                </label>
-              </div>
-
-              <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
-                <label className="form-control">
-                  <span className="label-text">Tid (minuter, valfritt)</span>
-                  <input
-                    type="number"
-                    min="0"
-                    className="input input-bordered"
-                    value={editingModuleForm.durationMinutes}
-                    onChange={(event) =>
-                      setEditingModuleForm((prev) =>
-                        prev
-                          ? { ...prev, durationMinutes: event.target.value }
-                          : prev
-                      )
-                    }
-                    placeholder="t.ex. 30"
-                  />
-                </label>
-
-                <label className="form-control">
-                  <span className="label-text">Tid (sekunder, valfritt)</span>
-                  <input
-                    type="number"
-                    min="0"
-                    max="59"
-                    className="input input-bordered"
-                    value={editingModuleForm.durationSeconds}
-                    onChange={(event) =>
-                      setEditingModuleForm((prev) =>
-                        prev
-                          ? { ...prev, durationSeconds: event.target.value }
-                          : prev
-                      )
-                    }
-                    placeholder="0-59"
-                  />
-                </label>
-              </div>
-
-              <div className="flex gap-2 sm:flex-col">
-                <p className="text-sm">
-                  {editingContext?.type === "schedule"
-                    ? "Changes will apply only to this block in the schedule. Reusable templates and other scheduled blocks remain unchanged."
-                    : "Changes will affect only the reusable block template, no blocks in schedules will be affected."}
-                </p>
+              <div className="flex flex-col gap-2 sm:flex-row">
                 <button type="submit" className="btn btn-secondary w-full">
-                  Save changes
+                  Lägg till block i biblioteket
+                </button>
+                <button
+                  type="button"
+                  className="btn btn-ghost w-full"
+                  onClick={resetModuleForm}
+                >
+                  Rensa formulär
                 </button>
               </div>
             </form>
-          )}
-        </div>
-        <form
-          method="dialog"
-          className="modal-backdrop"
-          onSubmit={closeEditModal}
-        >
-          <button>close</button>
-        </form>
-      </dialog>
-    </div>
+          </div>
+          <form
+            method="dialog"
+            className="modal-backdrop"
+            onSubmit={closeCreateModuleModal}
+          >
+            <button>close</button>
+          </form>
+        </dialog>
 
-    <div className="drawer-side">
-      <label
-        htmlFor="reusable-blocks-drawer"
-        aria-label="close sidebar"
-        className="drawer-overlay"
-      ></label>
-      <div className="flex h-full w-65 min-w-[150px] flex-col gap-3 border-r border-base-300 bg-primary-content p-4">
-        <div className="flex items-center justify-between gap-2">
-          <p className="text-xs font-semibold uppercase tracking-wide text-neutral">
-            Reusable blocks
-          </p>
-          <label
-            htmlFor="reusable-blocks-drawer"
-            className="btn btn-ghost btn-circle btn-xs lg:hidden"
+        <dialog className={`modal ${isAssignModalOpen ? "modal-open" : ""}`}>
+          <div className="modal-box max-w-l space-y-6">
+            <div className="flex items-start justify-between gap-4">
+              <div>
+                <h3 className="text-xl font-semibold">Assign schedule</h3>
+              </div>
+              <button
+                className="btn btn-circle btn-ghost btn-sm"
+                onClick={() => setIsAssignModalOpen(false)}
+              >
+                ✕
+              </button>
+            </div>
+
+            <div className="grid grid-cols-1 gap-4 md:grid-cols-1">
+              <section className="space-y-3 rounded-2xl border border-base-300 bg-base-100 p-4">
+                <div className="max-h-72 space-y-2 overflow-y-auto pr-1">
+                  {athletes.map((athlete) => (
+                    <label
+                      key={athlete.id}
+                      className="flex cursor-pointer items-center justify-between gap-2 rounded-xl border border-base-200 bg-base-50 px-3 py-2 text-sm hover:border-base-300"
+                    >
+                      <div>
+                        <p className="font-semibold">{athlete.name}</p>
+                        <p className="text-xs text-base-content/60">
+                          {athlete.sport}
+                        </p>
+                      </div>
+                      <input
+                        type="checkbox"
+                        className="checkbox"
+                        checked={selectedAthletes.includes(athlete.id)}
+                        onChange={() => toggleAthleteSelection(athlete.id)}
+                      />
+                    </label>
+                  ))}
+                </div>
+
+                <button
+                  className="btn btn-secondary w-full"
+                  disabled={selectedAthletes.length === 0}
+                  onClick={handleAssignToAthletes}
+                >
+                  Assign to selected athletes
+                </button>
+              </section>
+            </div>
+          </div>
+          <form
+            method="dialog"
+            className="modal-backdrop"
+            onSubmit={() => setIsAssignModalOpen(false)}
           >
-            ✕
-          </label>
-        </div>
-        <div className="flex flex-col gap-2">
-          <label className="input input-bordered input-sm flex items-center gap-2 lg:min-w-[10rem]">
-            <input
-              type="search"
-              value={search}
-              onChange={(event) => setSearch(event.target.value)}
-              placeholder="Search blocks"
-              className="grow"
-            />
-          </label>
-          <button
-            type="button"
-            className="btn btn-secondary btn-sm self-start"
-            onClick={() => {
-              resetModuleForm();
-              setIsCreateModuleModalOpen(true);
-            }}
-          >
-            Create block
-          </button>
-        </div>
-        <div className="min-h-0 flex-1 space-y-3 overflow-y-auto pr-1">
-          {filteredModules.map((module) => (
-            <article
-              key={module.id}
-              draggable
-              onDragStart={() => setActiveDrag(module)}
-              onDragEnd={() => setActiveDrag(null)}
-              onClick={() =>
-                startEditingModule(module, {
-                  type: "library",
-                  moduleId: module.id,
-                })
-              }
-              className="card cursor-grab overflow-hidden border border-base-200 bg-base-100 transition hover:border-primary"
-            >
-              <div className="card-body flex flex-col gap-2 p-4">
-                <div className="flex items-start justify-between gap-3">
-                  <p className="text-xs font-semibold">{module.title}</p>
-                  <button
-                    type="button"
-                    onClick={(event) => {
-                      event.stopPropagation();
-                      handleRemoveLibraryModule(module.id);
-                    }}
-                    className="btn btn-ghost btn-xs text-error"
-                    aria-label={`Delete ${module.title}`}
+            <button>close</button>
+          </form>
+        </dialog>
+
+        <dialog className={`modal ${editingContext ? "modal-open" : ""}`}>
+          <div className="modal-box max-w-2xl space-y-6">
+            <div className="flex items-start justify-between gap-4">
+              <div>
+                <p className="text-xs font-semibold uppercase tracking-wide text-neutral">
+                  {editingContext?.type === "schedule"
+                    ? "Redigera schemalagt block"
+                    : "Redigera återanvändbart block"}
+                </p>
+                <h3 className="text-xl font-semibold">
+                  {editingModuleForm?.title}
+                </h3>
+              </div>
+              <button
+                className="btn btn-circle btn-ghost btn-sm"
+                onClick={closeEditModal}
+              >
+                ✕
+              </button>
+            </div>
+
+            {editFormError && (
+              <div className="alert alert-error text-sm">{editFormError}</div>
+            )}
+
+            {editingModuleForm && (
+              <form
+                className="space-y-3 flex flex-col"
+                onSubmit={handleSaveEditedModule}
+              >
+                <label className="form-control">
+                  <span className="label-text text-sm">Titel</span>
+                  <input
+                    type="text"
+                    value={editingModuleForm.title}
+                    onChange={(event) =>
+                      setEditingModuleForm((prev) =>
+                        prev
+                          ? {
+                              ...prev,
+                              title: event.target.value,
+                            }
+                          : prev
+                      )
+                    }
+                    className="input input-sm input-bordered"
+                    placeholder="t.ex. Explosiv acceleration"
+                  />
+                </label>
+
+                <label className="form-control">
+                  <span className="label-text text-sm">Beskrivning</span>
+                  <textarea
+                    className="textarea textarea-bordered"
+                    rows={3}
+                    placeholder="Vad är syftet med blocket?"
+                    value={editingModuleForm.description}
+                    onChange={(event) =>
+                      setEditingModuleForm((prev) =>
+                        prev
+                          ? {
+                              ...prev,
+                              description: event.target.value,
+                            }
+                          : prev
+                      )
+                    }
+                  />
+                </label>
+
+                <label className="form-control">
+                  <span className="label-text text-sm">Kategori</span>
+                  <select
+                    className="select select-bordered select-sm"
+                    value={editingModuleForm.category}
+                    onChange={(event) =>
+                      setEditingModuleForm((prev) =>
+                        prev
+                          ? {
+                              ...prev,
+                              category: event.target.value as Category,
+                            }
+                          : prev
+                      )
+                    }
+                    required
                   >
-                    Delete
+                    <option value="" disabled>
+                      Välj kategori
+                    </option>
+                    <option value="warmup">Uppvärmning</option>
+                    <option value="kondition">Kondition</option>
+                    <option value="styrka">Styrka</option>
+                  </select>
+                </label>
+
+                <label className="form-control">
+                  <span className="label-text label.sm">
+                    Underkategori (valfritt)
+                  </span>
+                  <input
+                    type="text"
+                    className="input input-sm input-bordered"
+                    value={editingModuleForm.subcategory}
+                    onChange={(event) =>
+                      setEditingModuleForm((prev) =>
+                        prev
+                          ? { ...prev, subcategory: event.target.value }
+                          : prev
+                      )
+                    }
+                    placeholder="t.ex. Intervaller, baslyft"
+                  />
+                </label>
+
+                <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
+                  <label className="form-control">
+                    <span className="label-text text-sm">
+                      Distans (meter, valfritt)
+                    </span>
+                    <input
+                      type="number"
+                      min="0"
+                      className="input input-sm input-bordered"
+                      value={editingModuleForm.distanceMeters}
+                      onChange={(event) =>
+                        setEditingModuleForm((prev) =>
+                          prev
+                            ? { ...prev, distanceMeters: event.target.value }
+                            : prev
+                        )
+                      }
+                      placeholder="t.ex. 5000"
+                    />
+                  </label>
+
+                  <label className="form-control">
+                    <span className="label-text text-sm">
+                      Vikt (kg, valfritt)
+                    </span>
+                    <input
+                      type="number"
+                      min="0"
+                      className="input input-sm input-bordered"
+                      value={editingModuleForm.weightKg}
+                      onChange={(event) =>
+                        setEditingModuleForm((prev) =>
+                          prev
+                            ? { ...prev, weightKg: event.target.value }
+                            : prev
+                        )
+                      }
+                      placeholder="t.ex. 20"
+                    />
+                  </label>
+                </div>
+
+                <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
+                  <label className="form-control">
+                    <span className="label-text text-sm">
+                      Tid (minuter, valfritt)
+                    </span>
+                    <input
+                      type="number"
+                      min="0"
+                      className="input input-sm input-bordered"
+                      value={editingModuleForm.durationMinutes}
+                      onChange={(event) =>
+                        setEditingModuleForm((prev) =>
+                          prev
+                            ? { ...prev, durationMinutes: event.target.value }
+                            : prev
+                        )
+                      }
+                      placeholder="t.ex. 30"
+                    />
+                  </label>
+
+                  <label className="form-control">
+                    <span className="label-text text-sm">
+                      Tid (sekunder, valfritt)
+                    </span>
+                    <input
+                      type="number"
+                      min="0"
+                      max="59"
+                      className="input input-sm input-bordered"
+                      value={editingModuleForm.durationSeconds}
+                      onChange={(event) =>
+                        setEditingModuleForm((prev) =>
+                          prev
+                            ? { ...prev, durationSeconds: event.target.value }
+                            : prev
+                        )
+                      }
+                      placeholder="0-59"
+                    />
+                  </label>
+                </div>
+
+                <div className="flex gap-2 sm:flex-col">
+                  <p className="text-sm">
+                    {editingContext?.type === "schedule"
+                      ? "Changes will apply only to this block in the schedule. Reusable templates and other scheduled blocks remain unchanged."
+                      : "Changes will affect only the reusable block template, no blocks in schedules will be affected."}
+                  </p>
+                  <button type="submit" className="btn btn-secondary w-full">
+                    Save changes
                   </button>
                 </div>
-                <p className="max-h-16 overflow-hidden text-xs text-base-content/70">
-                  {module.description}
-                </p>
-                <div className="mt-auto flex flex-wrap gap-1">
-                  <span className="badge badge-outline badge-xs capitalize">
-                    {module.category}
-                  </span>
-                  {module.subcategory && (
-                    <span className="badge badge-outline badge-xs">
-                      Underkategori: {module.subcategory}
-                    </span>
-                  )}
-                  {module.distanceMeters !== undefined && (
-                    <span className="badge badge-outline badge-xs">
-                      Distans: {module.distanceMeters} m
-                    </span>
-                  )}
-                  {formatDuration(module.durationMinutes, module.durationSeconds) && (
-                    <span className="badge badge-outline badge-xs">
-                      Tid: {formatDuration(module.durationMinutes, module.durationSeconds)}
-                    </span>
-                  )}
-                  {module.weightKg !== undefined && (
-                    <span className="badge badge-outline badge-xs">
-                      Vikt: {module.weightKg} kg
-                    </span>
-                  )}
-                </div>
-              </div>
-            </article>
-          ))}
+              </form>
+            )}
+          </div>
+          <form
+            method="dialog"
+            className="modal-backdrop"
+            onSubmit={closeEditModal}
+          >
+            <button>close</button>
+          </form>
+        </dialog>
+      </div>
 
-          {filteredModules.length === 0 && (
-            <p className="rounded-2xl border border-dashed border-base-200 p-6 text-center text-sm text-base-content/60">
-              No modules match your search. Clear filters to see more.
+      <div className="drawer-side">
+        <label
+          htmlFor="reusable-blocks-drawer"
+          aria-label="close sidebar"
+          className="drawer-overlay"
+        ></label>
+        <div className="flex h-full w-65 min-w-[150px] flex-col gap-3 border-r border-base-300 bg-primary-content p-4">
+          <div className="flex items-center justify-between gap-2">
+            <p className="text-xs font-semibold uppercase tracking-wide text-neutral">
+              Reusable blocks
             </p>
-          )}
+            <label
+              htmlFor="reusable-blocks-drawer"
+              className="btn btn-ghost btn-circle btn-xs lg:hidden"
+            >
+              ✕
+            </label>
+          </div>
+          <div className="flex flex-col gap-2">
+            <label className="input input-bordered input-sm flex items-center gap-2 lg:min-w-[10rem]">
+              <input
+                type="search"
+                value={search}
+                onChange={(event) => setSearch(event.target.value)}
+                placeholder="Search blocks"
+                className="grow"
+              />
+            </label>
+            <button
+              type="button"
+              className="btn btn-secondary btn-sm self-start"
+              onClick={() => {
+                resetModuleForm();
+                setIsCreateModuleModalOpen(true);
+              }}
+            >
+              Create block
+            </button>
+          </div>
+          <div className="min-h-0 flex-1 space-y-3 overflow-y-auto pr-1">
+            {filteredModules.map((module) => (
+              <article
+                key={module.id}
+                draggable
+                onDragStart={() => setActiveDrag(module)}
+                onDragEnd={() => setActiveDrag(null)}
+                onClick={() =>
+                  startEditingModule(module, {
+                    type: "library",
+                    moduleId: module.id,
+                  })
+                }
+                className="card cursor-grab overflow-hidden border border-base-200 bg-base-100 transition hover:border-primary"
+              >
+                <div className="card-body flex flex-col gap-2 p-4">
+                  <div className="flex items-start justify-between gap-3">
+                    <p className="text-xs font-semibold">{module.title}</p>
+                    <button
+                      type="button"
+                      onClick={(event) => {
+                        event.stopPropagation();
+                        handleRemoveLibraryModule(module.id);
+                      }}
+                      className="btn btn-ghost btn-xs text-error"
+                      aria-label={`Delete ${module.title}`}
+                    >
+                      Delete
+                    </button>
+                  </div>
+                  <p className="max-h-16 overflow-hidden text-xs text-base-content/70">
+                    {module.description}
+                  </p>
+                  <div className="mt-auto flex flex-wrap gap-1">
+                    <span className="badge badge-outline badge-xs capitalize">
+                      {module.category}
+                    </span>
+                    {module.subcategory && (
+                      <span className="badge badge-outline badge-xs">
+                        Underkategori: {module.subcategory}
+                      </span>
+                    )}
+                    {module.distanceMeters !== undefined && (
+                      <span className="badge badge-outline badge-xs">
+                        Distans: {module.distanceMeters} m
+                      </span>
+                    )}
+                    {formatDuration(
+                      module.durationMinutes,
+                      module.durationSeconds
+                    ) && (
+                      <span className="badge badge-outline badge-xs">
+                        Tid:{" "}
+                        {formatDuration(
+                          module.durationMinutes,
+                          module.durationSeconds
+                        )}
+                      </span>
+                    )}
+                    {module.weightKg !== undefined && (
+                      <span className="badge badge-outline badge-xs">
+                        Vikt: {module.weightKg} kg
+                      </span>
+                    )}
+                  </div>
+                </div>
+              </article>
+            ))}
+
+            {filteredModules.length === 0 && (
+              <p className="rounded-2xl border border-dashed border-base-200 p-6 text-center text-sm text-base-content/60">
+                No modules match your search. Clear filters to see more.
+              </p>
+            )}
+          </div>
         </div>
       </div>
-    </div>
     </div>
   );
 }
