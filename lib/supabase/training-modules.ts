@@ -13,11 +13,20 @@ type ModuleRow = {
   description: string | null;
 };
 
-type ScheduleWeekRow = {
-  id: string;
-  owner: string;
-  athlete: string;
+type RawScheduleWeekRow = {
+  id: number;
   week: number;
+  owner: { id: number; name: string } | null;
+  athlete: { id: number; name: string } | null;
+};
+
+export type ScheduleWeekRow = {
+  id: string;
+  week: number;
+  ownerId: string;
+  ownerName: string;
+  athleteId: string;
+  athleteName: string;
 };
 
 type ScheduleDayRow = {
@@ -29,6 +38,13 @@ type ScheduleDayRow = {
 type ModuleScheduleDayRow = {
   A: string;
   B: string;
+};
+
+export type AthleteRow = {
+  id: string;
+  name: string;
+  email: string;
+  isCoach: boolean;
 };
 
 export type CreateModuleInput = {
@@ -57,6 +73,36 @@ export type AddModuleToScheduleDayInput = {
 
 const sanitizeNumber = (value: number | undefined) =>
   Number.isFinite(value) ? Number(value) : undefined;
+
+export const getAthletes = async (): Promise<AthleteRow[]> =>
+  supabaseRequest<AthleteRow[]>("user", {
+    searchParams: {
+      select: "id,name,email,isCoach",
+      isCoach: "eq.false",
+      order: "name.asc",
+    },
+  });
+
+export const getScheduleWeeksByAthlete = async (
+  athleteId: string,
+): Promise<ScheduleWeekRow[]> => {
+  const weeks = await supabaseRequest<RawScheduleWeekRow[]>("scheduleWeek", {
+    searchParams: {
+      select: "id,week,owner(id,name),athlete(id,name)",
+      athlete: `eq.${athleteId}`,
+      order: "week.asc",
+    },
+  });
+
+  return weeks.map((week) => ({
+    id: String(week.id),
+    week: week.week,
+    ownerId: week.owner ? String(week.owner.id) : "",
+    ownerName: week.owner?.name ?? "Unknown coach",
+    athleteId: week.athlete ? String(week.athlete.id) : "",
+    athleteName: week.athlete?.name ?? "Unknown athlete",
+  }));
+};
 
 export const createModule = async (input: CreateModuleInput): Promise<ModuleRow> => {
   const payload = {
