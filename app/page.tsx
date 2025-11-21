@@ -347,8 +347,8 @@ export default function CoachDashboard() {
     <div className="min-h-screen">
       <div className="mx-auto flex max-w-7xl flex-col gap-6 px-4 py-10">
         <div className="grid w-full max-w-6xl gap-6 self-center">
-          <div className="card bg-base-200 border border-base-300 shadow-md">
-            <div className="card-body">
+          <div className="card h-[360px] bg-base-200 border border-base-300 shadow-md">
+            <div className="card-body flex h-full flex-col">
               <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
                 <p className="text-xs font-semibold uppercase tracking-wide text-neutral">
                   Reusable blocks
@@ -375,8 +375,8 @@ export default function CoachDashboard() {
                   </button>
                 </div>
               </div>
-              <div className="mt-3 space-y-3">
-                <div className="flex gap-3 overflow-x-auto pb-2">
+              <div className="mt-3 flex-1 space-y-3 overflow-hidden">
+                <div className="flex h-full flex-nowrap gap-3 overflow-x-auto pb-2">
                   {filteredModules.map((module) => (
                     <article
                       key={module.id}
