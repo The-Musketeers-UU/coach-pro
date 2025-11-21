@@ -346,7 +346,7 @@ export default function CoachDashboard() {
   return (
     <div className="min-h-screen">
       <div className="mx-auto flex max-w-7xl flex-col gap-6 px-4 py-10">
-        <div className="grid gap-6">
+        <div className="grid w-full max-w-6xl gap-6 self-center">
           <div className="card bg-base-200 border border-base-300 shadow-md">
             <div className="card-body">
               <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
@@ -434,7 +434,7 @@ export default function CoachDashboard() {
           </div>
         </div>
 
-        <section className="w-full space-y-6">
+        <section className="w-full max-w-6xl self-center space-y-6">
           <div className="card bg-base-200 border border-base-300 shadow-md">
             <div className="card-body gap-6">
               <header className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
