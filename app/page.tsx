@@ -345,8 +345,8 @@ export default function CoachDashboard() {
 
   return (
     <div className="min-h-screen">
-      <div className="mx-auto flex max-w-7xl flex-col gap-6 px-4 py-10">
-        <div className="grid w-full max-w-6xl gap-6 self-center">
+      <div className="mx-auto flex max-w-full flex-col gap-6 px-10 py-5">
+        <div className="grid w-full max-w-full gap-6 self-center">
           <div className="card h-[320px] max-h-[320px] overflow-hidden bg-base-200 border border-base-300 shadow-md">
             <div className="card-body flex h-full flex-col overflow-hidden">
               <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
@@ -389,11 +389,11 @@ export default function CoachDashboard() {
                           moduleId: module.id,
                         })
                       }
-                      className="card h-full w-[260px] min-w-[260px] shrink-0 cursor-grab overflow-hidden border border-base-200 bg-base-100 transition hover:border-primary"
+                      className="card h-full w-[200px] min-w-[200px] shrink-0 cursor-grab overflow-hidden border border-base-200 bg-base-100 transition hover:border-primary"
                     >
                       <div className="card-body flex h-full flex-col gap-2 p-4">
                         <div className="flex items-start justify-between gap-3">
-                          <h2 className="font-semibold">{module.title}</h2>
+                          <p className="font-semibold text-xs">{module.title}</p>
                           <button
                             type="button"
                             onClick={(event) => {
@@ -413,7 +413,7 @@ export default function CoachDashboard() {
                           {module.attributes.map((attribute) => (
                             <span
                               key={attribute.id}
-                              className="badge badge-outline badge-sm"
+                              className="badge badge-outline badge-xs"
                             >
                               {attribute.key}: {attribute.value}
                             </span>
@@ -434,7 +434,7 @@ export default function CoachDashboard() {
           </div>
         </div>
 
-        <section className="w-full max-w-6xl self-center space-y-6">
+        <section className="w-full max-w-full self-center space-y-6">
           <div className="card bg-base-200 border border-base-300 shadow-md">
             <div className="card-body gap-6">
               <header className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
