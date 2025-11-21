@@ -1,6 +1,6 @@
 "use client";
 
-import { FormEvent, useMemo, useRef, useState } from "react";
+import { type DragEvent, FormEvent, useMemo, useRef, useState } from "react";
 
 type Category = "warmup" | "kondition" | "styrka";
 
@@ -17,6 +17,10 @@ type Module = {
 };
 
 type DaySchedule = Record<string, Module[]>;
+
+type ActiveDrag =
+  | { source: { type: "library" }; module: Module }
+  | { source: { type: "schedule"; dayId: string; moduleIndex: number }; module: Module };
 
 type EditingContext =
   | { type: "library"; moduleId: string }
@@ -136,7 +140,7 @@ const athletes: Athlete[] = [
 
 export default function CoachDashboard() {
   const [search, setSearch] = useState("");
-  const [activeDrag, setActiveDrag] = useState<Module | null>(null);
+  const [activeDrag, setActiveDrag] = useState<ActiveDrag | null>(null);
   const [moduleLibrary, setModuleLibrary] = useState<Module[]>(initialModules);
   const [schedule, setSchedule] = useState<DaySchedule>(() =>
     days.reduce((acc, day) => ({ ...acc, [day.id]: [] }), {} as DaySchedule)
@@ -183,12 +187,46 @@ export default function CoachDashboard() {
     };
   };
 
-  const handleDrop = (dayId: string) => {
+  const allowDrop = (event: DragEvent) => {
+    event.preventDefault();
+  };
+
+  const handleDrop = (dayId: string, targetIndex?: number) => {
     if (!activeDrag) return;
-    setSchedule((prev) => ({
-      ...prev,
-      [dayId]: [...prev[dayId], cloneModuleForSchedule(activeDrag)],
-    }));
+
+    setSchedule((prev) => {
+      const insertAt = targetIndex ?? prev[dayId].length;
+
+      if (activeDrag.source.type === "library") {
+        const nextModules = [...prev[dayId]];
+        nextModules.splice(insertAt, 0, cloneModuleForSchedule(activeDrag.module));
+        return {
+          ...prev,
+          [dayId]: nextModules,
+        };
+      }
+
+      const { dayId: sourceDayId, moduleIndex } = activeDrag.source;
+      const movingModule = prev[sourceDayId][moduleIndex];
+      if (!movingModule) return prev;
+
+      const updatedSchedule = { ...prev };
+      updatedSchedule[sourceDayId] = prev[sourceDayId].filter(
+        (_, index) => index !== moduleIndex
+      );
+
+      const adjustedInsertAt =
+        sourceDayId === dayId && moduleIndex < insertAt
+          ? Math.max(0, insertAt - 1)
+          : insertAt;
+
+      const destinationModules = [...updatedSchedule[dayId]];
+      destinationModules.splice(adjustedInsertAt, 0, movingModule);
+      updatedSchedule[dayId] = destinationModules;
+
+      return updatedSchedule;
+    });
+
     setActiveDrag(null);
   };
 
@@ -436,7 +474,7 @@ export default function CoachDashboard() {
                   {days.map((day) => (
                     <div
                       key={day.id}
-                      onDragOver={(event) => event.preventDefault()}
+                      onDragOver={allowDrop}
                       onDrop={() => handleDrop(day.id)}
                       className="flex min-h-[600px] flex-col rounded-2xl border border-dashed border-base-200 bg-base-300 p-2"
                     >
@@ -456,75 +494,112 @@ export default function CoachDashboard() {
                         )}
 
                         {schedule[day.id].map((module, index) => (
-                          <div
-                            key={`${module.id}-${index}`}
-                            onClick={() =>
-                              startEditingModule(module, {
-                                type: "schedule",
-                                moduleId: module.id,
-                                dayId: day.id,
-                                moduleIndex: index,
-                              })
-                            }
-                            className="w-full rounded-xl border border-base-200 bg-base-100 p-3 transition"
-                          >
-                            <div className="flex items-start justify-between gap-2">
-                              <div className="space-y-1 text-xs text-base-content/60">
-                                <div className="flex flex-row justify-between">
-                                  <p className="font-semibold text-base-content">
-                                    {module.title}
+                          <div key={`${module.id}-${index}`} className="space-y-2">
+                            <div
+                              onDragOver={allowDrop}
+                              onDrop={(event) => {
+                                event.stopPropagation();
+                                handleDrop(day.id, index);
+                              }}
+                              className="h-2 w-full"
+                            />
+                            <div
+                              draggable
+                              onDragOver={allowDrop}
+                              onDrop={(event) => {
+                                event.stopPropagation();
+                                handleDrop(day.id, index);
+                              }}
+                              onDragStart={() =>
+                                setActiveDrag({
+                                  module,
+                                  source: {
+                                    type: "schedule",
+                                    dayId: day.id,
+                                    moduleIndex: index,
+                                  },
+                                })
+                              }
+                              onDragEnd={() => setActiveDrag(null)}
+                              onClick={() =>
+                                startEditingModule(module, {
+                                  type: "schedule",
+                                  moduleId: module.id,
+                                  dayId: day.id,
+                                  moduleIndex: index,
+                                })
+                              }
+                              className="w-full rounded-xl border border-base-200 bg-base-100 p-3 transition"
+                            >
+                              <div className="flex items-start justify-between gap-2">
+                                <div className="space-y-1 text-xs text-base-content/60">
+                                  <div className="flex flex-row justify-between">
+                                    <p className="font-semibold text-base-content">
+                                      {module.title}
+                                    </p>
+                                    <button
+                                      type="button"
+                                      onClick={(event) => {
+                                        event.stopPropagation();
+                                        handleRemoveModule(day.id, index);
+                                      }}
+                                      className="btn btn-ghost btn-xs text-error"
+                                      aria-label={`Delete ${module.title}`}
+                                    >
+                                      Delete
+                                    </button>
+                                  </div>
+                                  <p className="text-xs text-base-content/70">
+                                    {module.description}
                                   </p>
-                                  <button
-                                    type="button"
-                                    onClick={(event) => {
-                                      event.stopPropagation();
-                                      handleRemoveModule(day.id, index);
-                                    }}
-                                    className="btn btn-ghost btn-xs text-error"
-                                    aria-label={`Delete ${module.title}`}
-                                  >
-                                    Delete
-                                  </button>
-                                </div>
-                                <p className="text-xs text-base-content/70">
-                                  {module.description}
-                                </p>
-                                <div className="flex flex-wrap gap-1">
-                                  <span className="badge badge-outline badge-xs capitalize">
-                                    {module.category}
-                                  </span>
-                                  {module.subcategory && (
-                                    <span className="badge badge-outline badge-xs">
-                                      Underkategori: {module.subcategory}
+                                  <div className="flex flex-wrap gap-1">
+                                    <span className="badge badge-outline badge-xs capitalize">
+                                      {module.category}
                                     </span>
-                                  )}
-                                  {module.distanceMeters !== undefined && (
-                                    <span className="badge badge-outline badge-xs">
-                                      Distans: {module.distanceMeters} m
-                                    </span>
-                                  )}
-                                  {formatDuration(
-                                    module.durationMinutes,
-                                    module.durationSeconds
-                                  ) && (
-                                    <span className="badge badge-outline badge-xs">
-                                      Tid:{" "}
-                                      {formatDuration(
-                                        module.durationMinutes,
-                                        module.durationSeconds
-                                      )}
-                                    </span>
-                                  )}
-                                  {module.weightKg !== undefined && (
-                                    <span className="badge badge-outline badge-xs">
-                                      Vikt: {module.weightKg} kg
-                                    </span>
-                                  )}
+                                    {module.subcategory && (
+                                      <span className="badge badge-outline badge-xs">
+                                        Underkategori: {module.subcategory}
+                                      </span>
+                                    )}
+                                    {module.distanceMeters !== undefined && (
+                                      <span className="badge badge-outline badge-xs">
+                                        Distans: {module.distanceMeters} m
+                                      </span>
+                                    )}
+                                    {formatDuration(
+                                      module.durationMinutes,
+                                      module.durationSeconds
+                                    ) && (
+                                      <span className="badge badge-outline badge-xs">
+                                        Tid:{" "}
+                                        {formatDuration(
+                                          module.durationMinutes,
+                                          module.durationSeconds
+                                        )}
+                                      </span>
+                                    )}
+                                    {module.weightKg !== undefined && (
+                                      <span className="badge badge-outline badge-xs">
+                                        Vikt: {module.weightKg} kg
+                                      </span>
+                                    )}
+                                  </div>
                                 </div>
                               </div>
                             </div>
                           </div>
                         ))}
+
+                        {schedule[day.id].length > 0 && (
+                          <div
+                            onDragOver={allowDrop}
+                            onDrop={(event) => {
+                              event.stopPropagation();
+                              handleDrop(day.id, schedule[day.id].length);
+                            }}
+                            className="h-2 w-full"
+                          />
+                        )}
                       </div>
                     </div>
                   ))}
@@ -1046,7 +1121,12 @@ export default function CoachDashboard() {
               <article
                 key={module.id}
                 draggable
-                onDragStart={() => setActiveDrag(module)}
+                onDragStart={() =>
+                  setActiveDrag({
+                    module,
+                    source: { type: "library" },
+                  })
+                }
                 onDragEnd={() => setActiveDrag(null)}
                 onClick={() =>
                   startEditingModule(module, {
