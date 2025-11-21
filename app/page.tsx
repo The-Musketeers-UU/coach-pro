@@ -2,13 +2,14 @@
 
 import { FormEvent, useMemo, useRef, useState } from "react";
 
-type Category = "warmup" | "running" | "lifting";
+type Category = "warmup" | "kondition" | "styrka";
 
 type Module = {
   id: string;
   title: string;
   description: string;
   category: Category;
+  subcategory?: string;
   distanceMeters?: number;
   durationMinutes?: number;
   durationSeconds?: number;
@@ -25,6 +26,7 @@ type ModuleForm = {
   title: string;
   description: string;
   category: Category | "";
+  subcategory: string;
   distanceMeters: string;
   durationMinutes: string;
   durationSeconds: string;
@@ -44,13 +46,15 @@ const initialModules: Module[] = [
     description:
       "Ledande mobility-sekvens med skips, höga knän och bandaktivering innan huvudpasset.",
     category: "warmup",
+    subcategory: "Rörlighet",
     durationMinutes: 12,
   },
   {
     id: "mod-2",
     title: "Tröskelintervaller",
     description: "4x8 minuter i jämn tröskelfart med 2 minuter joggvila.",
-    category: "running",
+    category: "kondition",
+    subcategory: "Intervaller",
     distanceMeters: 8000,
     durationMinutes: 40,
   },
@@ -58,7 +62,8 @@ const initialModules: Module[] = [
     id: "mod-3",
     title: "Back to basics styrka",
     description: "Knäböj, bänkpress och rodd med fokus på kontrollerade 3-1-1-tempon.",
-    category: "lifting",
+    category: "styrka",
+    subcategory: "Baslyft",
     weightKg: 60,
     durationMinutes: 45,
   },
@@ -66,7 +71,8 @@ const initialModules: Module[] = [
     id: "mod-4",
     title: "Progressiv distans",
     description: "Jämn distanslöpning med fartökning sista tredjedelen.",
-    category: "running",
+    category: "kondition",
+    subcategory: "Distans",
     distanceMeters: 10000,
     durationMinutes: 55,
     durationSeconds: 0,
@@ -75,7 +81,8 @@ const initialModules: Module[] = [
     id: "mod-5",
     title: "Explosiv kettlebell",
     description: "Svingar, clean & press och farmers walks för helkroppsathleticism.",
-    category: "lifting",
+    category: "styrka",
+    subcategory: "Explosivitet",
     weightKg: 24,
     durationMinutes: 30,
     durationSeconds: 0,
@@ -86,6 +93,7 @@ const createInitialFormState = (): ModuleForm => ({
   title: "",
   description: "",
   category: "",
+  subcategory: "",
   distanceMeters: "",
   durationMinutes: "",
   durationSeconds: "",
@@ -165,6 +173,7 @@ export default function CoachDashboard() {
       title: module.title,
       description: module.description,
       category: module.category,
+      subcategory: module.subcategory,
       distanceMeters: module.distanceMeters,
       durationMinutes: module.durationMinutes,
       durationSeconds: module.durationSeconds,
@@ -222,6 +231,7 @@ export default function CoachDashboard() {
       title: module.title,
       description: module.description,
       category: module.category,
+      subcategory: module.subcategory ?? "",
       distanceMeters:
         module.distanceMeters !== undefined ? String(module.distanceMeters) : "",
       durationMinutes:
@@ -244,6 +254,7 @@ export default function CoachDashboard() {
     const trimmedTitle = formState.title.trim();
     const trimmedDescription = formState.description.trim();
     const selectedCategory = formState.category;
+    const trimmedSubcategory = formState.subcategory.trim();
 
     const parseOptionalNumber = (value: string, label: string) => {
       const trimmed = value.trim();
@@ -251,7 +262,9 @@ export default function CoachDashboard() {
 
       const parsed = Number(trimmed);
       if (Number.isNaN(parsed) || parsed < 0) {
-        return { error: `${label} must be a non-negative number.` } as const;
+        return {
+          error: `${label} måste vara ett icke-negativt tal.`,
+        } as const;
       }
 
       return { value: parsed } as const;
@@ -259,26 +272,26 @@ export default function CoachDashboard() {
 
     if (!trimmedTitle || !trimmedDescription || !selectedCategory) {
       return {
-        error: "Title, description, and category are required.",
+        error: "Titel, beskrivning och kategori är obligatoriska.",
       };
     }
 
     const distanceResult = parseOptionalNumber(
       formState.distanceMeters,
-      "Distance"
+      "Distans"
     );
     if ("error" in distanceResult) return { error: distanceResult.error };
 
     const durationMinutesResult = parseOptionalNumber(
       formState.durationMinutes,
-      "Minutes"
+      "Minuter"
     );
     if ("error" in durationMinutesResult)
       return { error: durationMinutesResult.error };
 
     const durationSecondsResult = parseOptionalNumber(
       formState.durationSeconds,
-      "Seconds"
+      "Sekunder"
     );
     if ("error" in durationSecondsResult)
       return { error: durationSecondsResult.error };
@@ -287,10 +300,10 @@ export default function CoachDashboard() {
       durationSecondsResult.value !== undefined &&
       durationSecondsResult.value >= 60
     ) {
-      return { error: "Seconds must be less than 60." };
+      return { error: "Sekunder måste vara under 60." };
     }
 
-    const weightResult = parseOptionalNumber(formState.weightKg, "Weight");
+    const weightResult = parseOptionalNumber(formState.weightKg, "Vikt");
     if ("error" in weightResult) return { error: weightResult.error };
 
     return {
@@ -299,6 +312,7 @@ export default function CoachDashboard() {
         title: trimmedTitle,
         description: trimmedDescription,
         category: selectedCategory,
+        subcategory: trimmedSubcategory || undefined,
         distanceMeters: distanceResult.value,
         durationMinutes: durationMinutesResult.value,
         durationSeconds: durationSecondsResult.value,
@@ -472,6 +486,11 @@ export default function CoachDashboard() {
                                 <span className="badge badge-outline badge-xs capitalize">
                                   {module.category}
                                 </span>
+                                {module.subcategory && (
+                                  <span className="badge badge-outline badge-xs">
+                                    Underkategori: {module.subcategory}
+                                  </span>
+                                )}
                                 {module.distanceMeters !== undefined && (
                                   <span className="badge badge-outline badge-xs">
                                     Distans: {module.distanceMeters} m
@@ -515,8 +534,8 @@ export default function CoachDashboard() {
         <div className="modal-box max-w-2xl space-y-4">
           <div className="flex items-start justify-between gap-4">
             <div>
-              <h3 className="text-xl font-semibold">Create a new block</h3>
-              <p className="text-sm text-base-content/70"></p>
+              <h3 className="text-xl font-semibold">Skapa nytt block</h3>
+              <p className="text-sm text-base-content/70">Fyll i detaljerna nedan.</p>
             </div>
             <button
               className="btn btn-circle btn-ghost btn-sm"
@@ -532,7 +551,7 @@ export default function CoachDashboard() {
 
           <form className="space-y-3" onSubmit={handleAddModule}>
             <label className="form-control">
-              <span className="label-text">Title</span>
+              <span className="label-text">Titel</span>
               <input
                 type="text"
                 value={newModule.title}
@@ -543,16 +562,16 @@ export default function CoachDashboard() {
                   }))
                 }
                 className="input input-bordered"
-                placeholder="Explosive Acceleration"
+                placeholder="t.ex. Explosiv acceleration"
               />
             </label>
 
             <label className="form-control">
-              <span className="label-text">Description</span>
+              <span className="label-text">Beskrivning</span>
               <textarea
                 className="textarea textarea-bordered"
                 rows={3}
-                placeholder="What's the intent?"
+                placeholder="Vad är syftet med blocket?"
                 value={newModule.description}
                 onChange={(event) =>
                   setNewModule((prev) => ({
@@ -564,7 +583,7 @@ export default function CoachDashboard() {
             </label>
 
             <label className="form-control">
-              <span className="label-text">Category</span>
+              <span className="label-text">Kategori</span>
               <select
                 className="select select-bordered"
                 value={newModule.category}
@@ -579,15 +598,31 @@ export default function CoachDashboard() {
                 <option value="" disabled>
                   Välj kategori
                 </option>
-                <option value="warmup">Warmup</option>
-                <option value="running">Running</option>
-                <option value="lifting">Lifting</option>
+                <option value="warmup">Uppvärmning</option>
+                <option value="kondition">Kondition</option>
+                <option value="styrka">Styrka</option>
               </select>
+            </label>
+
+            <label className="form-control">
+              <span className="label-text">Underkategori (valfritt)</span>
+              <input
+                type="text"
+                className="input input-bordered"
+                value={newModule.subcategory}
+                onChange={(event) =>
+                  setNewModule((prev) => ({
+                    ...prev,
+                    subcategory: event.target.value,
+                  }))
+                }
+                placeholder="t.ex. Intervaller, baslyft"
+              />
             </label>
 
             <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
               <label className="form-control">
-                <span className="label-text">Distance (meters)</span>
+                <span className="label-text">Distans (meter, valfritt)</span>
                 <input
                   type="number"
                   min="0"
@@ -604,7 +639,7 @@ export default function CoachDashboard() {
               </label>
 
               <label className="form-control">
-                <span className="label-text">Weight (kg)</span>
+                <span className="label-text">Vikt (kg, valfritt)</span>
                 <input
                   type="number"
                   min="0"
@@ -623,7 +658,7 @@ export default function CoachDashboard() {
 
             <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
               <label className="form-control">
-                <span className="label-text">Duration (minutes)</span>
+                <span className="label-text">Tid (minuter, valfritt)</span>
                 <input
                   type="number"
                   min="0"
@@ -640,7 +675,7 @@ export default function CoachDashboard() {
               </label>
 
               <label className="form-control">
-                <span className="label-text">Duration (seconds)</span>
+                <span className="label-text">Tid (sekunder, valfritt)</span>
                 <input
                   type="number"
                   min="0"
@@ -660,14 +695,14 @@ export default function CoachDashboard() {
 
             <div className="flex flex-col gap-2 sm:flex-row">
               <button type="submit" className="btn btn-secondary w-full">
-                Add block to library
+                Lägg till block i biblioteket
               </button>
               <button
                 type="button"
                 className="btn btn-ghost w-full"
                 onClick={resetModuleForm}
               >
-                Clear form
+                Rensa formulär
               </button>
             </div>
           </form>
@@ -744,8 +779,8 @@ export default function CoachDashboard() {
             <div>
               <p className="text-xs font-semibold uppercase tracking-wide text-neutral">
                 {editingContext?.type === "schedule"
-                  ? "Edit scheduled block"
-                  : "Edit reusable block"}
+                  ? "Redigera schemalagt block"
+                  : "Redigera återanvändbart block"}
               </p>
               <h3 className="text-xl font-semibold">
                 {editingModuleForm?.title}
@@ -769,7 +804,7 @@ export default function CoachDashboard() {
               onSubmit={handleSaveEditedModule}
             >
               <label className="form-control">
-                <span className="label-text">Title</span>
+                <span className="label-text">Titel</span>
                 <input
                   type="text"
                   value={editingModuleForm.title}
@@ -784,16 +819,16 @@ export default function CoachDashboard() {
                     )
                   }
                   className="input input-bordered"
-                  placeholder="Explosive Acceleration"
+                  placeholder="t.ex. Explosiv acceleration"
                 />
               </label>
 
               <label className="form-control">
-                <span className="label-text">Description</span>
+                <span className="label-text">Beskrivning</span>
                 <textarea
                   className="textarea textarea-bordered"
                   rows={3}
-                  placeholder="What's the intent?"
+                  placeholder="Vad är syftet med blocket?"
                   value={editingModuleForm.description}
                   onChange={(event) =>
                     setEditingModuleForm((prev) =>
@@ -809,7 +844,7 @@ export default function CoachDashboard() {
               </label>
 
               <label className="form-control">
-                <span className="label-text">Category</span>
+                <span className="label-text">Kategori</span>
                 <select
                   className="select select-bordered"
                   value={editingModuleForm.category}
@@ -825,15 +860,32 @@ export default function CoachDashboard() {
                   <option value="" disabled>
                     Välj kategori
                   </option>
-                  <option value="warmup">Warmup</option>
-                  <option value="running">Running</option>
-                  <option value="lifting">Lifting</option>
+                  <option value="warmup">Uppvärmning</option>
+                  <option value="kondition">Kondition</option>
+                  <option value="styrka">Styrka</option>
                 </select>
+              </label>
+
+              <label className="form-control">
+                <span className="label-text">Underkategori (valfritt)</span>
+                <input
+                  type="text"
+                  className="input input-bordered"
+                  value={editingModuleForm.subcategory}
+                  onChange={(event) =>
+                    setEditingModuleForm((prev) =>
+                      prev
+                        ? { ...prev, subcategory: event.target.value }
+                        : prev
+                    )
+                  }
+                  placeholder="t.ex. Intervaller, baslyft"
+                />
               </label>
 
               <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
                 <label className="form-control">
-                  <span className="label-text">Distance (meters)</span>
+                  <span className="label-text">Distans (meter, valfritt)</span>
                   <input
                     type="number"
                     min="0"
@@ -851,7 +903,7 @@ export default function CoachDashboard() {
                 </label>
 
                 <label className="form-control">
-                  <span className="label-text">Weight (kg)</span>
+                  <span className="label-text">Vikt (kg, valfritt)</span>
                   <input
                     type="number"
                     min="0"
@@ -871,7 +923,7 @@ export default function CoachDashboard() {
 
               <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
                 <label className="form-control">
-                  <span className="label-text">Duration (minutes)</span>
+                  <span className="label-text">Tid (minuter, valfritt)</span>
                   <input
                     type="number"
                     min="0"
@@ -889,7 +941,7 @@ export default function CoachDashboard() {
                 </label>
 
                 <label className="form-control">
-                  <span className="label-text">Duration (seconds)</span>
+                  <span className="label-text">Tid (sekunder, valfritt)</span>
                   <input
                     type="number"
                     min="0"
@@ -1007,6 +1059,11 @@ export default function CoachDashboard() {
                   <span className="badge badge-outline badge-xs capitalize">
                     {module.category}
                   </span>
+                  {module.subcategory && (
+                    <span className="badge badge-outline badge-xs">
+                      Underkategori: {module.subcategory}
+                    </span>
+                  )}
                   {module.distanceMeters !== undefined && (
                     <span className="badge badge-outline badge-xs">
                       Distans: {module.distanceMeters} m
