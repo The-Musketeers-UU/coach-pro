@@ -6,8 +6,8 @@
 
 // prisma/schema.prisma
 datasource db {
-  provider = "postgresql"
-  url      = env("DATABASE_URL")
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
   directUrl = env("DIRECT_URL")
 }
 
@@ -16,9 +16,67 @@ generator client {
 }
 
 model User {
-  id        Int      @id @default(autoincrement())
-  email     String   @unique
-  name      String?
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id       BigInt  @id @default(autoincrement()) @db.BigInt
+  name     String  @db.Text
+  email    String  @unique @db.Text
+  isCoach  Boolean @default(false)
+
+  // Relations
+  modules      Module[]       @relation("UserModules")
+  ownedWeeks   ScheduleWeek[] @relation("CoachWeeks")
+  athleteWeeks ScheduleWeek[] @relation("AthleteWeeks")
+
+  @@map("user") // map to table name "user"
+}
+
+model Module {
+  id              BigInt  @id @default(autoincrement()) @db.BigInt
+  ownerId         BigInt  @map("owner") @db.BigInt
+  owner           User    @relation("UserModules", fields: [ownerId], references: [id])
+
+  name            String  @db.Text
+  category        String  @db.Text
+  subCategory     String? @db.Text
+  distance        Int?
+  durationSeconds Int?
+  durationMinutes Int?
+  weight          Int?
+  description     String? @db.Text
+
+  // A module can be used in many schedule days
+  scheduleDays    ScheduleDay[]
+
+  @@map("module")
+}
+
+// One week, for one athlete, owned by one coach
+model ScheduleWeek {
+  id        BigInt @id @default(autoincrement()) @db.BigInt
+
+  ownerId   BigInt @map("owner")   @db.BigInt
+  owner     User   @relation("CoachWeeks", fields: [ownerId],   references: [id])
+
+  athleteId BigInt @map("athlete") @db.BigInt
+  athlete   User   @relation("AthleteWeeks", fields: [athleteId], references: [id])
+
+  week      Int    
+
+  // Relation: one week has many days
+  days      ScheduleDay[]
+
+  @@map("scheduleWeek")
+}
+
+model ScheduleDay {
+  id     BigInt @id @default(autoincrement()) @db.BigInt
+  day    Int    
+
+  // Foreign key to the week this day belongs to
+  weekId BigInt?       @db.BigInt
+  week   ScheduleWeek? @relation(fields: [weekId], references: [id])
+
+  // Relation: a day has a list of modules (many-to-many)
+  modules Module[]
+
+  @@map("scheduleDay")
 }

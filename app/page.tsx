@@ -1,547 +1,555 @@
 "use client";
 
-import { FormEvent, useMemo, useState } from "react";
+import { FormEvent, useEffect, useState } from "react";
 
-type Module = {
-  id: string;
-  title: string;
-  focus: "Strength" | "Conditioning" | "Mobility" | "Mindset" | "Recovery";
-  duration: string;
-  intensity: "Low" | "Moderate" | "High";
-  description: string;
-};
+import {
+  addModuleToScheduleDay,
+  createModule,
+  createScheduleWeek,
+  type AddModuleToScheduleDayInput,
+  type AthleteRow,
+  type CreateModuleInput,
+  type CreateScheduleWeekInput,
+  getAthletes,
+  getScheduleWeeksByAthlete,
+  type ScheduleWeekRow,
+} from "@/lib/supabase/training-modules";
 
-type DaySchedule = Record<string, Module[]>;
-
-type ModuleForm = Omit<Module, "id">;
-
-type Athlete = {
-  id: string;
-  name: string;
-  sport: string;
-  program: string;
-	group: string;
-};
-
-const initialModules: Module[] = [
-  {
-    id: "mod-1",
-    title: "Explosive Power Circuit",
-    focus: "Strength",
-    duration: "45 min",
-    intensity: "High",
-    description: "Olympic lifts, sled pushes, and plyometrics to prime neuromuscular output.",
-  },
-  {
-    id: "mod-2",
-    title: "Tempo Endurance Ride",
-    focus: "Conditioning",
-    duration: "60 min",
-    intensity: "Moderate",
-    description: "Zone 3 tempo ride with cadence holds for sustainable power.",
-  },
-  {
-    id: "mod-3",
-    title: "Mobility & Prehab Flow",
-    focus: "Mobility",
-    duration: "25 min",
-    intensity: "Low",
-    description: "Thoracic opener, hip cars, and ankle sequencing for joint prep.",
-  },
-  {
-    id: "mod-4",
-    title: "Race Visualization",
-    focus: "Mindset",
-    duration: "15 min",
-    intensity: "Low",
-    description: "Guided visualization script focusing on strategic decision-making.",
-  },
-  {
-    id: "mod-5",
-    title: "Threshold Track Session",
-    focus: "Conditioning",
-    duration: "50 min",
-    intensity: "High",
-    description: "5x1k repeats @ 10k pace with 90s recoveries to raise lactate threshold.",
-  },
-  {
-    id: "mod-6",
-    title: "Contrast Recovery",
-    focus: "Recovery",
-    duration: "30 min",
-    intensity: "Low",
-    description: "Contrast bath protocol paired with diaphragmatic breathing reset.",
-  },
-  {
-    id: "mod-7",
-    title: "Strength Foundations",
-    focus: "Strength",
-    duration: "40 min",
-    intensity: "Moderate",
-    description: "Tempo squats, pull variations, and single-leg stability primer.",
-  },
-  {
-    id: "mod-8",
-    title: "Track Strides",
-    focus: "Conditioning",
-    duration: "20 min",
-    intensity: "Moderate",
-    description: "8x120m strides with buildups to reinforce running mechanics.",
-  },
-];
-
-const createInitialFormState = (): ModuleForm => ({
-  title: "",
-  focus: "Strength",
-  duration: "",
-  intensity: "Moderate",
+const createDefaultModuleForm = (): CreateModuleInput => ({
+  ownerId: "",
+  name: "",
+  category: "",
+  subCategory: "",
+  distance: undefined,
+  durationMinutes: undefined,
+  durationSeconds: undefined,
+  weight: undefined,
   description: "",
 });
 
-const days = [
-  { id: "mon", label: "Monday" },
-  { id: "tue", label: "Tuesday" },
-  { id: "wed", label: "Wednesday" },
-  { id: "thu", label: "Thursday" },
-  { id: "fri", label: "Friday" },
-  { id: "sat", label: "Saturday" },
-  { id: "sun", label: "Sunday" },
-];
+const createDefaultWeekForm = (): CreateScheduleWeekInput => ({
+  ownerId: "",
+  athleteId: "",
+  week: 1,
+});
 
-const athletes: Athlete[] = [
-  {
-    id: "ath-1",
-    name: "Jordan Vega",
-    sport: "800m",
-    program: "Camp Momentum",
-		group: "Group 1"
-  },
-  {
-    id: "ath-2",
-    name: "Mira Hwang",
-    sport: "Triathlon",
-    program: "Altitude Prep Block",
-		group: "Group 2"
-  },
-  {
-    id: "ath-3",
-    name: "Leo Brennan",
-    sport: "400m",
-    program: "Camp Momentum",
-		group: "Group 3"
-  },
-  {
-    id: "ath-4",
-    name: "Rafa Costa",
-    sport: "Soccer",
-    program: "Return-to-Play Ramp",
-		group: "Group 1"
-  },
-  {
-    id: "ath-5",
-    name: "Ada Lewis",
-    sport: "Marathon",
-    program: "Altitude Prep Block",
-		group: "Group 2"
-  },
-];
+const createDefaultScheduleDayForm = (): AddModuleToScheduleDayInput => ({
+  moduleId: "",
+  weekId: "",
+  day: 1,
+});
 
 export default function CoachDashboard() {
-  const [search, setSearch] = useState("");
-  const focusFilter = "All";
-  const [activeDrag, setActiveDrag] = useState<Module | null>(null);
-  const [moduleLibrary, setModuleLibrary] = useState<Module[]>(initialModules);
-  const [schedule, setSchedule] = useState<DaySchedule>(() =>
-    days.reduce((acc, day) => ({ ...acc, [day.id]: [] }), {} as DaySchedule),
+  const [moduleForm, setModuleForm] = useState<CreateModuleInput>(
+    createDefaultModuleForm,
   );
-  const [newModule, setNewModule] = useState<ModuleForm>(() => createInitialFormState());
-  const [formError, setFormError] = useState<string | null>(null);
-  const [isAddModuleExpanded, setIsAddModuleExpanded] = useState(false);
-  const [isAssignModalOpen, setIsAssignModalOpen] = useState(false);
-  const [selectedGroup, setSelectedGroup] = useState("");
-  const [selectedAthletes, setSelectedAthletes] = useState<string[]>([]);
-
-  const filteredModules = useMemo(() => {
-    return moduleLibrary.filter((module) => {
-      const matchesSearch = module.title.toLowerCase().includes(search.toLowerCase());
-      const matchesFocus = focusFilter === "All" || module.focus === focusFilter;
-      return matchesSearch && matchesFocus;
-    });
-  }, [moduleLibrary, search, focusFilter]);
-
-  const focusOptions: ("All" | Module["focus"])[] = [
-    "All",
-    "Strength",
-    "Conditioning",
-    "Mobility",
-    "Mindset",
-    "Recovery",
-  ];
-  const focusValues = focusOptions.filter(
-    (option): option is Module["focus"] => option !== "All",
+  const [weekForm, setWeekForm] = useState<CreateScheduleWeekInput>(createDefaultWeekForm);
+  const [scheduleDayForm, setScheduleDayForm] = useState<AddModuleToScheduleDayInput>(
+    createDefaultScheduleDayForm,
   );
+  const [athletes, setAthletes] = useState<AthleteRow[]>([]);
+  const [isLoadingAthletes, setIsLoadingAthletes] = useState(false);
+  const [selectedAthleteId, setSelectedAthleteId] = useState<string | null>(null);
+  const [athleteSchedules, setAthleteSchedules] = useState<ScheduleWeekRow[]>([]);
+  const [isLoadingSchedules, setIsLoadingSchedules] = useState(false);
+  const [isSubmittingModule, setIsSubmittingModule] = useState(false);
+  const [isSubmittingWeek, setIsSubmittingWeek] = useState(false);
+  const [isSubmittingScheduleDay, setIsSubmittingScheduleDay] = useState(false);
+  const [moduleResult, setModuleResult] = useState<string | null>(null);
+  const [weekResult, setWeekResult] = useState<string | null>(null);
+  const [scheduleResult, setScheduleResult] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [listError, setListError] = useState<string | null>(null);
 
-  const groups = useMemo(() => Array.from(new Set(athletes.map((athlete) => athlete.group))), []);
-
-  const handleDrop = (dayId: string) => {
-    if (!activeDrag) return;
-    setSchedule((prev) => ({
-      ...prev,
-      [dayId]: [...prev[dayId], activeDrag],
-    }));
-    setActiveDrag(null);
-  };
-
-  const handleRemoveModule = (dayId: string, moduleIndex: number) => {
-    setSchedule((prev) => ({
-      ...prev,
-      [dayId]: prev[dayId].filter((_, index) => index !== moduleIndex),
-    }));
-  };
-
-  const handleAddModule = (event: FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
-    if (!newModule.title.trim() || !newModule.duration.trim() || !newModule.description.trim()) {
-      setFormError("Title, duration, and description are required.");
-      return;
-    }
-
-    const moduleToAdd: Module = {
-      id: `mod-${Date.now()}`,
-      ...newModule,
+  useEffect(() => {
+    const fetchAthletes = async () => {
+      setIsLoadingAthletes(true);
+      setListError(null);
+      try {
+        const athleteRows = await getAthletes();
+        setAthletes(athleteRows);
+      } catch (supabaseError) {
+        setListError(
+          supabaseError instanceof Error
+            ? supabaseError.message
+            : String(supabaseError),
+        );
+      } finally {
+        setIsLoadingAthletes(false);
+      }
     };
 
-    setModuleLibrary((prev) => [moduleToAdd, ...prev]);
-    setNewModule(createInitialFormState());
-    setFormError(null);
-  };
+    void fetchAthletes();
+  }, []);
 
-  const toggleAthleteSelection = (athleteId: string) => {
-    setSelectedAthletes((prev) =>
-      prev.includes(athleteId) ? prev.filter((id) => id !== athleteId) : [...prev, athleteId],
-    );
-  };
+  const handleSelectAthlete = async (athleteId: string) => {
+    setSelectedAthleteId(athleteId);
+    setIsLoadingSchedules(true);
+    setListError(null);
 
-  const handleAssignToGroup = () => {
-    if (!selectedGroup) {
-      return;
+    try {
+      const weeks = await getScheduleWeeksByAthlete(athleteId);
+      setAthleteSchedules(weeks);
+    } catch (supabaseError) {
+      setListError(
+        supabaseError instanceof Error ? supabaseError.message : String(supabaseError),
+      );
+      setAthleteSchedules([]);
+    } finally {
+      setIsLoadingSchedules(false);
     }
-
-    setSelectedGroup("");
-    setIsAssignModalOpen(false);
   };
 
-  const handleAssignToAthletes = () => {
-    setSelectedAthletes([]);
-    setIsAssignModalOpen(false);
+  const handleCreateModule = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    setIsSubmittingModule(true);
+    setError(null);
+    setModuleResult(null);
+
+    try {
+      const sanitizedInput: CreateModuleInput = {
+        ...moduleForm,
+        ownerId: moduleForm.ownerId.trim(),
+        name: moduleForm.name.trim(),
+        category: moduleForm.category.trim(),
+        subCategory: moduleForm.subCategory?.trim() || undefined,
+        description: moduleForm.description?.trim() || undefined,
+        distance: Number.isFinite(moduleForm.distance) ? Number(moduleForm.distance) : undefined,
+        durationMinutes: Number.isFinite(moduleForm.durationMinutes)
+          ? Number(moduleForm.durationMinutes)
+          : undefined,
+        durationSeconds: Number.isFinite(moduleForm.durationSeconds)
+          ? Number(moduleForm.durationSeconds)
+          : undefined,
+        weight: Number.isFinite(moduleForm.weight) ? Number(moduleForm.weight) : undefined,
+      };
+      const createdModule = await createModule(sanitizedInput);
+      setModuleResult(`Created module “${createdModule.name}” with id ${createdModule.id}.`);
+      setModuleForm(createDefaultModuleForm());
+    } catch (supabaseError) {
+      setError(supabaseError instanceof Error ? supabaseError.message : String(supabaseError));
+    } finally {
+      setIsSubmittingModule(false);
+    }
+  };
+
+  const handleCreateWeek = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    setIsSubmittingWeek(true);
+    setError(null);
+    setWeekResult(null);
+
+    try {
+      const weekInput: CreateScheduleWeekInput = {
+        ownerId: weekForm.ownerId.trim(),
+        athleteId: weekForm.athleteId.trim(),
+        week: Number(weekForm.week) || 0,
+      };
+      const createdWeek = await createScheduleWeek(weekInput);
+      setWeekResult(
+        `Created week ${createdWeek.week} for athlete ${createdWeek.athlete} owned by ${createdWeek.owner} (id ${createdWeek.id}).`,
+      );
+      setWeekForm(createDefaultWeekForm());
+    } catch (supabaseError) {
+      setError(supabaseError instanceof Error ? supabaseError.message : String(supabaseError));
+    } finally {
+      setIsSubmittingWeek(false);
+    }
+  };
+
+  const handleAddToScheduleDay = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    setIsSubmittingScheduleDay(true);
+    setError(null);
+    setScheduleResult(null);
+
+    try {
+      const { day, link } = await addModuleToScheduleDay({
+        ...scheduleDayForm,
+        day: Number.isFinite(scheduleDayForm.day) ? Number(scheduleDayForm.day) : 0,
+      });
+
+      setScheduleResult(
+        `Linked module ${link.A} to day ${day.day} in week ${day.weekId ?? "(unassigned)"}.`,
+      );
+      setScheduleDayForm(createDefaultScheduleDayForm());
+    } catch (supabaseError) {
+      setError(supabaseError instanceof Error ? supabaseError.message : String(supabaseError));
+    } finally {
+      setIsSubmittingScheduleDay(false);
+    }
   };
 
   return (
     <div className="min-h-screen">
-      <div className="mx-auto flex max-w-7xl flex-col gap-6 px-4 py-10 lg:flex-row">
-        <aside className="w-full space-y-6 lg:w-1/3">
-          <div className="card bg-base-200 shadow-md border border-base-300">
-            <div className="card-body space-y-4">
-              <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-                <div>
-                  <h2 className="card-title text-lg">Create a new block</h2>
-                  <p className="text-sm text-base-content/70">
-                  </p>
-                </div>
-                <button
-                  type="button"
-                  onClick={() => setIsAddModuleExpanded((prev) => !prev)}
-                  className="btn btn-secondary btn-outline btn-sm"
-                  aria-expanded={isAddModuleExpanded}
-                >
-                  {isAddModuleExpanded ? "Hide form" : "Add block"}
-                </button>
-              </div>
+      <div className="mx-auto flex max-w-5xl flex-col gap-6 px-4 py-10">
+        <header className="space-y-2">
+          <p className="text-xs font-semibold uppercase tracking-wide text-neutral">Supabase tooling</p>
+          <h1 className="text-3xl font-semibold">Training modules + schedules</h1>
+          <p className="text-base text-base-content/70">
+            Create reusable training modules and attach them to schedule days that match the Prisma schema in
+            <code className="mx-1 font-mono text-sm">prisma/schema.prisma</code>.
+          </p>
+        </header>
 
-              {isAddModuleExpanded && (
-                <>
-                  {formError && <div className="alert alert-error text-sm">{formError}</div>}
+        {error && <div className="alert alert-error">{error}</div>}
 
-                  <form className="space-y-3" onSubmit={handleAddModule}>
-                    <label className="form-control">
-                      <span className="label-text">Title</span>
-                      <input
-                        type="text"
-                        value={newModule.title}
-                        onChange={(event) => setNewModule((prev) => ({ ...prev, title: event.target.value }))}
-                        className="input input-bordered"
-                        placeholder="Explosive Acceleration"
-                      />
-                    </label>
+        <section className="card border border-base-300 bg-base-200 shadow-sm">
+          <div className="card-body space-y-4">
+            <header className="space-y-1">
+              <p className="text-xs font-semibold uppercase tracking-wide text-neutral">Athletes</p>
+              <h2 className="text-xl font-semibold">Browse athletes + schedules</h2>
+              <p className="text-sm text-base-content/70">
+                Select an athlete to load all schedule weeks attached to them.
+              </p>
+            </header>
 
-                    <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
-                      <label className="form-control">
-                        <span className="label-text">Focus</span>
-                        <select
-                          className="select select-bordered"
-                          value={newModule.focus}
-                          onChange={(event) =>
-                            setNewModule((prev) => ({ ...prev, focus: event.target.value as Module["focus"] }))
-                          }
-                        >
-                          {focusValues.map((focus) => (
-                            <option key={focus} value={focus}>
-                              {focus}
-                            </option>
-                          ))}
-                        </select>
-                      </label>
+            {listError && <div className="alert alert-error">{listError}</div>}
 
-                      <label className="form-control">
-                        <span className="label-text">Intensity</span>
-                        <select
-                          className="select select-bordered"
-                          value={newModule.intensity}
-                          onChange={(event) =>
-                            setNewModule((prev) => ({ ...prev, intensity: event.target.value as Module["intensity"] }))
-                          }
-                        >
-                          {["Low", "Moderate", "High"].map((level) => (
-                            <option key={level} value={level}>
-                              {level}
-                            </option>
-                          ))}
-                        </select>
-                      </label>
-                    </div>
-
-                    <label className="form-control">
-                      <span className="label-text">Duration</span>
-                      <input
-                        type="text"
-                        className="input input-bordered"
-                        placeholder="45 min"
-                        value={newModule.duration}
-                        onChange={(event) => setNewModule((prev) => ({ ...prev, duration: event.target.value }))}
-                      />
-                    </label>
-
-                    <label className="form-control">
-                      <span className="label-text">Description</span>
-                      <textarea
-                        className="textarea textarea-bordered"
-                        rows={3}
-                        placeholder="What's the intent?"
-                        value={newModule.description}
-                        onChange={(event) => setNewModule((prev) => ({ ...prev, description: event.target.value }))}
-                      />
-                    </label>
-
-                    <button type="submit" className="btn btn-secondary w-full">
-                      Add block to library
-                    </button>
-                  </form>
-                </>
+            <div className="flex flex-wrap gap-3">
+              {isLoadingAthletes ? (
+                <span className="loading loading-spinner" aria-label="Loading athletes" />
+              ) : athletes.length ? (
+                athletes.map((athlete) => (
+                  <button
+                    key={athlete.id}
+                    type="button"
+                    className={`btn ${
+                      athlete.id === selectedAthleteId ? "btn-primary" : "btn-outline"
+                    }`}
+                    onClick={() => handleSelectAthlete(athlete.id)}
+                  >
+                    <span className="font-semibold">{athlete.name}</span>
+                    <span className="text-xs font-normal text-base-content/80">{athlete.email}</span>
+                  </button>
+                ))
+              ) : (
+                <p className="text-sm text-base-content/70">No athletes found.</p>
               )}
             </div>
-          </div>
 
-          <div className="card bg-base-200 border border-base-300 shadow-md">
-            <div className="card-body">
-              <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                <p className="text-xs font-semibold uppercase tracking-wide text-neutral">Reusable blocks</p>
-                <label className="input input-bordered input-sm flex items-center gap-2 sm:max-w-xs">
-                  <input
-                    type="search"
-                    value={search}
-                    onChange={(event) => setSearch(event.target.value)}
-                    placeholder="Search blocks"
-                    className="grow"
-                  />
-                </label>
-              </div>
-              <div className="mt-3 max-h-[30rem] space-y-3 overflow-y-auto pr-1">
-                {filteredModules.map((module) => (
-                  <article
-                    key={module.id}
-                    draggable
-                    onDragStart={() => setActiveDrag(module)}
-                    onDragEnd={() => setActiveDrag(null)}
-                    className="card cursor-grab border border-base-200 bg-base-100 transition hover:border-primary"
-                  >
-                    <div className="card-body space-y-2 p-4">
-                      <div className="flex items-center justify-between text-xs text-base-content/60">
-                        <span className="badge badge-outline badge-sm">{module.focus}</span>
-                        <span>{module.duration}</span>
-                      </div>
-                      <h2 className="font-semibold">{module.title}</h2>
-                      <p className="text-sm text-base-content/70">{module.description}</p>
-                      <div className="badge badge-primary badge-sm">Intensity · {module.intensity}</div>
-                    </div>
-                  </article>
-                ))}
+            {selectedAthleteId && (
+              <div className="space-y-3">
+                <div className="flex items-center justify-between gap-3">
+                  <h3 className="text-lg font-semibold">Schedule weeks</h3>
+                  {isLoadingSchedules && (
+                    <span className="loading loading-spinner" aria-label="Loading schedules" />
+                  )}
+                </div>
 
-                {filteredModules.length === 0 && (
-                  <p className="rounded-2xl border border-dashed border-base-200 p-6 text-center text-sm text-base-content/60">
-                    No modules match your search. Clear filters to see more.
-                  </p>
+                {athleteSchedules.length ? (
+                  <ul className="space-y-2">
+                    {athleteSchedules.map((week) => (
+                      <li
+                        key={week.id}
+                        className="flex items-center justify-between rounded-lg border border-base-300 bg-base-100 px-4 py-3"
+                      >
+                        <div className="space-y-1">
+                          <p className="text-sm font-semibold">Week {week.week}</p>
+                          <p className="text-xs text-base-content/70">Schedule ID: {week.id}</p>
+                        </div>
+                        <span className="badge badge-neutral">Coach: {week.owner}</span>
+                      </li>
+                    ))}
+                  </ul>
+                ) : isLoadingSchedules ? null : (
+                  <p className="text-sm text-base-content/70">No schedules for this athlete yet.</p>
                 )}
               </div>
-            </div>
-          </div>
-        </aside>
-
-        <section className="w-full space-y-6 lg:w-2/3">
-          <div className="card bg-base-200 border border-base-300 shadow-md">
-            <div className="card-body gap-6">
-              <header className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
-                <div>
-                  <p className="text-xs font-semibold uppercase tracking-wide text-neutral">Schedule in progress</p>
-                  <h2 className="text-3xl font-semibold">Camp Momentum · Week 43</h2>
-                </div>
-
-                <button className="btn btn-secondary btn-sm" onClick={() => setIsAssignModalOpen(true)}>
-                  Assign schedule
-                </button>
-              </header>
-              <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
-                {days.map((day) => (
-                  <div
-                    key={day.id}
-                    onDragOver={(event) => event.preventDefault()}
-                    onDrop={() => handleDrop(day.id)}
-                    className="flex min-h-[220px] flex-col rounded-2xl border border-dashed border-base-200 bg-base-300 p-4"
-                  >
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <p className="text-xs font-semibold uppercase tracking-wide text-neutral">{day.label}</p>
-                      </div>
-                    </div>
-
-                    <div className="mt-3 flex-1 space-y-3">
-                      {schedule[day.id].length === 0 && (
-                        <div className="flex h-full items-center justify-center rounded-xl border border-dashed border-base-200 bg-base-100/60 p-4 text-center text-xs text-base-content/60">
-                          Drag a module to begin
-                        </div>
-                      )}
-
-                      {schedule[day.id].map((module, index) => (
-                        <div
-                          key={`${module.id}-${index}`}
-                          className="w-full rounded-xl border border-base-200 bg-base-100 p-3 transition"
-                        >
-                          <div className="flex items-start justify-between gap-2">
-                            <div className="text-xs text-base-content/60">
-                              <div className="flex items-center gap-2">
-                                <span>{module.focus}</span>
-                                <span className="text-base-content/50">·</span>
-                                <span>{module.duration}</span>
-                              </div>
-                              <p className="mt-1 font-semibold text-base-content">{module.title}</p>
-                            </div>
-                            <button
-                              type="button"
-                              onClick={() => handleRemoveModule(day.id, index)}
-                              className="btn btn-ghost btn-xs text-error"
-                              aria-label={`Delete ${module.title}`}
-                            >
-                              Delete
-                            </button>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
+            )}
           </div>
         </section>
-      </div>
 
-      <dialog className={`modal ${isAssignModalOpen ? "modal-open" : ""}`}>
-        <div className="modal-box max-w-2xl space-y-6">
-          <div className="flex items-start justify-between gap-4">
-            <div>
-              <h3 className="text-xl font-semibold">Assign schedule</h3>
-              <p className="text-sm text-base-content/70">
-                Share this week&apos;s plan with a full group or select individual athletes.
-              </p>
-            </div>
-            <button className="btn btn-circle btn-ghost btn-sm" onClick={() => setIsAssignModalOpen(false)}>
-              ✕
-            </button>
-          </div>
-
-          <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-            <section className="space-y-3 rounded-2xl border border-base-300 bg-base-100 p-4">
-              <header className="flex items-center justify-between">
-                <div>
-                  <h4 className="text-lg font-semibold">Assign to group</h4>
-                </div>
+        <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+          <section className="card border border-base-300 bg-base-200 shadow-sm">
+            <div className="card-body space-y-4">
+              <header className="space-y-1">
+                <p className="text-xs font-semibold uppercase tracking-wide text-neutral">Modules</p>
+                <h2 className="text-xl font-semibold">Create a module</h2>
+                <p className="text-sm text-base-content/70">Save a reusable block tied to a specific coach/owner.</p>
               </header>
 
-              <label className="form-control w-full">
-                <div className="label">
-                  <span className="label-text">Select group</span>
-                </div>
-                <select
-                  className="select select-bordered"
-                  value={selectedGroup}
-                  onChange={(event) => setSelectedGroup(event.target.value)}
-                >
-                  <option value="" disabled>
-                    Choose a group
-                  </option>
-                  {groups.map((group) => (
-                    <option key={group} value={group}>
-                      {group}
-                    </option>
-                  ))}
-                </select>
-              </label>
+              <form className="space-y-3" onSubmit={handleCreateModule}>
+                <label className="form-control">
+                  <span className="label-text">Name</span>
+                  <input
+                    type="text"
+                    className="input input-bordered"
+                    required
+                    value={moduleForm.name}
+                    onChange={(event) => setModuleForm((prev) => ({ ...prev, name: event.target.value }))}
+                    placeholder="Acceleration mechanics"
+                  />
+                </label>
 
-              <button className="btn btn-primary w-full" disabled={!selectedGroup} onClick={handleAssignToGroup}>
-                Assign to group
-              </button>
-            </section>
-
-            <section className="space-y-3 rounded-2xl border border-base-300 bg-base-100 p-4">
-              <header className="flex items-center justify-between">
-                <div>
-                  <h4 className="text-lg font-semibold">Assign to athletes</h4>
-                </div>
-              </header>
-
-              <div className="max-h-72 space-y-2 overflow-y-auto pr-1">
-                {athletes.map((athlete) => (
-                  <label
-                    key={athlete.id}
-                    className="flex cursor-pointer items-center justify-between gap-2 rounded-xl border border-base-200 bg-base-50 px-3 py-2 text-sm hover:border-base-300"
-                  >
-                    <div>
-                      <p className="font-semibold">{athlete.name}</p>
-                      <p className="text-xs text-base-content/60">{athlete.sport}</p>
-                    </div>
+                <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
+                  <label className="form-control">
+                    <span className="label-text">Category</span>
                     <input
-                      type="checkbox"
-                      className="checkbox"
-                      checked={selectedAthletes.includes(athlete.id)}
-                      onChange={() => toggleAthleteSelection(athlete.id)}
+                      type="text"
+                      className="input input-bordered"
+                      required
+                      value={moduleForm.category}
+                      onChange={(event) =>
+                        setModuleForm((prev) => ({
+                          ...prev,
+                          category: event.target.value,
+                        }))
+                      }
+                      placeholder="Conditioning"
                     />
                   </label>
-                ))}
-              </div>
 
-              <button
-                className="btn btn-secondary w-full"
-                disabled={selectedAthletes.length === 0}
-                onClick={handleAssignToAthletes}
-              >
-                Assign to selected athletes
-              </button>
-            </section>
-          </div>
+                  <label className="form-control">
+                    <span className="label-text">Sub-category (optional)</span>
+                    <input
+                      type="text"
+                      className="input input-bordered"
+                      value={moduleForm.subCategory ?? ""}
+                      onChange={(event) =>
+                        setModuleForm((prev) => ({
+                          ...prev,
+                          subCategory: event.target.value,
+                        }))
+                      }
+                      placeholder="Tempo work"
+                    />
+                  </label>
+                </div>
+
+                <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
+                  <label className="form-control">
+                    <span className="label-text">Distance (meters)</span>
+                    <input
+                      type="number"
+                      className="input input-bordered"
+                      value={moduleForm.distance ?? ""}
+                      onChange={(event) =>
+                        setModuleForm((prev) => ({
+                          ...prev,
+                          distance: event.target.value ? Number(event.target.value) : undefined,
+                        }))
+                      }
+                    />
+                  </label>
+
+                  <label className="form-control">
+                    <span className="label-text">Weight (kg)</span>
+                    <input
+                      type="number"
+                      className="input input-bordered"
+                      value={moduleForm.weight ?? ""}
+                      onChange={(event) =>
+                        setModuleForm((prev) => ({
+                          ...prev,
+                          weight: event.target.value ? Number(event.target.value) : undefined,
+                        }))
+                      }
+                    />
+                  </label>
+                </div>
+
+                <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
+                  <label className="form-control">
+                    <span className="label-text">Duration (minutes)</span>
+                    <input
+                      type="number"
+                      min={0}
+                      className="input input-bordered"
+                      value={moduleForm.durationMinutes ?? ""}
+                      onChange={(event) =>
+                        setModuleForm((prev) => ({
+                          ...prev,
+                          durationMinutes: event.target.value ? Number(event.target.value) : undefined,
+                        }))
+                      }
+                    />
+                  </label>
+
+                  <label className="form-control">
+                    <span className="label-text">Duration (seconds)</span>
+                    <input
+                      type="number"
+                      min={0}
+                      className="input input-bordered"
+                      value={moduleForm.durationSeconds ?? ""}
+                      onChange={(event) =>
+                        setModuleForm((prev) => ({
+                          ...prev,
+                          durationSeconds: event.target.value ? Number(event.target.value) : undefined,
+                        }))
+                      }
+                    />
+                  </label>
+
+                  <label className="form-control">
+                    <span className="label-text">Owner ID</span>
+                    <input
+                      type="text"
+                      className="input input-bordered"
+                      required
+                      value={moduleForm.ownerId}
+                      onChange={(event) =>
+                        setModuleForm((prev) => ({
+                          ...prev,
+                          ownerId: event.target.value,
+                        }))
+                      }
+                      placeholder="coach id"
+                    />
+                  </label>
+                </div>
+
+                <label className="form-control">
+                  <span className="label-text">Description</span>
+                  <textarea
+                    className="textarea textarea-bordered"
+                    rows={4}
+                    value={moduleForm.description ?? ""}
+                    onChange={(event) =>
+                      setModuleForm((prev) => ({ ...prev, description: event.target.value }))
+                    }
+                    placeholder="Intent, key movements, constraints..."
+                  />
+                </label>
+
+                <button className="btn btn-primary w-full" type="submit" disabled={isSubmittingModule}>
+                  {isSubmittingModule ? "Saving module..." : "Save module to Supabase"}
+                </button>
+              </form>
+
+              {moduleResult && <div className="alert alert-success text-sm">{moduleResult}</div>}
+            </div>
+          </section>
+
+          <section className="card border border-base-300 bg-base-200 shadow-sm">
+            <div className="card-body space-y-4">
+              <header className="space-y-1">
+                <p className="text-xs font-semibold uppercase tracking-wide text-neutral">Schedules</p>
+                <h2 className="text-xl font-semibold">Create a schedule week</h2>
+                <p className="text-sm text-base-content/70">Add a week for an athlete owned by a coach.</p>
+              </header>
+
+              <form className="space-y-3" onSubmit={handleCreateWeek}>
+                <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
+                  <label className="form-control">
+                    <span className="label-text">Owner ID</span>
+                    <input
+                      type="text"
+                      className="input input-bordered"
+                      required
+                      value={weekForm.ownerId}
+                      onChange={(event) =>
+                        setWeekForm((prev) => ({ ...prev, ownerId: event.target.value }))
+                      }
+                      placeholder="coach id"
+                    />
+                  </label>
+
+                  <label className="form-control">
+                    <span className="label-text">Athlete ID</span>
+                    <input
+                      type="text"
+                      className="input input-bordered"
+                      required
+                      value={weekForm.athleteId}
+                      onChange={(event) =>
+                        setWeekForm((prev) => ({ ...prev, athleteId: event.target.value }))
+                      }
+                      placeholder="athlete id"
+                    />
+                  </label>
+                </div>
+
+                <label className="form-control">
+                  <span className="label-text">Week number</span>
+                  <input
+                    type="number"
+                    className="input input-bordered"
+                    required
+                    min={1}
+                    value={weekForm.week}
+                    onChange={(event) =>
+                      setWeekForm((prev) => ({ ...prev, week: Number(event.target.value) || 1 }))
+                    }
+                    placeholder="1"
+                  />
+                </label>
+
+                <button className="btn btn-secondary w-full" type="submit" disabled={isSubmittingWeek}>
+                  {isSubmittingWeek ? "Saving week..." : "Save schedule week"}
+                </button>
+              </form>
+
+              {weekResult && <div className="alert alert-success text-sm">{weekResult}</div>}
+            </div>
+          </section>
+
+          <section className="card border border-base-300 bg-base-200 shadow-sm">
+            <div className="card-body space-y-4">
+              <header className="space-y-1">
+                <p className="text-xs font-semibold uppercase tracking-wide text-neutral">Schedule days</p>
+                <h2 className="text-xl font-semibold">Attach a module to a day</h2>
+                <p className="text-sm text-base-content/70">Create or reuse a day in a week and link a module.</p>
+              </header>
+
+              <form className="space-y-3" onSubmit={handleAddToScheduleDay}>
+                <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
+                  <label className="form-control">
+                    <span className="label-text">Week ID</span>
+                    <input
+                      type="text"
+                      className="input input-bordered"
+                      required
+                      value={scheduleDayForm.weekId}
+                      onChange={(event) =>
+                        setScheduleDayForm((prev) => ({ ...prev, weekId: event.target.value }))
+                      }
+                      placeholder="scheduleWeek id"
+                    />
+                  </label>
+
+                  <label className="form-control">
+                    <span className="label-text">Day (1-7)</span>
+                    <input
+                      type="number"
+                      className="input input-bordered"
+                      required
+                      min={1}
+                      max={7}
+                      value={scheduleDayForm.day}
+                      onChange={(event) =>
+                        setScheduleDayForm((prev) => ({ ...prev, day: Number(event.target.value) || 1 }))
+                      }
+                      placeholder="1"
+                    />
+                  </label>
+                </div>
+
+                <label className="form-control">
+                  <span className="label-text">Module ID</span>
+                  <input
+                    type="text"
+                    className="input input-bordered"
+                    required
+                    value={scheduleDayForm.moduleId}
+                    onChange={(event) =>
+                      setScheduleDayForm((prev) => ({ ...prev, moduleId: event.target.value }))
+                    }
+                    placeholder="module id"
+                  />
+                </label>
+
+                <button className="btn btn-secondary w-full" type="submit" disabled={isSubmittingScheduleDay}>
+                  {isSubmittingScheduleDay ? "Saving to day..." : "Add module to schedule day"}
+                </button>
+              </form>
+
+              {scheduleResult && <div className="alert alert-success text-sm">{scheduleResult}</div>}
+            </div>
+          </section>
         </div>
-        <form method="dialog" className="modal-backdrop" onSubmit={() => setIsAssignModalOpen(false)}>
-          <button>close</button>
-        </form>
-      </dialog>
+      </div>
     </div>
   );
 }
