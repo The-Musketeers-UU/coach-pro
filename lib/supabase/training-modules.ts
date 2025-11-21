@@ -13,7 +13,7 @@ type ModuleRow = {
   description: string | null;
 };
 
-type ScheduleWeekRow = {
+export type ScheduleWeekRow = {
   id: string;
   owner: string;
   athlete: string;
@@ -29,6 +29,13 @@ type ScheduleDayRow = {
 type ModuleScheduleDayRow = {
   A: string;
   B: string;
+};
+
+export type AthleteRow = {
+  id: string;
+  name: string;
+  email: string;
+  isCoach: boolean;
 };
 
 export type CreateModuleInput = {
@@ -57,6 +64,26 @@ export type AddModuleToScheduleDayInput = {
 
 const sanitizeNumber = (value: number | undefined) =>
   Number.isFinite(value) ? Number(value) : undefined;
+
+export const getAthletes = async (): Promise<AthleteRow[]> =>
+  supabaseRequest<AthleteRow[]>("user", {
+    searchParams: {
+      select: "id,name,email,isCoach",
+      isCoach: "eq.false",
+      order: "name.asc",
+    },
+  });
+
+export const getScheduleWeeksByAthlete = async (
+  athleteId: string,
+): Promise<ScheduleWeekRow[]> =>
+  supabaseRequest<ScheduleWeekRow[]>("scheduleWeek", {
+    searchParams: {
+      select: "id,week,owner,athlete",
+      athlete: `eq.${athleteId}`,
+      order: "week.asc",
+    },
+  });
 
 export const createModule = async (input: CreateModuleInput): Promise<ModuleRow> => {
   const payload = {
