@@ -2,17 +2,17 @@
 
 import { FormEvent, useMemo, useRef, useState } from "react";
 
-type ModuleAttribute = {
-  id: string;
-  key: string;
-  value: string;
-};
+type Category = "warmup" | "running" | "lifting";
 
 type Module = {
   id: string;
   title: string;
   description: string;
-  attributes: ModuleAttribute[];
+  category: Category;
+  distanceMeters?: number;
+  durationMinutes?: number;
+  durationSeconds?: number;
+  weightKg?: number;
 };
 
 type DaySchedule = Record<string, Module[]>;
@@ -21,7 +21,15 @@ type EditingContext =
   | { type: "library"; moduleId: string }
   | { type: "schedule"; moduleId: string; dayId: string; moduleIndex: number };
 
-type ModuleForm = Omit<Module, "id">;
+type ModuleForm = {
+  title: string;
+  description: string;
+  category: Category | "";
+  distanceMeters: string;
+  durationMinutes: string;
+  durationSeconds: string;
+  weightKg: string;
+};
 
 type Athlete = {
   id: string;
@@ -32,97 +40,71 @@ type Athlete = {
 const initialModules: Module[] = [
   {
     id: "mod-1",
-    title: "Explosive Power Circuit",
+    title: "Dynamisk uppvärmning",
     description:
-      "Olympic lifts, sled pushes, and plyometrics to prime neuromuscular output.",
-    attributes: [
-      { id: "attr-1", key: "Focus", value: "Strength" },
-      { id: "attr-2", key: "Duration", value: "45 min" },
-      { id: "attr-3", key: "Intensity", value: "High" },
-    ],
+      "Ledande mobility-sekvens med skips, höga knän och bandaktivering innan huvudpasset.",
+    category: "warmup",
+    durationMinutes: 12,
   },
   {
     id: "mod-2",
-    title: "Tempo Endurance Ride",
-    description: "Zone 3 tempo ride with cadence holds for sustainable power.",
-    attributes: [
-      { id: "attr-1", key: "Focus", value: "Conditioning" },
-      { id: "attr-2", key: "Duration", value: "60 min" },
-      { id: "attr-3", key: "Intensity", value: "Moderate" },
-    ],
+    title: "Tröskelintervaller",
+    description: "4x8 minuter i jämn tröskelfart med 2 minuter joggvila.",
+    category: "running",
+    distanceMeters: 8000,
+    durationMinutes: 40,
   },
   {
     id: "mod-3",
-    title: "Mobility & Prehab Flow",
-    description:
-      "Thoracic opener, hip cars, and ankle sequencing for joint prep.",
-    attributes: [
-      { id: "attr-1", key: "Focus", value: "Mobility" },
-      { id: "attr-2", key: "Duration", value: "25 min" },
-      { id: "attr-3", key: "Intensity", value: "Low" },
-    ],
+    title: "Back to basics styrka",
+    description: "Knäböj, bänkpress och rodd med fokus på kontrollerade 3-1-1-tempon.",
+    category: "lifting",
+    weightKg: 60,
+    durationMinutes: 45,
   },
   {
     id: "mod-4",
-    title: "Race Visualization",
-    description:
-      "Guided visualization script focusing on strategic decision-making.",
-    attributes: [
-      { id: "attr-1", key: "Focus", value: "Mindset" },
-      { id: "attr-2", key: "Duration", value: "15 min" },
-      { id: "attr-3", key: "Intensity", value: "Low" },
-    ],
+    title: "Progressiv distans",
+    description: "Jämn distanslöpning med fartökning sista tredjedelen.",
+    category: "running",
+    distanceMeters: 10000,
+    durationMinutes: 55,
+    durationSeconds: 0,
   },
   {
     id: "mod-5",
-    title: "Threshold Track Session",
-    description:
-      "5x1k repeats @ 10k pace with 90s recoveries to raise lactate threshold.",
-    attributes: [
-      { id: "attr-1", key: "Focus", value: "Conditioning" },
-      { id: "attr-2", key: "Duration", value: "50 min" },
-      { id: "attr-3", key: "Intensity", value: "High" },
-    ],
-  },
-  {
-    id: "mod-6",
-    title: "Contrast Recovery",
-    description:
-      "Contrast bath protocol paired with diaphragmatic breathing reset.",
-    attributes: [
-      { id: "attr-1", key: "Focus", value: "Recovery" },
-      { id: "attr-2", key: "Duration", value: "30 min" },
-      { id: "attr-3", key: "Intensity", value: "Low" },
-    ],
-  },
-  {
-    id: "mod-7",
-    title: "Strength Foundations",
-    description:
-      "Tempo squats, pull variations, and single-leg stability primer.",
-    attributes: [
-      { id: "attr-1", key: "Focus", value: "Strength" },
-      { id: "attr-2", key: "Duration", value: "40 min" },
-      { id: "attr-3", key: "Intensity", value: "Moderate" },
-    ],
-  },
-  {
-    id: "mod-8",
-    title: "Track Strides",
-    description: "8x120m strides with buildups to reinforce running mechanics.",
-    attributes: [
-      { id: "attr-1", key: "Focus", value: "Conditioning" },
-      { id: "attr-2", key: "Duration", value: "20 min" },
-      { id: "attr-3", key: "Intensity", value: "Moderate" },
-    ],
+    title: "Explosiv kettlebell",
+    description: "Svingar, clean & press och farmers walks för helkroppsathleticism.",
+    category: "lifting",
+    weightKg: 24,
+    durationMinutes: 30,
+    durationSeconds: 0,
   },
 ];
 
 const createInitialFormState = (): ModuleForm => ({
   title: "",
   description: "",
-  attributes: [],
+  category: "",
+  distanceMeters: "",
+  durationMinutes: "",
+  durationSeconds: "",
+  weightKg: "",
 });
+
+const formatDuration = (minutes?: number, seconds?: number) => {
+  const parts: string[] = [];
+
+  if (minutes !== undefined) {
+    parts.push(`${minutes} min`);
+  }
+
+  if (seconds !== undefined) {
+    parts.push(`${seconds} sec`);
+  }
+
+  return parts.join(" ");
+};
 
 const days = [
   { id: "mon", label: "Monday" },
@@ -164,7 +146,6 @@ export default function CoachDashboard() {
   );
   const [editFormError, setEditFormError] = useState<string | null>(null);
   const libraryModuleCounter = useRef(initialModules.length);
-  const attributeIdCounter = useRef(0);
   const scheduledModuleCounter = useRef(0);
 
   const filteredModules = useMemo(() => {
@@ -183,7 +164,11 @@ export default function CoachDashboard() {
       id: `scheduled-${module.id}-${scheduledModuleCounter.current}`,
       title: module.title,
       description: module.description,
-      attributes: module.attributes.map((attribute) => ({ ...attribute })),
+      category: module.category,
+      distanceMeters: module.distanceMeters,
+      durationMinutes: module.durationMinutes,
+      durationSeconds: module.durationSeconds,
+      weightKg: module.weightKg,
     };
   };
 
@@ -236,7 +221,19 @@ export default function CoachDashboard() {
     setEditingModuleForm({
       title: module.title,
       description: module.description,
-      attributes: module.attributes.map((attribute) => ({ ...attribute })),
+      category: module.category,
+      distanceMeters:
+        module.distanceMeters !== undefined ? String(module.distanceMeters) : "",
+      durationMinutes:
+        module.durationMinutes !== undefined
+          ? String(module.durationMinutes)
+          : "",
+      durationSeconds:
+        module.durationSeconds !== undefined
+          ? String(module.durationSeconds)
+          : "",
+      weightKg:
+        module.weightKg !== undefined ? String(module.weightKg) : "",
     });
   };
 
@@ -246,29 +243,66 @@ export default function CoachDashboard() {
   ): { module?: Module; error?: string } => {
     const trimmedTitle = formState.title.trim();
     const trimmedDescription = formState.description.trim();
-    const completedAttributes = formState.attributes.filter(
-      (attribute) => attribute.key.trim() && attribute.value.trim()
-    );
-    const hasIncompleteAttribute = formState.attributes.some(
-      (attribute) =>
-        (attribute.key.trim() && !attribute.value.trim()) ||
-        (!attribute.key.trim() && attribute.value.trim())
-    );
+    const selectedCategory = formState.category;
 
-    if (!trimmedTitle || !trimmedDescription) {
-      return { error: "Title and description are required." };
+    const parseOptionalNumber = (value: string, label: string) => {
+      const trimmed = value.trim();
+      if (!trimmed) return { value: undefined as number | undefined };
+
+      const parsed = Number(trimmed);
+      if (Number.isNaN(parsed) || parsed < 0) {
+        return { error: `${label} must be a non-negative number.` } as const;
+      }
+
+      return { value: parsed } as const;
+    };
+
+    if (!trimmedTitle || !trimmedDescription || !selectedCategory) {
+      return {
+        error: "Title, description, and category are required.",
+      };
     }
 
-    if (hasIncompleteAttribute) {
-      return { error: "Complete or remove any partial key/value pairs." };
+    const distanceResult = parseOptionalNumber(
+      formState.distanceMeters,
+      "Distance"
+    );
+    if ("error" in distanceResult) return { error: distanceResult.error };
+
+    const durationMinutesResult = parseOptionalNumber(
+      formState.durationMinutes,
+      "Minutes"
+    );
+    if ("error" in durationMinutesResult)
+      return { error: durationMinutesResult.error };
+
+    const durationSecondsResult = parseOptionalNumber(
+      formState.durationSeconds,
+      "Seconds"
+    );
+    if ("error" in durationSecondsResult)
+      return { error: durationSecondsResult.error };
+
+    if (
+      durationSecondsResult.value !== undefined &&
+      durationSecondsResult.value >= 60
+    ) {
+      return { error: "Seconds must be less than 60." };
     }
+
+    const weightResult = parseOptionalNumber(formState.weightKg, "Weight");
+    if ("error" in weightResult) return { error: weightResult.error };
 
     return {
       module: {
         id: moduleId ?? `mod-${(libraryModuleCounter.current += 1)}`,
         title: trimmedTitle,
         description: trimmedDescription,
-        attributes: completedAttributes,
+        category: selectedCategory,
+        distanceMeters: distanceResult.value,
+        durationMinutes: durationMinutesResult.value,
+        durationSeconds: durationSecondsResult.value,
+        weightKg: weightResult.value,
       },
     };
   };
@@ -435,14 +469,32 @@ export default function CoachDashboard() {
                                 {module.description}
                               </p>
                               <div className="flex flex-wrap gap-1">
-                                {module.attributes.map((attribute) => (
-                                  <span
-                                    key={attribute.id}
-                                    className="badge badge-outline badge-xs"
-                                  >
-                                    {attribute.key}: {attribute.value}
+                                <span className="badge badge-outline badge-xs capitalize">
+                                  {module.category}
+                                </span>
+                                {module.distanceMeters !== undefined && (
+                                  <span className="badge badge-outline badge-xs">
+                                    Distans: {module.distanceMeters} m
                                   </span>
-                                ))}
+                                )}
+                                {formatDuration(
+                                  module.durationMinutes,
+                                  module.durationSeconds
+                                ) && (
+                                  <span className="badge badge-outline badge-xs">
+                                    Tid:
+                                    {" "}
+                                    {formatDuration(
+                                      module.durationMinutes,
+                                      module.durationSeconds
+                                    )}
+                                  </span>
+                                )}
+                                {module.weightKg !== undefined && (
+                                  <span className="badge badge-outline badge-xs">
+                                    Vikt: {module.weightKg} kg
+                                  </span>
+                                )}
                               </div>
                             </div>
                           </div>
@@ -511,95 +563,99 @@ export default function CoachDashboard() {
               />
             </label>
 
-            <div className="space-y-2 rounded-xl border border-base-300 bg-base-100 p-3">
-              <div className="flex items-center justify-between gap-2">
-                <span className="text-sm font-semibold">Key/value pairs</span>
-                <button
-                  type="button"
-                  className="btn btn-ghost btn-xs"
-                  onClick={() =>
+            <label className="form-control">
+              <span className="label-text">Category</span>
+              <select
+                className="select select-bordered"
+                value={newModule.category}
+                onChange={(event) =>
+                  setNewModule((prev) => ({
+                    ...prev,
+                    category: event.target.value as Category,
+                  }))
+                }
+                required
+              >
+                <option value="" disabled>
+                  Välj kategori
+                </option>
+                <option value="warmup">Warmup</option>
+                <option value="running">Running</option>
+                <option value="lifting">Lifting</option>
+              </select>
+            </label>
+
+            <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
+              <label className="form-control">
+                <span className="label-text">Distance (meters)</span>
+                <input
+                  type="number"
+                  min="0"
+                  className="input input-bordered"
+                  value={newModule.distanceMeters}
+                  onChange={(event) =>
                     setNewModule((prev) => ({
                       ...prev,
-                      attributes: [
-                        ...prev.attributes,
-                        {
-                          id: `attr-${(attributeIdCounter.current += 1)}`,
-                          key: "",
-                          value: "",
-                        },
-                      ],
+                      distanceMeters: event.target.value,
                     }))
                   }
-                >
-                  + Add pair
-                </button>
-              </div>
+                  placeholder="t.ex. 5000"
+                />
+              </label>
 
-              <div className="space-y-3">
-                {newModule.attributes.map((attribute, index) => (
-                  <div
-                    key={attribute.id}
-                    className="grid grid-cols-1 gap-2 md:grid-cols-2"
-                  >
-                    <label className="form-control">
-                      <span className="label-text">Key</span>
-                      <input
-                        type="text"
-                        value={attribute.key}
-                        onChange={(event) =>
-                          setNewModule((prev) => {
-                            const nextAttributes = [...prev.attributes];
-                            nextAttributes[index] = {
-                              ...nextAttributes[index],
-                              key: event.target.value,
-                            };
-                            return { ...prev, attributes: nextAttributes };
-                          })
-                        }
-                        placeholder="e.g., Focus"
-                        className="input input-bordered"
-                      />
-                    </label>
+              <label className="form-control">
+                <span className="label-text">Weight (kg)</span>
+                <input
+                  type="number"
+                  min="0"
+                  className="input input-bordered"
+                  value={newModule.weightKg}
+                  onChange={(event) =>
+                    setNewModule((prev) => ({
+                      ...prev,
+                      weightKg: event.target.value,
+                    }))
+                  }
+                  placeholder="t.ex. 20"
+                />
+              </label>
+            </div>
 
-                    <label className="form-control">
-                      <span className="label-text">Value</span>
-                      <input
-                        type="text"
-                        value={attribute.value}
-                        onChange={(event) =>
-                          setNewModule((prev) => {
-                            const nextAttributes = [...prev.attributes];
-                            nextAttributes[index] = {
-                              ...nextAttributes[index],
-                              value: event.target.value,
-                            };
-                            return { ...prev, attributes: nextAttributes };
-                          })
-                        }
-                        placeholder="e.g., Strength"
-                        className="input input-bordered"
-                      />
-                    </label>
+            <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
+              <label className="form-control">
+                <span className="label-text">Duration (minutes)</span>
+                <input
+                  type="number"
+                  min="0"
+                  className="input input-bordered"
+                  value={newModule.durationMinutes}
+                  onChange={(event) =>
+                    setNewModule((prev) => ({
+                      ...prev,
+                      durationMinutes: event.target.value,
+                    }))
+                  }
+                  placeholder="t.ex. 30"
+                />
+              </label>
 
-                    <div className="flex items-center justify-end gap-2 md:col-span-2">
-                      <button
-                        type="button"
-                        className="btn btn-ghost btn-xs"
-                        onClick={() =>
-                          setNewModule((prev) => ({
-                            ...prev,
-                            attributes: prev.attributes.filter(
-                              (_, attrIndex) => attrIndex !== index
-                            ),
-                          }))
-                        }
-                      >
-                        Remove
-                      </button>
-                    </div>
-                  </div>
-                ))}
-              </div>
+              <label className="form-control">
+                <span className="label-text">Duration (seconds)</span>
+                <input
+                  type="number"
+                  min="0"
+                  max="59"
+                  className="input input-bordered"
+                  value={newModule.durationSeconds}
+                  onChange={(event) =>
+                    setNewModule((prev) => ({
+                      ...prev,
+                      durationSeconds: event.target.value,
+                    }))
+                  }
+                  placeholder="0-59"
+                />
+              </label>
             </div>
 
             <div className="flex flex-col gap-2 sm:flex-row">
@@ -752,104 +808,104 @@ export default function CoachDashboard() {
                 />
               </label>
 
-              <div className="space-y-2 rounded-xl border border-base-300 bg-base-100 p-3">
-                <div className="flex items-center justify-between gap-2">
-                  <span className="text-sm font-semibold">Key/value pairs</span>
-                  <button
-                    type="button"
-                    className="btn btn-ghost btn-xs"
-                    onClick={() =>
+              <label className="form-control">
+                <span className="label-text">Category</span>
+                <select
+                  className="select select-bordered"
+                  value={editingModuleForm.category}
+                  onChange={(event) =>
+                    setEditingModuleForm((prev) =>
+                      prev
+                        ? { ...prev, category: event.target.value as Category }
+                        : prev
+                    )
+                  }
+                  required
+                >
+                  <option value="" disabled>
+                    Välj kategori
+                  </option>
+                  <option value="warmup">Warmup</option>
+                  <option value="running">Running</option>
+                  <option value="lifting">Lifting</option>
+                </select>
+              </label>
+
+              <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
+                <label className="form-control">
+                  <span className="label-text">Distance (meters)</span>
+                  <input
+                    type="number"
+                    min="0"
+                    className="input input-bordered"
+                    value={editingModuleForm.distanceMeters}
+                    onChange={(event) =>
                       setEditingModuleForm((prev) =>
                         prev
-                          ? {
-                              ...prev,
-                              attributes: [
-                                ...prev.attributes,
-                                {
-                                  id: `attr-${(attributeIdCounter.current += 1)}`,
-                                  key: "",
-                                  value: "",
-                                },
-                              ],
-                            }
+                          ? { ...prev, distanceMeters: event.target.value }
                           : prev
                       )
                     }
-                  >
-                    + Add pair
-                  </button>
-                </div>
+                    placeholder="t.ex. 5000"
+                  />
+                </label>
 
-                <div className="space-y-3">
-                  {editingModuleForm.attributes.map((attribute, index) => (
-                    <div
-                      key={attribute.id}
-                      className="grid grid-cols-1 gap-2 md:grid-cols-2"
-                    >
-                      <label className="form-control">
-                        <span className="label-text">Key</span>
-                        <input
-                          type="text"
-                          className="input input-bordered"
-                          value={attribute.key}
-                          onChange={(event) => {
-                            const updated = [...editingModuleForm.attributes];
-                            updated[index] = {
-                              ...attribute,
-                              key: event.target.value,
-                            };
-                            setEditingModuleForm((prev) =>
-                              prev ? { ...prev, attributes: updated } : prev
-                            );
-                          }}
-                          placeholder="e.g. Focus"
-                        />
-                      </label>
-                      <label className="form-control">
-                        <span className="label-text">Value</span>
-                        <div className="flex gap-2">
-                          <input
-                            type="text"
-                            className="input input-bordered flex-1"
-                            value={attribute.value}
-                            onChange={(event) => {
-                              const updated = [...editingModuleForm.attributes];
-                              updated[index] = {
-                                ...attribute,
-                                value: event.target.value,
-                              };
-                              setEditingModuleForm((prev) =>
-                                prev ? { ...prev, attributes: updated } : prev
-                              );
-                            }}
-                            placeholder="e.g. Moderate"
-                          />
-                          {editingModuleForm.attributes.length > 0 && (
-                            <button
-                              type="button"
-                              className="btn btn-ghost btn-square"
-                              aria-label="Remove pair"
-                              onClick={() =>
-                                setEditingModuleForm((prev) =>
-                                  prev
-                                    ? {
-                                        ...prev,
-                                        attributes: prev.attributes.filter(
-                                          (_, attrIndex) => attrIndex !== index
-                                        ),
-                                      }
-                                    : prev
-                                )
-                              }
-                            >
-                              ✕
-                            </button>
-                          )}
-                        </div>
-                      </label>
-                    </div>
-                  ))}
-                </div>
+                <label className="form-control">
+                  <span className="label-text">Weight (kg)</span>
+                  <input
+                    type="number"
+                    min="0"
+                    className="input input-bordered"
+                    value={editingModuleForm.weightKg}
+                    onChange={(event) =>
+                      setEditingModuleForm((prev) =>
+                        prev
+                          ? { ...prev, weightKg: event.target.value }
+                          : prev
+                      )
+                    }
+                    placeholder="t.ex. 20"
+                  />
+                </label>
+              </div>
+
+              <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
+                <label className="form-control">
+                  <span className="label-text">Duration (minutes)</span>
+                  <input
+                    type="number"
+                    min="0"
+                    className="input input-bordered"
+                    value={editingModuleForm.durationMinutes}
+                    onChange={(event) =>
+                      setEditingModuleForm((prev) =>
+                        prev
+                          ? { ...prev, durationMinutes: event.target.value }
+                          : prev
+                      )
+                    }
+                    placeholder="t.ex. 30"
+                  />
+                </label>
+
+                <label className="form-control">
+                  <span className="label-text">Duration (seconds)</span>
+                  <input
+                    type="number"
+                    min="0"
+                    max="59"
+                    className="input input-bordered"
+                    value={editingModuleForm.durationSeconds}
+                    onChange={(event) =>
+                      setEditingModuleForm((prev) =>
+                        prev
+                          ? { ...prev, durationSeconds: event.target.value }
+                          : prev
+                      )
+                    }
+                    placeholder="0-59"
+                  />
+                </label>
               </div>
 
               <div className="flex gap-2 sm:flex-col">
@@ -948,11 +1004,24 @@ export default function CoachDashboard() {
                   {module.description}
                 </p>
                 <div className="mt-auto flex flex-wrap gap-1">
-                  {module.attributes.map((attribute) => (
-                    <span key={attribute.id} className="badge badge-outline badge-xs">
-                      {attribute.key}: {attribute.value}
+                  <span className="badge badge-outline badge-xs capitalize">
+                    {module.category}
+                  </span>
+                  {module.distanceMeters !== undefined && (
+                    <span className="badge badge-outline badge-xs">
+                      Distans: {module.distanceMeters} m
                     </span>
-                  ))}
+                  )}
+                  {formatDuration(module.durationMinutes, module.durationSeconds) && (
+                    <span className="badge badge-outline badge-xs">
+                      Tid: {formatDuration(module.durationMinutes, module.durationSeconds)}
+                    </span>
+                  )}
+                  {module.weightKg !== undefined && (
+                    <span className="badge badge-outline badge-xs">
+                      Vikt: {module.weightKg} kg
+                    </span>
+                  )}
                 </div>
               </div>
             </article>
