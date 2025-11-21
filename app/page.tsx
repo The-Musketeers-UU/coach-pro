@@ -344,117 +344,40 @@ export default function CoachDashboard() {
   };
 
   return (
-    <div className="min-h-screen">
-      <div className="mx-auto flex max-w-full flex-col gap-6 px-10 py-5">
-        <div className="grid w-full max-w-full gap-6 self-center">
-          <div className="card h-[320px] max-h-[320px] overflow-hidden bg-base-200 border border-base-300 shadow-md">
-            <div className="card-body flex h-full flex-col overflow-hidden">
-              <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
-                <p className="text-xs font-semibold uppercase tracking-wide text-neutral">
-                  Reusable blocks
-                </p>
-                <div className="flex flex-col gap-2 lg:flex-row lg:items-center lg:gap-3">
-                  <label className="input input-bordered input-sm flex items-center gap-2 lg:min-w-[16rem]">
-                    <input
-                      type="search"
-                      value={search}
-                      onChange={(event) => setSearch(event.target.value)}
-                      placeholder="Search blocks"
-                      className="grow"
-                    />
-                  </label>
-                  <button
-                    type="button"
-                    className="btn btn-secondary btn-sm self-end lg:self-auto"
-                    onClick={() => {
-                      resetModuleForm();
-                      setIsCreateModuleModalOpen(true);
-                    }}
-                  >
-                    Create block
-                  </button>
-                </div>
-              </div>
-              <div className="mt-3 flex-1 min-h-0 space-y-3 overflow-hidden">
-                <div className="flex h-full flex-nowrap items-stretch gap-3 overflow-x-auto overflow-y-hidden pb-2">
-                  {filteredModules.map((module) => (
-                    <article
-                      key={module.id}
-                      draggable
-                      onDragStart={() => setActiveDrag(module)}
-                      onDragEnd={() => setActiveDrag(null)}
-                      onClick={() =>
-                        startEditingModule(module, {
-                          type: "library",
-                          moduleId: module.id,
-                        })
-                      }
-                      className="card h-full w-[200px] min-w-[200px] shrink-0 cursor-grab overflow-hidden border border-base-200 bg-base-100 transition hover:border-primary"
-                    >
-                      <div className="card-body flex h-full flex-col gap-2 p-4">
-                        <div className="flex items-start justify-between gap-3">
-                          <p className="font-semibold text-xs">{module.title}</p>
-                          <button
-                            type="button"
-                            onClick={(event) => {
-                              event.stopPropagation();
-                              handleRemoveLibraryModule(module.id);
-                            }}
-                            className="btn btn-ghost btn-xs text-error"
-                            aria-label={`Delete ${module.title}`}
-                          >
-                            Delete
-                          </button>
-                        </div>
-                        <p className="text-xs text-base-content/70 max-h-16 overflow-hidden">
-                          {module.description}
-                        </p>
-                        <div className="mt-auto flex flex-wrap gap-2 overflow-hidden">
-                          {module.attributes.map((attribute) => (
-                            <span
-                              key={attribute.id}
-                              className="badge badge-outline badge-xs"
-                            >
-                              {attribute.key}: {attribute.value}
-                            </span>
-                          ))}
-                        </div>
-                      </div>
-                    </article>
-                  ))}
-                </div>
-
-                {filteredModules.length === 0 && (
-                  <p className="rounded-2xl border border-dashed border-base-200 p-6 text-center text-sm text-base-content/60">
-                    No modules match your search. Clear filters to see more.
-                  </p>
-                )}
-              </div>
-            </div>
+    <div className="drawer lg:drawer-open">
+      <input id="reusable-blocks-drawer" type="checkbox" className="drawer-toggle" />
+      <div className="drawer-content min-h-screen">
+        <div className="mx-auto flex max-w-full flex-col gap-6 px-10 py-5">
+          <div className="flex items-center justify-between">
+            <label
+              htmlFor="reusable-blocks-drawer"
+              className="btn btn-primary btn-sm lg:hidden"
+            >
+              Visa reusable blocks
+            </label>
           </div>
-        </div>
 
-        <section className="w-full max-w-full self-center space-y-6">
-          <div className="card bg-base-200 border border-base-300 shadow-md">
-            <div className="card-body gap-6">
-              <header className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
-                <div>
-                  <p className="text-xs font-semibold uppercase tracking-wide text-neutral">
-                    Schedule in progress
-                  </p>
-                  <h2 className="text-3xl font-semibold">
-                    Camp Momentum · Week 43
-                  </h2>
-                </div>
+          <section className="w-full max-w-full self-center space-y-6">
+            <div className="card bg-base-200 border border-base-300 shadow-md">
+              <div className="card-body gap-6">
+                <header className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+                  <div>
+                    <p className="text-xs font-semibold uppercase tracking-wide text-neutral">
+                      Schedule in progress
+                    </p>
+                    <h2 className="text-3xl font-semibold">
+                      Camp Momentum · Week 43
+                    </h2>
+                  </div>
 
-                <button
-                  className="btn btn-secondary btn-sm"
-                  onClick={() => setIsAssignModalOpen(true)}
-                >
-                  Assign schedule
-                </button>
-              </header>
-              <div className="grid grid-cols-1 gap-1 md:grid-cols-2 xl:grid-cols-7">
+                  <button
+                    className="btn btn-secondary btn-sm"
+                    onClick={() => setIsAssignModalOpen(true)}
+                  >
+                    Assign schedule
+                  </button>
+                </header>
+                <div className="grid grid-cols-1 gap-1 md:grid-cols-2 xl:grid-cols-7">
                 {days.map((day) => (
                   <div
                     key={day.id}
@@ -950,6 +873,98 @@ export default function CoachDashboard() {
           <button>close</button>
         </form>
       </dialog>
+    </div>
+
+    <div className="drawer-side">
+      <label
+        htmlFor="reusable-blocks-drawer"
+        aria-label="close sidebar"
+        className="drawer-overlay"
+      ></label>
+      <div className="flex h-full w-96 min-w-[320px] flex-col gap-3 border-r border-base-300 bg-base-200 p-4">
+        <div className="flex items-center justify-between gap-2">
+          <p className="text-xs font-semibold uppercase tracking-wide text-neutral">
+            Reusable blocks
+          </p>
+          <label
+            htmlFor="reusable-blocks-drawer"
+            className="btn btn-ghost btn-circle btn-xs lg:hidden"
+          >
+            ✕
+          </label>
+        </div>
+        <div className="flex flex-col gap-2">
+          <label className="input input-bordered input-sm flex items-center gap-2 lg:min-w-[16rem]">
+            <input
+              type="search"
+              value={search}
+              onChange={(event) => setSearch(event.target.value)}
+              placeholder="Search blocks"
+              className="grow"
+            />
+          </label>
+          <button
+            type="button"
+            className="btn btn-secondary btn-sm self-start"
+            onClick={() => {
+              resetModuleForm();
+              setIsCreateModuleModalOpen(true);
+            }}
+          >
+            Create block
+          </button>
+        </div>
+        <div className="min-h-0 flex-1 space-y-3 overflow-y-auto pr-1">
+          {filteredModules.map((module) => (
+            <article
+              key={module.id}
+              draggable
+              onDragStart={() => setActiveDrag(module)}
+              onDragEnd={() => setActiveDrag(null)}
+              onClick={() =>
+                startEditingModule(module, {
+                  type: "library",
+                  moduleId: module.id,
+                })
+              }
+              className="card cursor-grab overflow-hidden border border-base-200 bg-base-100 transition hover:border-primary"
+            >
+              <div className="card-body flex flex-col gap-2 p-4">
+                <div className="flex items-start justify-between gap-3">
+                  <p className="text-xs font-semibold">{module.title}</p>
+                  <button
+                    type="button"
+                    onClick={(event) => {
+                      event.stopPropagation();
+                      handleRemoveLibraryModule(module.id);
+                    }}
+                    className="btn btn-ghost btn-xs text-error"
+                    aria-label={`Delete ${module.title}`}
+                  >
+                    Delete
+                  </button>
+                </div>
+                <p className="max-h-16 overflow-hidden text-xs text-base-content/70">
+                  {module.description}
+                </p>
+                <div className="mt-auto flex flex-wrap gap-2">
+                  {module.attributes.map((attribute) => (
+                    <span key={attribute.id} className="badge badge-outline badge-xs">
+                      {attribute.key}: {attribute.value}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            </article>
+          ))}
+
+          {filteredModules.length === 0 && (
+            <p className="rounded-2xl border border-dashed border-base-200 p-6 text-center text-sm text-base-content/60">
+              No modules match your search. Clear filters to see more.
+            </p>
+          )}
+        </div>
+      </div>
     </div>
   );
 }
