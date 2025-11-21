@@ -340,8 +340,8 @@ export default function CoachDashboard() {
 
   return (
     <div className="min-h-screen">
-      <div className="mx-auto flex max-w-7xl flex-col gap-6 px-4 py-10 lg:flex-row">
-        <aside className="w-full space-y-6 lg:w-1/3">
+      <div className="mx-auto flex max-w-7xl flex-col gap-6 px-4 py-10">
+        <div className="grid gap-6 lg:grid-cols-2">
           <div className="card bg-base-200 shadow-md border border-base-300">
             <div className="card-body space-y-4">
               <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
@@ -537,52 +537,54 @@ export default function CoachDashboard() {
                   />
                 </label>
               </div>
-              <div className="mt-3 max-h-[30rem] space-y-3 overflow-y-auto pr-1">
-                {filteredModules.map((module) => (
-                  <article
-                    key={module.id}
-                    draggable
-                    onDragStart={() => setActiveDrag(module)}
-                    onDragEnd={() => setActiveDrag(null)}
-                    onClick={() =>
-                      startEditingModule(module, {
-                        type: "library",
-                        moduleId: module.id,
-                      })
-                    }
-                    className="card cursor-grab border border-base-200 bg-base-100 transition hover:border-primary"
-                  >
-                    <div className="card-body space-y-2 p-4">
-                      <div className="flex items-start justify-between gap-3">
-                        <h2 className="font-semibold">{module.title}</h2>
-                        <button
-                          type="button"
-                          onClick={(event) => {
-                            event.stopPropagation();
-                            handleRemoveLibraryModule(module.id);
-                          }}
-                          className="btn btn-ghost btn-xs text-error"
-                          aria-label={`Delete ${module.title}`}
-                        >
-                          Delete
-                        </button>
-                      </div>
-                      <p className="text-sm text-base-content/70">
-                        {module.description}
-                      </p>
-                      <div className="flex flex-wrap gap-2">
-                        {module.attributes.map((attribute) => (
-                          <span
-                            key={attribute.id}
-                            className="badge badge-outline badge-sm"
+              <div className="mt-3 space-y-3">
+                <div className="flex gap-3 overflow-x-auto pb-2">
+                  {filteredModules.map((module) => (
+                    <article
+                      key={module.id}
+                      draggable
+                      onDragStart={() => setActiveDrag(module)}
+                      onDragEnd={() => setActiveDrag(null)}
+                      onClick={() =>
+                        startEditingModule(module, {
+                          type: "library",
+                          moduleId: module.id,
+                        })
+                      }
+                      className="card min-w-[16rem] shrink-0 cursor-grab border border-base-200 bg-base-100 transition hover:border-primary"
+                    >
+                      <div className="card-body space-y-2 p-4">
+                        <div className="flex items-start justify-between gap-3">
+                          <h2 className="font-semibold">{module.title}</h2>
+                          <button
+                            type="button"
+                            onClick={(event) => {
+                              event.stopPropagation();
+                              handleRemoveLibraryModule(module.id);
+                            }}
+                            className="btn btn-ghost btn-xs text-error"
+                            aria-label={`Delete ${module.title}`}
                           >
-                            {attribute.key}: {attribute.value}
-                          </span>
-                        ))}
+                            Delete
+                          </button>
+                        </div>
+                        <p className="text-sm text-base-content/70">
+                          {module.description}
+                        </p>
+                        <div className="flex flex-wrap gap-2">
+                          {module.attributes.map((attribute) => (
+                            <span
+                              key={attribute.id}
+                              className="badge badge-outline badge-sm"
+                            >
+                              {attribute.key}: {attribute.value}
+                            </span>
+                          ))}
+                        </div>
                       </div>
-                    </div>
-                  </article>
-                ))}
+                    </article>
+                  ))}
+                </div>
 
                 {filteredModules.length === 0 && (
                   <p className="rounded-2xl border border-dashed border-base-200 p-6 text-center text-sm text-base-content/60">
@@ -592,9 +594,9 @@ export default function CoachDashboard() {
               </div>
             </div>
           </div>
-        </aside>
+        </div>
 
-        <section className="w-full space-y-6 lg:w-2/3">
+        <section className="w-full space-y-6">
           <div className="card bg-base-200 border border-base-300 shadow-md">
             <div className="card-body gap-6">
               <header className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
