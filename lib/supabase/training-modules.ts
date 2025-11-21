@@ -38,6 +38,12 @@ export type AthleteRow = {
   isCoach: boolean;
 };
 
+export type CreateUserInput = {
+  name: string;
+  email: string;
+  isCoach?: boolean;
+};
+
 export type CreateModuleInput = {
   ownerId: string;
   name: string;
@@ -70,6 +76,15 @@ export const getAthletes = async (): Promise<AthleteRow[]> =>
     searchParams: {
       select: "id,name,email,isCoach",
       isCoach: "eq.false",
+      order: "name.asc",
+    },
+  });
+
+export const getCoaches = async (): Promise<AthleteRow[]> =>
+  supabaseRequest<AthleteRow[]>("user", {
+    searchParams: {
+      select: "id,name,email,isCoach",
+      isCoach: "eq.true",
       order: "name.asc",
     },
   });
@@ -167,4 +182,20 @@ export const addModuleToScheduleDay = async (
   });
 
   return { day: dayRow, link: linkRow };
+};
+
+export const createUser = async (input: CreateUserInput): Promise<AthleteRow> => {
+  const payload = {
+    name: input.name.trim(),
+    email: input.email.trim(),
+    isCoach: Boolean(input.isCoach),
+  } satisfies Omit<AthleteRow, "id">;
+
+  const data = await supabaseRequest<AthleteRow[]>("user", {
+    method: "POST",
+    body: payload,
+    prefer: "return=representation",
+  });
+
+  return data[0];
 };
