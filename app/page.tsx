@@ -347,7 +347,7 @@ export default function CoachDashboard() {
     <div className="min-h-screen">
       <div className="mx-auto flex max-w-7xl flex-col gap-6 px-4 py-10">
         <div className="grid w-full max-w-6xl gap-6 self-center">
-          <div className="card h-[360px] max-h-[360px] overflow-hidden bg-base-200 border border-base-300 shadow-md">
+          <div className="card h-[320px] max-h-[320px] overflow-hidden bg-base-200 border border-base-300 shadow-md">
             <div className="card-body flex h-full flex-col overflow-hidden">
               <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
                 <p className="text-xs font-semibold uppercase tracking-wide text-neutral">
@@ -389,9 +389,9 @@ export default function CoachDashboard() {
                           moduleId: module.id,
                         })
                       }
-                      className="card min-w-[16rem] shrink-0 cursor-grab border border-base-200 bg-base-100 transition hover:border-primary"
+                      className="card h-full w-[260px] min-w-[260px] shrink-0 cursor-grab overflow-hidden border border-base-200 bg-base-100 transition hover:border-primary"
                     >
-                      <div className="card-body space-y-2 p-4">
+                      <div className="card-body flex h-full flex-col gap-2 p-4">
                         <div className="flex items-start justify-between gap-3">
                           <h2 className="font-semibold">{module.title}</h2>
                           <button
@@ -406,10 +406,10 @@ export default function CoachDashboard() {
                             Delete
                           </button>
                         </div>
-                        <p className="text-xs text-base-content/70">
+                        <p className="text-xs text-base-content/70 max-h-16 overflow-hidden">
                           {module.description}
                         </p>
-                        <div className="flex flex-wrap gap-2">
+                        <div className="mt-auto flex flex-wrap gap-2 overflow-hidden">
                           {module.attributes.map((attribute) => (
                             <span
                               key={attribute.id}
