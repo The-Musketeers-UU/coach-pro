@@ -503,7 +503,7 @@ export default function CoachDashboard() {
                         </div>
                       </div>
 
-                      <div className="mt-3 flex-1 space-y-3">
+                      <div className="mt-3 flex-1 space-y-0.5">
                         {schedule[day.id].length === 0 && (
                           <div className="flex h-full items-center justify-center rounded-xl border border-dashed border-base-200 bg-base-100/60 p-4 text-center text-xs text-base-content/60">
                             Drag a module to begin
@@ -522,7 +522,7 @@ export default function CoachDashboard() {
                                 event.stopPropagation();
                                 setDropPreview({ dayId: day.id, index });
                               }}
-                              className={`h-2 w-full rounded-full transition-all duration-150 ${
+                              className={`h-1 w-full rounded-full transition-all duration-150 ${
                                 isPreviewLocation(day.id, index)
                                   ? "bg-primary shadow-[0_0_0_2px] shadow-primary/30"
                                   : "bg-transparent"
@@ -632,7 +632,7 @@ export default function CoachDashboard() {
                                 index: schedule[day.id].length,
                               });
                             }}
-                            className={`h-2 w-full rounded-full transition-all duration-150 ${
+                            className={`h-1 w-full rounded-full transition-all duration-150 ${
                               isPreviewLocation(day.id, schedule[day.id].length)
                                 ? "bg-primary shadow-[0_0_0_2px] shadow-primary/30"
                                 : "bg-transparent"
