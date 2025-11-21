@@ -655,6 +655,9 @@ export default function CoachDashboard() {
                               <p className="font-semibold text-base-content">
                                 {module.title}
                               </p>
+                              <p className="text-sm text-base-content/70">
+                                {module.description}
+                              </p>
                               <div className="flex flex-wrap gap-1">
                                 {module.attributes.map((attribute) => (
                                   <span
