@@ -14,13 +14,20 @@ export default function LoginPage() {
     email: "",
     password: "",
   });
+
+   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setFormData({
+      ...formData,
+      [e.target.name]: e.target.value,
+    });
+  };
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
     setLoading(true);
 
     try {
-      const { data, error: loginError } = await supabase.auth.log({
+      const { data, error: loginError } = await supabase.auth.signInWithPassword({
         email: formData.email,
         password: formData.password,
       });
@@ -34,6 +41,10 @@ export default function LoginPage() {
         // Redirect to dashboard or confirmation page
         router.push("/dashboard");
         router.refresh();
+      }else if(data.user && !data.session){
+        setError('Please check your email to confirm your account');
+        setLoading(false);
+
       }
     } catch (err) {
       setError("An unexpected error occurred");
@@ -61,7 +72,7 @@ export default function LoginPage() {
               type="email"
               required
               value={formData.email}
-            //   onChange={handleChange}
+              onChange={handleChange}
               style={styles.input}
               placeholder="you@example.com"
             />
@@ -78,7 +89,7 @@ export default function LoginPage() {
               required
               minLength={6}
               value={formData.password}
-            //   onChange={handleChange}
+              onChange={handleChange}
               style={styles.input}
               placeholder="••••••••"
             />
@@ -89,7 +100,7 @@ export default function LoginPage() {
           {error && <div style={styles.error}>{error}</div>}
 
           <button type="submit" disabled={loading} style={styles.button}>
-            {loading ? "Creating account..." : "Sign Up"}
+            {loading ? "Retriving User info..." : "Login"}
           </button>
         </form>
 

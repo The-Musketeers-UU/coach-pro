@@ -44,12 +44,14 @@ export default function SignupPage() {
         },
       });
 
+
       if (signUpError) {
         setError(signUpError.message);
         return;
       }
 
       if (data.user) {
+        
         // Redirect to dashboard or confirmation page
         router.push("/dashboard");
         router.refresh();
