@@ -39,4 +39,6 @@ export type Athlete = {
   sport: string;
 };
 
+export type Day = { id: string; label: string };
+
 export type DropPreviewLocation = { dayId: string; index: number };

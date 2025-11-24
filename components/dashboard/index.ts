@@ -9,4 +9,5 @@ export { ModuleFormFields } from "./ModuleFormFields";
 export { ReusableBlocksDrawer } from "./ReusableBlocksDrawer";
 export { ScheduleSection } from "./ScheduleSection";
 export { ScheduledModuleCard } from "./ScheduledModuleCard";
+export { useDashboardState } from "./useDashboardState";
 export * from "./types";
