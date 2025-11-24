@@ -26,7 +26,7 @@ export default function CoachAthleteSchedulePage({ params }: AthleteScheduleProp
           <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
             <div>
               <p className="text-xs font-semibold uppercase tracking-wide text-neutral">Coach view</p>
-              <h1 className="text-3xl font-semibold">{athleteName}&apos;s Schedules</h1>
+              <h1 className="text-xl font-semibold">{athleteName}&apos;s Schedules</h1>
               <p className="text-sm text-base-content/70">
                 {athlete
                   ? `${athlete.program} · ${athlete.group}`

@@ -46,10 +46,7 @@ export function WeekScheduleView({
       <div className="card-body gap-6">
         <div className="flex flex-col gap-2 lg:flex-row lg:items-center lg:justify-between">
           <div>
-            <p className="text-xs font-semibold uppercase tracking-wide text-neutral">
-              Vecka {weekNumber}
-            </p>
-            <h2 className="text-3xl font-semibold">
+            <h2 className="text-xl font-semibold">
               {week ? week.label : emptyWeekTitle}
             </h2>
             <p className="text-sm text-base-content/70">
