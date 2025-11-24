@@ -1,6 +1,14 @@
 "use client";
 
-import { type DragEvent, FormEvent, useMemo, useRef, useState } from "react";
+import {
+  type DragEvent,
+  Dispatch,
+  FormEvent,
+  SetStateAction,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 
 type Category = "warmup" | "kondition" | "styrka";
 
@@ -165,7 +173,7 @@ export default function CoachDashboard() {
   >(null);
   const libraryModuleCounter = useRef(initialModules.length);
   const scheduledModuleCounter = useRef(0);
-  const dragPointerOffsetY = useRef<number | null>(null);
+  const dragPointerOffsetYRef = useRef<number | null>(null);
   const scheduleCardRefs = useRef<Record<string, (HTMLDivElement | null)[]>>({});
 
   const registerScheduleCardRef = (
@@ -234,7 +242,7 @@ export default function CoachDashboard() {
 
     if (!activeDrag) return;
 
-    const offsetFromPointer = dragPointerOffsetY.current ?? 0;
+    const offsetFromPointer = dragPointerOffsetYRef.current ?? 0;
     const dragTop = event.clientY - offsetFromPointer;
 
     updateDropPreviewFromDragTop(dayId, dragTop);
@@ -329,17 +337,11 @@ export default function CoachDashboard() {
       category: module.category,
       subcategory: module.subcategory ?? "",
       distanceMeters:
-        module.distanceMeters !== undefined
-          ? String(module.distanceMeters)
-          : "",
+        module.distanceMeters !== undefined ? String(module.distanceMeters) : "",
       durationMinutes:
-        module.durationMinutes !== undefined
-          ? String(module.durationMinutes)
-          : "",
+        module.durationMinutes !== undefined ? String(module.durationMinutes) : "",
       durationSeconds:
-        module.durationSeconds !== undefined
-          ? String(module.durationSeconds)
-          : "",
+        module.durationSeconds !== undefined ? String(module.durationSeconds) : "",
       weightKg: module.weightKg !== undefined ? String(module.weightKg) : "",
     });
   };
@@ -497,897 +499,899 @@ export default function CoachDashboard() {
       />
       <div className="drawer-content min-h-screen">
         <div className="mx-auto max-w-full px-5 py-5">
-          <div className="flex items-center justify-between">
-            <label
-              htmlFor="reusable-blocks-drawer"
-              className="btn btn-primary btn-sm lg:hidden"
-            >
-              Visa reusable blocks
-            </label>
+          <DrawerToggle targetId="reusable-blocks-drawer" />
+
+          <ScheduleSection
+            days={days}
+            schedule={schedule}
+            handleDayDragOver={handleDayDragOver}
+            handleDrop={handleDrop}
+            allowDrop={allowDrop}
+            isPreviewLocation={isPreviewLocation}
+            updateDropPreviewFromDragTop={updateDropPreviewFromDragTop}
+            dragPointerOffsetYRef={dragPointerOffsetYRef}
+            setActiveDrag={setActiveDrag}
+            startEditingModule={startEditingModule}
+            handleRemoveModule={handleRemoveModule}
+            registerScheduleCardRef={registerScheduleCardRef}
+            setDropPreview={setDropPreview}
+            onAssignClick={() => setIsAssignModalOpen(true)}
+          />
+        </div>
+
+        <CreateModuleModal
+          isOpen={isCreateModuleModalOpen}
+          newModule={newModule}
+          formError={formError}
+          onClose={closeCreateModuleModal}
+          onSubmit={handleAddModule}
+          onReset={resetModuleForm}
+          onUpdate={setNewModule}
+        />
+
+        <AssignScheduleModal
+          isOpen={isAssignModalOpen}
+          athletes={athletes}
+          selectedAthletes={selectedAthletes}
+          toggleAthleteSelection={toggleAthleteSelection}
+          onClose={() => setIsAssignModalOpen(false)}
+          onAssign={handleAssignToAthletes}
+        />
+
+        <EditModuleModal
+          isOpen={Boolean(editingContext)}
+          editingContext={editingContext}
+          editingModuleForm={editingModuleForm}
+          editFormError={editFormError}
+          isEditMode={isEditMode}
+          setIsEditMode={setIsEditMode}
+          setEditingModuleForm={setEditingModuleForm}
+          onClose={closeEditModal}
+          onSave={handleSaveEditedModule}
+        />
+      </div>
+
+      <ReusableBlocksDrawer
+        search={search}
+        setSearch={setSearch}
+        filteredModules={filteredModules}
+        setActiveDrag={setActiveDrag}
+        dragPointerOffsetYRef={dragPointerOffsetYRef}
+        setDropPreview={setDropPreview}
+        startEditingModule={startEditingModule}
+        handleRemoveLibraryModule={handleRemoveLibraryModule}
+        resetModuleForm={resetModuleForm}
+        openCreateModal={() => setIsCreateModuleModalOpen(true)}
+      />
+    </div>
+  );
+}
+
+type DrawerToggleProps = {
+  targetId: string;
+};
+
+function DrawerToggle({ targetId }: DrawerToggleProps) {
+  return (
+    <div className="flex items-center justify-between">
+      <label htmlFor={targetId} className="btn btn-primary btn-sm lg:hidden">
+        Visa reusable blocks
+      </label>
+    </div>
+  );
+}
+
+type ScheduleSectionProps = {
+  days: { id: string; label: string }[];
+  schedule: DaySchedule;
+  handleDayDragOver: (event: DragEvent<HTMLElement>, dayId: string) => void;
+  handleDrop: (dayId: string, targetIndex?: number) => void;
+  allowDrop: (event: DragEvent) => void;
+  isPreviewLocation: (dayId: string, index: number) => boolean;
+  updateDropPreviewFromDragTop: (dayId: string, dragTop: number) => void;
+  dragPointerOffsetYRef: React.MutableRefObject<number | null>;
+  setActiveDrag: React.Dispatch<React.SetStateAction<ActiveDrag | null>>;
+  startEditingModule: (module: Module, context: EditingContext) => void;
+  handleRemoveModule: (dayId: string, moduleIndex: number) => void;
+  registerScheduleCardRef: (
+    dayId: string,
+    index: number,
+    el: HTMLDivElement | null
+  ) => void;
+  setDropPreview: React.Dispatch<
+    React.SetStateAction<{ dayId: string; index: number } | null>
+  >;
+  onAssignClick: () => void;
+};
+
+function ScheduleSection({
+  days,
+  schedule,
+  handleDayDragOver,
+  handleDrop,
+  allowDrop,
+  isPreviewLocation,
+  updateDropPreviewFromDragTop,
+  dragPointerOffsetYRef,
+  setActiveDrag,
+  startEditingModule,
+  handleRemoveModule,
+  registerScheduleCardRef,
+  setDropPreview,
+  onAssignClick,
+}: ScheduleSectionProps) {
+  return (
+    <section className="w-full max-w-full self-center space-y-6">
+      <div className="card bg-base-200 border border-base-300 shadow-md">
+        <div className="card-body gap-6">
+          <header className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+            <div>
+              <p className="text-xs font-semibold uppercase tracking-wide text-neutral">
+                Schedule in progress
+              </p>
+              <h2 className="text-3xl font-semibold">Camp Momentum · Week 43</h2>
+            </div>
+
+            <button className="btn btn-secondary btn-sm" onClick={onAssignClick}>
+              Assign schedule
+            </button>
+          </header>
+
+          <div className="grid grid-cols-1 gap-1 md:grid-cols-2 xl:grid-cols-7">
+            {days.map((day) => (
+              <DayColumn
+                key={day.id}
+                day={day}
+                modules={schedule[day.id]}
+                allowDrop={allowDrop}
+                handleDayDragOver={handleDayDragOver}
+                handleDrop={handleDrop}
+                isPreviewLocation={isPreviewLocation}
+                updateDropPreviewFromDragTop={updateDropPreviewFromDragTop}
+                dragPointerOffsetYRef={dragPointerOffsetYRef}
+                setActiveDrag={setActiveDrag}
+                startEditingModule={startEditingModule}
+                handleRemoveModule={handleRemoveModule}
+                registerScheduleCardRef={registerScheduleCardRef}
+                setDropPreview={setDropPreview}
+              />
+            ))}
           </div>
+        </div>
+      </div>
+    </section>
+  );
+}
 
-          <section className="w-full max-w-full self-center space-y-6">
-            <div className="card bg-base-200 border border-base-300 shadow-md">
-              <div className="card-body gap-6">
-                <header className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+type DayColumnProps = {
+  day: { id: string; label: string };
+  modules: Module[];
+  allowDrop: (event: DragEvent) => void;
+  handleDayDragOver: (event: DragEvent<HTMLElement>, dayId: string) => void;
+  handleDrop: (dayId: string, targetIndex?: number) => void;
+  isPreviewLocation: (dayId: string, index: number) => boolean;
+  updateDropPreviewFromDragTop: (dayId: string, dragTop: number) => void;
+  dragPointerOffsetYRef: React.MutableRefObject<number | null>;
+  setActiveDrag: React.Dispatch<React.SetStateAction<ActiveDrag | null>>;
+  startEditingModule: (module: Module, context: EditingContext) => void;
+  handleRemoveModule: (dayId: string, moduleIndex: number) => void;
+  registerScheduleCardRef: (
+    dayId: string,
+    index: number,
+    el: HTMLDivElement | null
+  ) => void;
+  setDropPreview: React.Dispatch<
+    React.SetStateAction<{ dayId: string; index: number } | null>
+  >;
+};
+
+function DayColumn({
+  day,
+  modules,
+  allowDrop,
+  handleDayDragOver,
+  handleDrop,
+  isPreviewLocation,
+  updateDropPreviewFromDragTop,
+  dragPointerOffsetYRef,
+  setActiveDrag,
+  startEditingModule,
+  handleRemoveModule,
+  registerScheduleCardRef,
+  setDropPreview,
+}: DayColumnProps) {
+  return (
+    <div
+      onDragOver={(event) => handleDayDragOver(event, day.id)}
+      onDrop={() => handleDrop(day.id)}
+      onDragLeave={(event) => {
+        if (!(event.currentTarget as HTMLElement).contains(event.relatedTarget as Node)) {
+          setDropPreview(null);
+        }
+      }}
+      className="flex min-h-[600px] flex-col rounded-2xl border border-dashed border-base-200 bg-base-300 p-2"
+    >
+      <div className="flex items-center justify-between">
+        <div>
+          <p className="text-xs font-semibold uppercase tracking-wide text-neutral">
+            {day.label}
+          </p>
+        </div>
+      </div>
+
+      <div className="mt-3 flex-1 space-y-1">
+        {modules.length === 0 && (
+          <div className="flex h-full items-center justify-center rounded-xl border border-dashed border-base-200 bg-base-100/60 p-4 text-center text-xs text-base-content/60">
+            Drag a module to begin
+          </div>
+        )}
+
+        {modules.map((module, index) => (
+          <div key={`${module.id}-${index}`} className="space-y-2">
+            <DropPreviewBar
+              dayId={day.id}
+              index={index}
+              isActive={isPreviewLocation(day.id, index)}
+              onDrop={(event) => {
+                event.stopPropagation();
+                handleDrop(day.id, index);
+              }}
+              onDragEnter={(event) => {
+                event.stopPropagation();
+                const dragTop = event.clientY - (dragPointerOffsetYRef.current ?? 0);
+                updateDropPreviewFromDragTop(day.id, dragTop);
+              }}
+              onDragOver={allowDrop}
+            />
+
+            <ScheduledModuleCard
+              dayId={day.id}
+              index={index}
+              module={module}
+              allowDrop={allowDrop}
+              handleDrop={handleDrop}
+              dragPointerOffsetYRef={dragPointerOffsetYRef}
+              setActiveDrag={setActiveDrag}
+              startEditingModule={startEditingModule}
+              handleRemoveModule={handleRemoveModule}
+              registerScheduleCardRef={registerScheduleCardRef}
+            />
+          </div>
+        ))}
+
+        {modules.length > 0 && (
+          <DropPreviewBar
+            dayId={day.id}
+            index={modules.length}
+            isActive={isPreviewLocation(day.id, modules.length)}
+            onDrop={(event) => {
+              event.stopPropagation();
+              handleDrop(day.id, modules.length);
+            }}
+            onDragEnter={(event) => {
+              event.stopPropagation();
+              const dragTop = event.clientY - (dragPointerOffsetYRef.current ?? 0);
+              updateDropPreviewFromDragTop(day.id, dragTop);
+            }}
+            onDragOver={(event) => handleDayDragOver(event as DragEvent<HTMLElement>, day.id)}
+          />
+        )}
+      </div>
+    </div>
+  );
+}
+
+type DropPreviewBarProps = {
+  dayId: string;
+  index: number;
+  isActive: boolean;
+  onDrop: (event: DragEvent<HTMLDivElement>) => void;
+  onDragEnter: (event: DragEvent<HTMLDivElement>) => void;
+  onDragOver: (event: DragEvent<HTMLDivElement>) => void;
+};
+
+function DropPreviewBar({ isActive, onDrop, onDragEnter, onDragOver }: DropPreviewBarProps) {
+  return (
+    <div
+      onDragOver={onDragOver}
+      onDrop={onDrop}
+      onDragEnter={onDragEnter}
+      className={`h-1 w-full rounded-full transition-all duration-150 ${
+        isActive ? "bg-primary shadow-[0_0_0_2px] shadow-primary/30" : "bg-transparent"
+      }`}
+    />
+  );
+}
+
+type ScheduledModuleCardProps = {
+  dayId: string;
+  index: number;
+  module: Module;
+  allowDrop: (event: DragEvent) => void;
+  handleDrop: (dayId: string, targetIndex?: number) => void;
+  dragPointerOffsetYRef: React.MutableRefObject<number | null>;
+  setActiveDrag: React.Dispatch<React.SetStateAction<ActiveDrag | null>>;
+  startEditingModule: (module: Module, context: EditingContext) => void;
+  handleRemoveModule: (dayId: string, moduleIndex: number) => void;
+  registerScheduleCardRef: (
+    dayId: string,
+    index: number,
+    el: HTMLDivElement | null
+  ) => void;
+};
+
+function ScheduledModuleCard({
+  dayId,
+  index,
+  module,
+  allowDrop,
+  handleDrop,
+  dragPointerOffsetYRef,
+  setActiveDrag,
+  startEditingModule,
+  handleRemoveModule,
+  registerScheduleCardRef,
+}: ScheduledModuleCardProps) {
+  return (
+    <div
+      draggable
+      onDragOver={allowDrop}
+      onDrop={(event) => {
+        event.stopPropagation();
+        handleDrop(dayId, index);
+      }}
+      onDragStart={(event) => {
+        const rect = (event.currentTarget as HTMLDivElement).getBoundingClientRect();
+        dragPointerOffsetYRef.current = event.clientY - rect.top;
+
+        setActiveDrag({
+          module,
+          source: {
+            type: "schedule",
+            dayId,
+            moduleIndex: index,
+          },
+        });
+      }}
+      onDragEnd={() => {
+        setActiveDrag(null);
+      }}
+      onClick={() =>
+        startEditingModule(module, {
+          type: "schedule",
+          moduleId: module.id,
+          dayId,
+          moduleIndex: index,
+        })
+      }
+      ref={(el) => registerScheduleCardRef(dayId, index, el)}
+      className="w-full cursor-grab rounded-xl border border-base-200 bg-base-100 p-3 transition hover:border-primary active:cursor-grabbing"
+    >
+      <div className="flex items-start justify-between gap-2">
+        <div className="space-y-1 text-xs text-base-content/60">
+          <div className="flex flex-row justify-between">
+            <p className="font-semibold text-base-content">{module.title}</p>
+            <button
+              type="button"
+              onClick={(event) => {
+                event.stopPropagation();
+                handleRemoveModule(dayId, index);
+              }}
+              className="btn btn-ghost btn-xs text-error"
+              aria-label={`Delete ${module.title}`}
+            >
+              Delete
+            </button>
+          </div>
+          <p className="text-xs text-base-content/70">{module.description}</p>
+          <ModuleBadges module={module} />
+        </div>
+      </div>
+    </div>
+  );
+}
+
+type ModuleBadgesProps = {
+  module: Module;
+};
+
+function ModuleBadges({ module }: ModuleBadgesProps) {
+  return (
+    <div className="flex flex-wrap gap-1">
+      <span className="badge badge-outline badge-xs capitalize">{module.category}</span>
+      {module.subcategory && (
+        <span className="badge badge-outline badge-xs">Underkategori: {module.subcategory}</span>
+      )}
+      {module.distanceMeters !== undefined && (
+        <span className="badge badge-outline badge-xs">Distans: {module.distanceMeters} m</span>
+      )}
+      {formatDuration(module.durationMinutes, module.durationSeconds) && (
+        <span className="badge badge-outline badge-xs">
+          Tid: {formatDuration(module.durationMinutes, module.durationSeconds)}
+        </span>
+      )}
+      {module.weightKg !== undefined && (
+        <span className="badge badge-outline badge-xs">Vikt: {module.weightKg} kg</span>
+      )}
+    </div>
+  );
+}
+
+type CreateModuleModalProps = {
+  isOpen: boolean;
+  newModule: ModuleForm;
+  formError: string | null;
+  onClose: () => void;
+  onSubmit: (event: FormEvent<HTMLFormElement>) => void;
+  onReset: () => void;
+  onUpdate: Dispatch<SetStateAction<ModuleForm>>;
+};
+
+function CreateModuleModal({
+  isOpen,
+  newModule,
+  formError,
+  onClose,
+  onSubmit,
+  onReset,
+  onUpdate,
+}: CreateModuleModalProps) {
+  return (
+    <dialog className={`modal ${isOpen ? "modal-open" : ""}`}>
+      <div className="modal-box max-w-md space-y-4">
+        <div className="flex items-start justify-between gap-4">
+          <div>
+            <h3 className="text-xl font-semibold">Skapa nytt block</h3>
+          </div>
+          <button className="btn btn-circle btn-ghost btn-sm" onClick={onClose}>
+            ✕
+          </button>
+        </div>
+
+        {formError && <div className="alert alert-error text-sm">{formError}</div>}
+
+        <form className="space-y-3" onSubmit={onSubmit}>
+          <ModuleFormFields formState={newModule} onChange={onUpdate} />
+
+          <div className="mt-7 flex flex-row gap-2 sm:flex-row">
+            <button type="button" className="btn flex-1" onClick={onReset}>
+              Rensa formulär
+            </button>
+            <button type="submit" className="btn btn-secondary flex-1">
+              Skapa block
+            </button>
+          </div>
+        </form>
+      </div>
+      <form method="dialog" className="modal-backdrop" onSubmit={onClose}>
+        <button>close</button>
+      </form>
+    </dialog>
+  );
+}
+
+type ModuleFormFieldsProps = {
+  formState: ModuleForm;
+  onChange: Dispatch<SetStateAction<ModuleForm>>;
+};
+
+function ModuleFormFields({ formState, onChange }: ModuleFormFieldsProps) {
+  return (
+    <div className="flex flex-col gap-4">
+      <label className="form-control flex flex-col gap-1">
+        <span className="label-text text-sm">Titel:</span>
+        <input
+          type="text"
+          value={formState.title}
+          onChange={(event) =>
+            onChange((prev) => ({
+              ...prev,
+              title: event.target.value,
+            }))
+          }
+          className="input input-sm input-bordered w-full"
+          placeholder="t.ex. Explosiv acceleration"
+        />
+      </label>
+
+      <label className="form-control flex-col flex gap-1">
+        <span className="label-text text-sm">Beskrivning:</span>
+        <textarea
+          className="textarea textarea-bordered w-full"
+          rows={3}
+          placeholder="Vad är syftet med blocket?"
+          value={formState.description}
+          onChange={(event) =>
+            onChange((prev) => ({
+              ...prev,
+              description: event.target.value,
+            }))
+          }
+        />
+      </label>
+
+      <label className="form-control flex flex-col gap-1">
+        <span className="label-text text-sm">Kategori:</span>
+        <select
+          className="select select-bordered select-sm"
+          value={formState.category}
+          onChange={(event) =>
+            onChange((prev) => ({
+              ...prev,
+              category: event.target.value as Category,
+            }))
+          }
+          required
+        >
+          <option value="" disabled>
+            Välj kategori
+          </option>
+          <option value="warmup">Uppvärmning</option>
+          <option value="kondition">Kondition</option>
+          <option value="styrka">Styrka</option>
+        </select>
+      </label>
+
+      <label className="form-control flex flex-col gap-1">
+        <span className="label-text text-sm">Underkategori:</span>
+        <input
+          type="text"
+          className="input input-sm input-bordered"
+          value={formState.subcategory}
+          onChange={(event) =>
+            onChange((prev) => ({
+              ...prev,
+              subcategory: event.target.value,
+            }))
+          }
+          placeholder="t.ex. Intervaller, baslyft"
+        />
+      </label>
+      <label className="form-control flex gap-4 items-end">
+        <span className="label-text text-sm">Distans (m):</span>
+        <input
+          type="number"
+          min="0"
+          className="input input-sm input-bordered w-20"
+          value={formState.distanceMeters}
+          onChange={(event) =>
+            onChange((prev) => ({
+              ...prev,
+              distanceMeters: event.target.value,
+            }))
+          }
+          placeholder=""
+        />
+      </label>
+
+      <label className="form-control flex gap-4 items-end">
+        <span className="label-text text-sm">Vikt (kg):</span>
+        <input
+          type="number"
+          min="0"
+          className="input input-sm input-bordered w-20"
+          value={formState.weightKg}
+          onChange={(event) =>
+            onChange((prev) => ({
+              ...prev,
+              weightKg: event.target.value,
+            }))
+          }
+          placeholder=""
+        />
+      </label>
+      <div className="flex flex-row gap-2 items-end">
+        <label className="form-control flex gap-4 items-end">
+          <span className="label-text text-sm">Tid: </span>
+          <input
+            type="number"
+            min="0"
+            className="input input-sm input-bordered w-15"
+            value={formState.durationMinutes}
+            onChange={(event) =>
+              onChange((prev) => ({
+                ...prev,
+                durationMinutes: event.target.value,
+              }))
+            }
+            placeholder=""
+          />
+        </label>
+
+        <p className="text-sm">min</p>
+
+        <label className="form-control">
+          <span className="label-text text-sm"></span>
+          <input
+            type="number"
+            min="0"
+            max="59"
+            className="input input-sm input-bordered w-15"
+            value={formState.durationSeconds}
+            onChange={(event) =>
+              onChange((prev) => ({
+                ...prev,
+                durationSeconds: event.target.value,
+              }))
+            }
+            placeholder=""
+          />
+        </label>
+        <p className="text-sm">sek</p>
+      </div>
+    </div>
+  );
+}
+
+type AssignScheduleModalProps = {
+  isOpen: boolean;
+  athletes: Athlete[];
+  selectedAthletes: string[];
+  toggleAthleteSelection: (athleteId: string) => void;
+  onClose: () => void;
+  onAssign: () => void;
+};
+
+function AssignScheduleModal({
+  isOpen,
+  athletes,
+  selectedAthletes,
+  toggleAthleteSelection,
+  onClose,
+  onAssign,
+}: AssignScheduleModalProps) {
+  return (
+    <dialog className={`modal ${isOpen ? "modal-open" : ""}`}>
+      <div className="modal-box max-w-l space-y-6">
+        <div className="flex items-start justify-between gap-4">
+          <div>
+            <h3 className="text-xl font-semibold">Assign schedule</h3>
+          </div>
+          <button className="btn btn-circle btn-ghost btn-sm" onClick={onClose}>
+            ✕
+          </button>
+        </div>
+
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-1">
+          <section className="space-y-3 rounded-2xl border border-base-300 bg-base-100 p-4">
+            <div className="max-h-72 space-y-2 overflow-y-auto pr-1">
+              {athletes.map((athlete) => (
+                <label
+                  key={athlete.id}
+                  className="flex cursor-pointer items-center justify-between gap-2 rounded-xl border border-base-200 bg-base-50 px-3 py-2 text-sm hover:border-base-300"
+                >
                   <div>
-                    <p className="text-xs font-semibold uppercase tracking-wide text-neutral">
-                      Schedule in progress
-                    </p>
-                    <h2 className="text-3xl font-semibold">
-                      Camp Momentum · Week 43
-                    </h2>
+                    <p className="font-semibold">{athlete.name}</p>
+                    <p className="text-xs text-base-content/60">{athlete.sport}</p>
                   </div>
+                  <input
+                    type="checkbox"
+                    className="checkbox checkbox-sm"
+                    checked={selectedAthletes.includes(athlete.id)}
+                    onChange={() => toggleAthleteSelection(athlete.id)}
+                  />
+                </label>
+              ))}
+            </div>
 
-                  <button
-                    className="btn btn-secondary btn-sm"
-                    onClick={() => setIsAssignModalOpen(true)}
-                  >
-                    Assign schedule
-                  </button>
-                </header>
-                <div className="grid grid-cols-1 gap-1 md:grid-cols-2 xl:grid-cols-7">
-                  {days.map((day) => (
-                    <div
-                      key={day.id}
-                      onDragOver={(event) => handleDayDragOver(event, day.id)}
-                      onDrop={() => handleDrop(day.id)}
-                      onDragLeave={(event) => {
-                        if (
-                          !(event.currentTarget as HTMLElement).contains(
-                            event.relatedTarget as Node
-                          )
-                        ) {
-                          setDropPreview(null);
-                        }
-                      }}
-                      className="flex min-h-[600px] flex-col rounded-2xl border border-dashed border-base-200 bg-base-300 p-2"
-                    >
-                      <div className="flex items-center justify-between">
-                        <div>
-                          <p className="text-xs font-semibold uppercase tracking-wide text-neutral">
-                            {day.label}
-                          </p>
-                        </div>
-                      </div>
-
-                      <div className="mt-3 flex-1 space-y-1">
-                        {schedule[day.id].length === 0 && (
-                          <div className="flex h-full items-center justify-center rounded-xl border border-dashed border-base-200 bg-base-100/60 p-4 text-center text-xs text-base-content/60">
-                            Drag a module to begin
-                          </div>
-                        )}
-
-                        {schedule[day.id].map((module, index) => (
-                          <div key={`${module.id}-${index}`} className="space-y-2">
-                            <div
-                              onDragOver={allowDrop}
-                              onDrop={(event) => {
-                                event.stopPropagation();
-                                handleDrop(day.id, index);
-                              }}
-                              onDragEnter={(event) => {
-                                event.stopPropagation();
-                                const dragTop =
-                                  event.clientY - (dragPointerOffsetY.current ?? 0);
-                                updateDropPreviewFromDragTop(day.id, dragTop);
-                              }}
-                              className={`h-1 w-full rounded-full transition-all duration-150 ${
-                                isPreviewLocation(day.id, index)
-                                  ? "bg-primary shadow-[0_0_0_2px] shadow-primary/30"
-                                  : "bg-transparent"
-                              }`}
-                            />
-                            <div
-                              draggable
-                              onDragOver={allowDrop}
-                              onDrop={(event) => {
-                                event.stopPropagation();
-                                handleDrop(day.id, index);
-                              }}
-                              onDragStart={(event) => {
-                                const rect =
-                                  (event.currentTarget as HTMLDivElement).getBoundingClientRect();
-                                dragPointerOffsetY.current = event.clientY - rect.top;
-
-                                setActiveDrag({
-                                  module,
-                                  source: {
-                                    type: "schedule",
-                                    dayId: day.id,
-                                    moduleIndex: index,
-                                  },
-                                });
-                              }}
-                              onDragEnd={() => {
-                                setActiveDrag(null);
-                                setDropPreview(null);
-                              }}
-                              onClick={() =>
-                                startEditingModule(module, {
-                                  type: "schedule",
-                                  moduleId: module.id,
-                                  dayId: day.id,
-                                  moduleIndex: index,
-                                })
-                              }
-                              ref={(el) => registerScheduleCardRef(day.id, index, el)}
-                              className="w-full rounded-xl border border-base-200 bg-base-100 p-3 transition hover:border-primary cursor-grab active:cursor-grabbing"
-                            >
-                              <div className="flex items-start justify-between gap-2">
-                                <div className="space-y-1 text-xs text-base-content/60">
-                                  <div className="flex flex-row justify-between">
-                                    <p className="font-semibold text-base-content">
-                                      {module.title}
-                                    </p>
-                                    <button
-                                      type="button"
-                                      onClick={(event) => {
-                                        event.stopPropagation();
-                                        handleRemoveModule(day.id, index);
-                                      }}
-                                      className="btn btn-ghost btn-xs text-error"
-                                      aria-label={`Delete ${module.title}`}
-                                    >
-                                      Delete
-                                    </button>
-                                  </div>
-                                  <p className="text-xs text-base-content/70">
-                                    {module.description}
-                                  </p>
-                                  <div className="flex flex-wrap gap-1">
-                                    <span className="badge badge-outline badge-xs capitalize">
-                                      {module.category}
-                                    </span>
-                                    {module.subcategory && (
-                                      <span className="badge badge-outline badge-xs">
-                                        Underkategori: {module.subcategory}
-                                      </span>
-                                    )}
-                                    {module.distanceMeters !== undefined && (
-                                      <span className="badge badge-outline badge-xs">
-                                        Distans: {module.distanceMeters} m
-                                      </span>
-                                    )}
-                                    {formatDuration(
-                                      module.durationMinutes,
-                                      module.durationSeconds
-                                    ) && (
-                                      <span className="badge badge-outline badge-xs">
-                                        Tid:{" "}
-                                        {formatDuration(
-                                          module.durationMinutes,
-                                          module.durationSeconds
-                                        )}
-                                      </span>
-                                    )}
-                                    {module.weightKg !== undefined && (
-                                      <span className="badge badge-outline badge-xs">
-                                        Vikt: {module.weightKg} kg
-                                      </span>
-                                    )}
-                                  </div>
-                                </div>
-                              </div>
-                            </div>
-                          </div>
-                        ))}
-
-                        {schedule[day.id].length > 0 && (
-                          <div
-                            onDragOver={(event) => handleDayDragOver(event, day.id)}
-                            onDrop={(event) => {
-                              event.stopPropagation();
-                              handleDrop(day.id, schedule[day.id].length);
-                            }}
-                            onDragEnter={(event) => {
-                              event.stopPropagation();
-                              const dragTop =
-                                event.clientY - (dragPointerOffsetY.current ?? 0);
-                              updateDropPreviewFromDragTop(day.id, dragTop);
-                            }}
-                            className={`h-1 w-full rounded-full transition-all duration-150 ${
-                              isPreviewLocation(day.id, schedule[day.id].length)
-                                ? "bg-primary shadow-[0_0_0_2px] shadow-primary/30"
-                                : "bg-transparent"
-                            }`}
-                          />
-                        )}
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
+            <div className="flex flex-col gap-2 sm:flex-row sm:justify-end">
+              <button className="btn" onClick={onClose}>
+                Avbryt
+              </button>
+              <button className="btn btn-secondary" onClick={onAssign}>
+                Tilldela
+              </button>
             </div>
           </section>
         </div>
-
-        <dialog
-          className={`modal ${isCreateModuleModalOpen ? "modal-open" : ""}`}
-        >
-          <div className="modal-box max-w-md space-y-4">
-            <div className="flex items-start justify-between gap-4">
-              <div>
-                <h3 className="text-xl font-semibold">Skapa nytt block</h3>
-              </div>
-              <button
-                className="btn btn-circle btn-ghost btn-sm"
-                onClick={closeCreateModuleModal}
-              >
-                ✕
-              </button>
-            </div>
-
-            {formError && (
-              <div className="alert alert-error text-sm">{formError}</div>
-            )}
-
-            <form className="space-y-3" onSubmit={handleAddModule}>
-              <div className="flex flex-col gap-4">
-                <label className="form-control flex flex-col gap-1">
-                  <span className="label-text text-sm">Titel:</span>
-                  <input
-                    type="text"
-                    value={newModule.title}
-                    onChange={(event) =>
-                      setNewModule((prev) => ({
-                        ...prev,
-                        title: event.target.value,
-                      }))
-                    }
-                    className="input input-sm input-bordered w-full"
-                    placeholder="t.ex. Explosiv acceleration"
-                  />
-                </label>
-
-                <label className="form-control flex-col flex gap-1">
-                  <span className="label-text text-sm">Beskrivning:</span>
-                  <textarea
-                    className="textarea textarea-bordered w-full"
-                    rows={3}
-                    placeholder="Vad är syftet med blocket?"
-                    value={newModule.description}
-                    onChange={(event) =>
-                      setNewModule((prev) => ({
-                        ...prev,
-                        description: event.target.value,
-                      }))
-                    }
-                  />
-                </label>
-
-                <label className="form-control flex flex-col gap-1">
-                  <span className="label-text text-sm">Kategori:</span>
-                  <select
-                    className="select select-bordered select-sm"
-                    value={newModule.category}
-                    onChange={(event) =>
-                      setNewModule((prev) => ({
-                        ...prev,
-                        category: event.target.value as Category,
-                      }))
-                    }
-                    required
-                  >
-                    <option value="" disabled>
-                      Välj kategori
-                    </option>
-                    <option value="warmup">Uppvärmning</option>
-                    <option value="kondition">Kondition</option>
-                    <option value="styrka">Styrka</option>
-                  </select>
-                </label>
-
-                <label className="form-control flex flex-col gap-1">
-                  <span className="label-text text-sm">Underkategori:</span>
-                  <input
-                    type="text"
-                    className="input input-sm input-bordered"
-                    value={newModule.subcategory}
-                    onChange={(event) =>
-                      setNewModule((prev) => ({
-                        ...prev,
-                        subcategory: event.target.value,
-                      }))
-                    }
-                    placeholder="t.ex. Intervaller, baslyft"
-                  />
-                </label>
-                <label className="form-control flex gap-4 items-end">
-                  <span className="label-text text-sm">Distans (m):</span>
-                  <input
-                    type="number"
-                    min="0"
-                    className="input input-sm input-bordered w-20"
-                    value={newModule.distanceMeters}
-                    onChange={(event) =>
-                      setNewModule((prev) => ({
-                        ...prev,
-                        distanceMeters: event.target.value,
-                      }))
-                    }
-                    placeholder=""
-                  />
-                </label>
-
-                <label className="form-control flex gap-4 items-end">
-                  <span className="label-text text-sm">Vikt (kg):</span>
-                  <input
-                    type="number"
-                    min="0"
-                    className="input input-sm input-bordered w-20"
-                    value={newModule.weightKg}
-                    onChange={(event) =>
-                      setNewModule((prev) => ({
-                        ...prev,
-                        weightKg: event.target.value,
-                      }))
-                    }
-                    placeholder=""
-                  />
-                </label>
-                <div className="flex flex-row gap-2 items-end">
-                  <label className="form-control flex gap-4 items-end">
-                    <span className="label-text text-sm">Tid: </span>
-                    <input
-                      type="number"
-                      min="0"
-                      className="input input-sm input-bordered w-15"
-                      value={newModule.durationMinutes}
-                      onChange={(event) =>
-                        setNewModule((prev) => ({
-                          ...prev,
-                          durationMinutes: event.target.value,
-                        }))
-                      }
-                      placeholder=""
-                    />
-                  </label>
-
-                  <p className="text-sm">min</p>
-
-                  <label className="form-control">
-                    <span className="label-text text-sm"></span>
-                    <input
-                      type="number"
-                      min="0"
-                      max="59"
-                      className="input input-sm input-bordered w-15"
-                      value={newModule.durationSeconds}
-                      onChange={(event) =>
-                        setNewModule((prev) => ({
-                          ...prev,
-                          durationSeconds: event.target.value,
-                        }))
-                      }
-                      placeholder=""
-                    />
-                  </label>
-                  <p className="text-sm">sek</p>
-                </div>
-              </div>
-
-              <div className="flex flex-row gap-2 sm:flex-row mt-7">
-                <button
-                  type="button"
-                  className="btn flex-1"
-                  onClick={resetModuleForm}
-                >
-                  Rensa formulär
-                </button>
-								<button type="submit" className="btn btn-secondary flex-1">
-                  Skapa block 
-                </button>
-              </div>
-            </form>
-          </div>
-          <form
-            method="dialog"
-            className="modal-backdrop"
-            onSubmit={closeCreateModuleModal}
-          >
-            <button>close</button>
-          </form>
-        </dialog>
-
-        <dialog className={`modal ${isAssignModalOpen ? "modal-open" : ""}`}>
-          <div className="modal-box max-w-l space-y-6">
-            <div className="flex items-start justify-between gap-4">
-              <div>
-                <h3 className="text-xl font-semibold">Assign schedule</h3>
-              </div>
-              <button
-                className="btn btn-circle btn-ghost btn-sm"
-                onClick={() => setIsAssignModalOpen(false)}
-              >
-                ✕
-              </button>
-            </div>
-
-            <div className="grid grid-cols-1 gap-4 md:grid-cols-1">
-              <section className="space-y-3 rounded-2xl border border-base-300 bg-base-100 p-4">
-                <div className="max-h-72 space-y-2 overflow-y-auto pr-1">
-                  {athletes.map((athlete) => (
-                    <label
-                      key={athlete.id}
-                      className="flex cursor-pointer items-center justify-between gap-2 rounded-xl border border-base-200 bg-base-50 px-3 py-2 text-sm hover:border-base-300"
-                    >
-                      <div>
-                        <p className="font-semibold">{athlete.name}</p>
-                        <p className="text-xs text-base-content/60">
-                          {athlete.sport}
-                        </p>
-                      </div>
-                      <input
-                        type="checkbox"
-                        className="checkbox"
-                        checked={selectedAthletes.includes(athlete.id)}
-                        onChange={() => toggleAthleteSelection(athlete.id)}
-                      />
-                    </label>
-                  ))}
-                </div>
-
-                <button
-                  className="btn btn-secondary w-full"
-                  disabled={selectedAthletes.length === 0}
-                  onClick={handleAssignToAthletes}
-                >
-                  Assign to selected athletes
-                </button>
-              </section>
-            </div>
-          </div>
-          <form
-            method="dialog"
-            className="modal-backdrop"
-            onSubmit={() => setIsAssignModalOpen(false)}
-          >
-            <button>close</button>
-          </form>
-        </dialog>
-
-        <dialog className={`modal ${editingContext ? "modal-open" : ""}`}>
-          <div className="modal-box max-w-md space-y-4">
-            <div className="flex items-start justify-between gap-4">
-              <div>
-                <p className="text-xs font-semibold uppercase tracking-wide text-neutral">
-                  {editingContext?.type === "schedule"
-                    ? "Schemalagt block"
-                    : "Återanvändbart block"}
-                </p>
-                <h3 className="text-xl font-semibold">
-                  {isEditMode ? "Redigera block" : "Blockdetaljer"}
-                </h3>
-              </div>
-              <button
-                className="btn btn-circle btn-ghost btn-sm"
-                onClick={closeEditModal}
-              >
-                ✕
-              </button>
-            </div>
-
-            {editFormError && (
-              <div className="alert alert-error text-sm">{editFormError}</div>
-            )}
-
-            {editingModuleForm && (
-              <div className="space-y-4">
-                {!isEditMode && (
-                  <div className="space-y-3 rounded-2xl border border-base-300 bg-base-100 p-4">
-                    <div className="space-y-1">
-                      <p className="text-xs uppercase tracking-wide text-neutral">Titel</p>
-                      <p className="text-base font-semibold text-base-content">
-                        {editingModuleForm.title}
-                      </p>
-                    </div>
-
-                    <div className="space-y-1">
-                      <p className="text-xs uppercase tracking-wide text-neutral">
-                        Beskrivning
-                      </p>
-                      <p className="text-sm leading-relaxed text-base-content/80">
-                        {editingModuleForm.description}
-                      </p>
-                    </div>
-
-                    <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-                      <div className="space-y-1">
-                        <p className="text-xs uppercase tracking-wide text-neutral">
-                          Kategori
-                        </p>
-                        <p className="badge badge-outline capitalize">
-                          {editingModuleForm.category}
-                        </p>
-                      </div>
-
-                      <div className="space-y-1">
-                        <p className="text-xs uppercase tracking-wide text-neutral">
-                          Underkategori
-                        </p>
-                        <p className="text-sm text-base-content/80">
-                          {editingModuleForm.subcategory || "-"}
-                        </p>
-                      </div>
-
-                      <div className="space-y-1">
-                        <p className="text-xs uppercase tracking-wide text-neutral">
-                          Distans
-                        </p>
-                        <p className="text-sm text-base-content/80">
-                          {editingModuleForm.distanceMeters
-                            ? `${editingModuleForm.distanceMeters} m`
-                            : "-"}
-                        </p>
-                      </div>
-
-                      <div className="space-y-1">
-                        <p className="text-xs uppercase tracking-wide text-neutral">Vikt</p>
-                        <p className="text-sm text-base-content/80">
-                          {editingModuleForm.weightKg
-                            ? `${editingModuleForm.weightKg} kg`
-                            : "-"}
-                        </p>
-                      </div>
-
-                      <div className="space-y-1">
-                        <p className="text-xs uppercase tracking-wide text-neutral">Tid</p>
-                        <p className="text-sm text-base-content/80">
-                          {editingModuleForm.durationMinutes || editingModuleForm.durationSeconds
-                            ? `${editingModuleForm.durationMinutes || 0} min ${
-                                editingModuleForm.durationSeconds || 0
-                              } sek`
-                            : "-"}
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-                )}
-
-                {isEditMode && (
-                  <form className="space-y-3" onSubmit={handleSaveEditedModule}>
-                    <div className="flex flex-col gap-4">
-                      <label className="form-control flex flex-col gap-1">
-                        <span className="label-text text-sm">Titel:</span>
-                        <input
-                          type="text"
-                          value={editingModuleForm.title}
-                          onChange={(event) =>
-                            setEditingModuleForm((prev) =>
-                              prev
-                                ? {
-                                    ...prev,
-                                    title: event.target.value,
-                                  }
-                                : prev
-                            )
-                          }
-                          className="input input-sm input-bordered w-full"
-                          placeholder="t.ex. Explosiv acceleration"
-                        />
-                      </label>
-
-                      <label className="form-control flex-col flex gap-1">
-                        <span className="label-text text-sm">Beskrivning:</span>
-                        <textarea
-                          className="textarea textarea-bordered w-full"
-                          rows={3}
-                          placeholder="Vad är syftet med blocket?"
-                          value={editingModuleForm.description}
-                          onChange={(event) =>
-                            setEditingModuleForm((prev) =>
-                              prev
-                                ? {
-                                    ...prev,
-                                    description: event.target.value,
-                                  }
-                                : prev
-                            )
-                          }
-                          required
-                        ></textarea>
-                      </label>
-
-                      <label className="form-control flex flex-col gap-1">
-                        <span className="label-text text-sm">Kategori:</span>
-                        <select
-                          className="select select-bordered select-sm"
-                          value={editingModuleForm.category}
-                          onChange={(event) =>
-                            setEditingModuleForm((prev) =>
-                              prev
-                                ? {
-                                    ...prev,
-                                    category: event.target.value as Category,
-                                  }
-                                : prev
-                            )
-                          }
-                          required
-                        >
-                          <option value="" disabled>
-                            Välj kategori
-                          </option>
-                          <option value="warmup">Uppvärmning</option>
-                          <option value="kondition">Kondition</option>
-                          <option value="styrka">Styrka</option>
-                        </select>
-                      </label>
-
-                      <label className="form-control flex flex-col gap-1">
-                        <span className="label-text text-sm">Underkategori:</span>
-                        <input
-                          type="text"
-                          className="input input-sm input-bordered"
-                          value={editingModuleForm.subcategory}
-                          onChange={(event) =>
-                            setEditingModuleForm((prev) =>
-                              prev
-                                ? { ...prev, subcategory: event.target.value }
-                                : prev
-                            )
-                          }
-                          placeholder="t.ex. Intervaller, baslyft"
-                        />
-                      </label>
-                      <label className="form-control flex gap-4 items-end">
-                        <span className="label-text text-sm">Distans (m):</span>
-                        <input
-                          type="number"
-                          min="0"
-                          className="input input-sm input-bordered w-20"
-                          value={editingModuleForm.distanceMeters}
-                          onChange={(event) =>
-                            setEditingModuleForm((prev) =>
-                              prev
-                                ? { ...prev, distanceMeters: event.target.value }
-                                : prev
-                            )
-                          }
-                          placeholder=""
-                        />
-                      </label>
-
-                      <label className="form-control flex gap-4 items-end">
-                        <span className="label-text text-sm">Vikt (kg):</span>
-                        <input
-                          type="number"
-                          min="0"
-                          className="input input-sm input-bordered w-20"
-                          value={editingModuleForm.weightKg}
-                          onChange={(event) =>
-                            setEditingModuleForm((prev) =>
-                              prev
-                                ? { ...prev, weightKg: event.target.value }
-                                : prev
-                            )
-                          }
-                          placeholder=""
-                        />
-                      </label>
-                      <div className="flex flex-row gap-2 items-end">
-                        <label className="form-control flex gap-4 items-end">
-                          <span className="label-text text-sm">Tid: </span>
-                          <input
-                            type="number"
-                            min="0"
-                            className="input input-sm input-bordered w-15"
-                            value={editingModuleForm.durationMinutes}
-                            onChange={(event) =>
-                              setEditingModuleForm((prev) =>
-                                prev
-                                  ? {
-                                      ...prev,
-                                      durationMinutes: event.target.value,
-                                    }
-                                  : prev
-                              )
-                            }
-                            placeholder=""
-                          />
-                        </label>
-
-                        <p className="text-sm">min</p>
-
-                        <label className="form-control">
-                          <span className="label-text text-sm"></span>
-                          <input
-                            type="number"
-                            min="0"
-                            max="59"
-                            className="input input-sm input-bordered w-15"
-                            value={editingModuleForm.durationSeconds}
-                            onChange={(event) =>
-                              setEditingModuleForm((prev) =>
-                                prev
-                                  ? {
-                                      ...prev,
-                                      durationSeconds: event.target.value,
-                                    }
-                                  : prev
-                              )
-                            }
-                            placeholder=""
-                          />
-                        </label>
-                        <p className="text-sm">sek</p>
-                      </div>
-                    </div>
-
-                    <div className="flex flex-row gap-2 sm:flex-row mt-7">
-                      <button
-                        type="button"
-                        className="btn flex-1"
-                        onClick={closeEditModal}
-                      >
-                        Avbryt
-                      </button>
-                      <button type="submit" className="btn btn-secondary flex-1">
-                        Spara ändringar
-                      </button>
-                    </div>
-                  </form>
-                )}
-
-                {!isEditMode && (
-                  <div className="flex flex-row gap-2 sm:flex-row">
-                    <button
-                      type="button"
-                      className="btn flex-1"
-                      onClick={closeEditModal}
-                    >
-                      Stäng
-                    </button>
-                    <button
-                      type="button"
-                      className="btn btn-secondary flex-1"
-                      onClick={() => setIsEditMode(true)}
-                    >
-                      Redigera
-                    </button>
-                  </div>
-                )}
-              </div>
-            )}
-          </div>
-          <form
-            method="dialog"
-            className="modal-backdrop"
-            onSubmit={closeEditModal}
-          >
-            <button>close</button>
-          </form>
-        </dialog>
-
       </div>
+      <form method="dialog" className="modal-backdrop" onSubmit={onClose}>
+        <button>close</button>
+      </form>
+    </dialog>
+  );
+}
 
-      <div className="drawer-side">
-        <label
-          htmlFor="reusable-blocks-drawer"
-          aria-label="close sidebar"
-          className="drawer-overlay"
-        ></label>
-        <div className="flex h-full w-65 min-w-[150px] flex-col gap-3 border-r border-base-300 bg-primary-content p-4">
-          <div className="flex items-center justify-between gap-2">
-            <p className="text-xs font-semibold uppercase tracking-wide text-neutral">
-              Reusable blocks
-            </p>
-            <label
-              htmlFor="reusable-blocks-drawer"
-              className="btn btn-ghost btn-circle btn-xs lg:hidden"
-            >
-              ✕
-            </label>
-          </div>
-          <div className="flex flex-col gap-2">
-            <label className="input input-bordered input-sm flex items-center gap-2 lg:min-w-[10rem]">
-              <input
-                type="search"
-                value={search}
-                onChange={(event) => setSearch(event.target.value)}
-                placeholder="Search blocks"
-                className="grow"
-              />
-            </label>
-            <button
-              type="button"
-              className="btn btn-secondary btn-sm self-start"
-              onClick={() => {
-                resetModuleForm();
-                setIsCreateModuleModalOpen(true);
-              }}
-            >
-              Create block
-            </button>
-          </div>
-          <div className="min-h-0 flex-1 space-y-3 overflow-y-auto pr-1">
-            {filteredModules.map((module) => (
-              <article
-                key={module.id}
-                draggable
-                onDragStart={(event) => {
-                  const rect =
-                    (event.currentTarget as HTMLDivElement).getBoundingClientRect();
-                  dragPointerOffsetY.current = event.clientY - rect.top;
+type EditModuleModalProps = {
+  isOpen: boolean;
+  editingContext: EditingContext | null;
+  editingModuleForm: ModuleForm | null;
+  editFormError: string | null;
+  isEditMode: boolean;
+  setIsEditMode: Dispatch<SetStateAction<boolean>>;
+  setEditingModuleForm: Dispatch<SetStateAction<ModuleForm | null>>;
+  onClose: () => void;
+  onSave: (event: FormEvent<HTMLFormElement>) => void;
+};
 
-                  setActiveDrag({
-                    module,
-                    source: { type: "library" },
-                  });
-                }}
-                onDragEnd={() => {
-                  setActiveDrag(null);
-                  setDropPreview(null);
-                }}
-                onClick={() =>
-                  startEditingModule(module, {
-                    type: "library",
-                    moduleId: module.id,
-                  })
-                }
-                className="card cursor-grab overflow-hidden border border-base-200 bg-base-100 transition hover:border-primary"
-              >
-                <div className="card-body flex flex-col gap-2 p-4">
-                  <div className="flex items-start justify-between gap-3">
-                    <p className="text-xs font-semibold">{module.title}</p>
-                    <button
-                      type="button"
-                      onClick={(event) => {
-                        event.stopPropagation();
-                        handleRemoveLibraryModule(module.id);
-                      }}
-                      className="btn btn-ghost btn-xs text-error"
-                      aria-label={`Delete ${module.title}`}
-                    >
-                      Delete
-                    </button>
-                  </div>
-                  <p className="max-h-16 overflow-hidden text-xs text-base-content/70">
-                    {module.description}
-                  </p>
-                  <div className="mt-auto flex flex-wrap gap-1">
-                    <span className="badge badge-outline badge-xs capitalize">
-                      {module.category}
-                    </span>
-                    {module.subcategory && (
-                      <span className="badge badge-outline badge-xs">
-                        Underkategori: {module.subcategory}
-                      </span>
-                    )}
-                    {module.distanceMeters !== undefined && (
-                      <span className="badge badge-outline badge-xs">
-                        Distans: {module.distanceMeters} m
-                      </span>
-                    )}
-                    {formatDuration(
-                      module.durationMinutes,
-                      module.durationSeconds
-                    ) && (
-                      <span className="badge badge-outline badge-xs">
-                        Tid:{" "}
-                        {formatDuration(
-                          module.durationMinutes,
-                          module.durationSeconds
-                        )}
-                      </span>
-                    )}
-                    {module.weightKg !== undefined && (
-                      <span className="badge badge-outline badge-xs">
-                        Vikt: {module.weightKg} kg
-                      </span>
-                    )}
-                  </div>
-                </div>
-              </article>
-            ))}
-
-            {filteredModules.length === 0 && (
-              <p className="rounded-2xl border border-dashed border-base-200 p-6 text-center text-sm text-base-content/60">
-                No modules match your search. Clear filters to see more.
+function EditModuleModal({
+  isOpen,
+  editingContext,
+  editingModuleForm,
+  editFormError,
+  isEditMode,
+  setIsEditMode,
+  setEditingModuleForm,
+  onClose,
+  onSave,
+}: EditModuleModalProps) {
+  return (
+    <dialog className={`modal ${isOpen ? "modal-open" : ""}`}>
+      <div className="modal-box max-w-md space-y-4">
+        <div className="flex items-start justify-between gap-4">
+          <div>
+            <h3 className="text-xl font-semibold">{editingContext?.moduleId}</h3>
+            {editingContext && (
+              <p className="text-xs text-base-content/60">
+                {editingContext.type === "library" ? "Bibliotek" : "Schedule"}
               </p>
             )}
           </div>
+          <button className="btn btn-circle btn-ghost btn-sm" onClick={onClose}>
+            ✕
+          </button>
+        </div>
+
+        {editFormError && <div className="alert alert-error text-sm">{editFormError}</div>}
+
+        {isEditMode && editingModuleForm && (
+          <form className="space-y-3" onSubmit={onSave}>
+            <ModuleFormFields
+              formState={editingModuleForm}
+              onChange={setEditingModuleForm as Dispatch<SetStateAction<ModuleForm>>}
+            />
+
+            <div className="mt-7 flex flex-row gap-2 sm:flex-row">
+              <button type="button" className="btn flex-1" onClick={onClose}>
+                Avbryt
+              </button>
+              <button type="submit" className="btn btn-secondary flex-1">
+                Spara ändringar
+              </button>
+            </div>
+          </form>
+        )}
+
+        {!isEditMode && (
+          <div className="flex flex-row gap-2 sm:flex-row">
+            <button type="button" className="btn flex-1" onClick={onClose}>
+              Stäng
+            </button>
+            <button
+              type="button"
+              className="btn btn-secondary flex-1"
+              onClick={() => setIsEditMode(true)}
+            >
+              Redigera
+            </button>
+          </div>
+        )}
+      </div>
+      <form method="dialog" className="modal-backdrop" onSubmit={onClose}>
+        <button>close</button>
+      </form>
+    </dialog>
+  );
+}
+
+type ReusableBlocksDrawerProps = {
+  search: string;
+  setSearch: Dispatch<SetStateAction<string>>;
+  filteredModules: Module[];
+  setActiveDrag: Dispatch<SetStateAction<ActiveDrag | null>>;
+  dragPointerOffsetYRef: React.MutableRefObject<number | null>;
+  setDropPreview: Dispatch<
+    SetStateAction<{ dayId: string; index: number } | null>
+  >;
+  startEditingModule: (module: Module, context: EditingContext) => void;
+  handleRemoveLibraryModule: (moduleId: string) => void;
+  resetModuleForm: () => void;
+  openCreateModal: () => void;
+};
+
+function ReusableBlocksDrawer({
+  search,
+  setSearch,
+  filteredModules,
+  setActiveDrag,
+  dragPointerOffsetYRef,
+  setDropPreview,
+  startEditingModule,
+  handleRemoveLibraryModule,
+  resetModuleForm,
+  openCreateModal,
+}: ReusableBlocksDrawerProps) {
+  return (
+    <div className="drawer-side">
+      <label
+        htmlFor="reusable-blocks-drawer"
+        aria-label="close sidebar"
+        className="drawer-overlay"
+      ></label>
+      <div className="flex h-full w-65 min-w-[150px] flex-col gap-3 border-r border-base-300 bg-primary-content p-4">
+        <div className="flex items-center justify-between gap-2">
+          <p className="text-xs font-semibold uppercase tracking-wide text-neutral">
+            Reusable blocks
+          </p>
+          <label htmlFor="reusable-blocks-drawer" className="btn btn-ghost btn-circle btn-xs lg:hidden">
+            ✕
+          </label>
+        </div>
+        <div className="flex flex-col gap-2">
+          <label className="input input-bordered input-sm flex items-center gap-2 lg:min-w-[10rem]">
+            <input
+              type="search"
+              value={search}
+              onChange={(event) => setSearch(event.target.value)}
+              placeholder="Search blocks"
+              className="grow"
+            />
+          </label>
+          <button
+            type="button"
+            className="btn btn-secondary btn-sm self-start"
+            onClick={() => {
+              resetModuleForm();
+              openCreateModal();
+            }}
+          >
+            Create block
+          </button>
+        </div>
+        <div className="min-h-0 flex-1 space-y-3 overflow-y-auto pr-1">
+          {filteredModules.map((module) => (
+            <article
+              key={module.id}
+              draggable
+              onDragStart={(event) => {
+                const rect = (event.currentTarget as HTMLDivElement).getBoundingClientRect();
+                dragPointerOffsetYRef.current = event.clientY - rect.top;
+
+                setActiveDrag({
+                  module,
+                  source: { type: "library" },
+                });
+              }}
+              onDragEnd={() => {
+                setActiveDrag(null);
+                setDropPreview(null);
+              }}
+              onClick={() =>
+                startEditingModule(module, {
+                  type: "library",
+                  moduleId: module.id,
+                })
+              }
+              className="card cursor-grab overflow-hidden border border-base-200 bg-base-100 transition hover:border-primary"
+            >
+              <div className="card-body flex flex-col gap-2 p-4">
+                <div className="flex items-start justify-between gap-3">
+                  <p className="text-xs font-semibold">{module.title}</p>
+                  <button
+                    type="button"
+                    onClick={(event) => {
+                      event.stopPropagation();
+                      handleRemoveLibraryModule(module.id);
+                    }}
+                    className="btn btn-ghost btn-xs text-error"
+                    aria-label={`Delete ${module.title}`}
+                  >
+                    Delete
+                  </button>
+                </div>
+                <p className="max-h-16 overflow-hidden text-xs text-base-content/70">
+                  {module.description}
+                </p>
+                <ModuleBadges module={module} />
+              </div>
+            </article>
+          ))}
+
+          {filteredModules.length === 0 && (
+            <p className="rounded-2xl border border-dashed border-base-200 p-6 text-center text-sm text-base-content/60">
+              No modules match your search. Clear filters to see more.
+            </p>
+          )}
         </div>
       </div>
     </div>
