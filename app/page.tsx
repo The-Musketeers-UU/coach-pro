@@ -720,7 +720,7 @@ export default function CoachDashboard() {
             )}
 
             <form className="space-y-3" onSubmit={handleAddModule}>
-              <div className="flex flex-col gap-2">
+              <div className="flex flex-col gap-4">
                 <label className="form-control flex flex-col gap-1">
                   <span className="label-text text-sm">Titel:</span>
                   <input
@@ -829,7 +829,7 @@ export default function CoachDashboard() {
                     <input
                       type="number"
                       min="0"
-                      className="input input-sm input-bordered w-20"
+                      className="input input-sm input-bordered w-15"
                       value={newModule.durationMinutes}
                       onChange={(event) =>
                         setNewModule((prev) => ({
@@ -849,7 +849,7 @@ export default function CoachDashboard() {
                       type="number"
                       min="0"
                       max="59"
-                      className="input input-sm input-bordered w-20"
+                      className="input input-sm input-bordered w-15"
                       value={newModule.durationSeconds}
                       onChange={(event) =>
                         setNewModule((prev) => ({
@@ -864,16 +864,16 @@ export default function CoachDashboard() {
                 </div>
               </div>
 
-              <div className="flex flex-col gap-2 sm:flex-row">
-                <button type="submit" className="btn btn-secondary w-full">
-                  Lägg till block i biblioteket
-                </button>
+              <div className="flex flex-row gap-2 sm:flex-row mt-7">
                 <button
                   type="button"
-                  className="btn btn-ghost w-full"
+                  className="btn flex-1"
                   onClick={resetModuleForm}
                 >
                   Rensa formulär
+                </button>
+								<button type="submit" className="btn btn-secondary flex-1">
+                  Skapa block 
                 </button>
               </div>
             </form>
