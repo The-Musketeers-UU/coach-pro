@@ -45,20 +45,22 @@ export function WeekScheduleView({
   return (
     <div className="card bg-base-200 border border-base-300 shadow-md">
       <div className="card-body gap-6">
-        <div className="flex flex-col gap-2 lg:flex-row lg:items-center lg:justify-between">
+        <div className="grid grid-cols-3 items-center w-full">
           <div>
             <h2 className="text-xl font-semibold">
               {week ? week.label : emptyWeekTitle}
             </h2>
             <p className="text-sm text-base-content/70">
-              {week
-                ? `${focusLabel}: ${week.focus}`
-                : emptyWeekDescription}
+              {week ? `${focusLabel}: ${week.focus}` : emptyWeekDescription}
             </p>
           </div>
-          {effectiveTitle && (
-            <p className="badge badge-lg badge-outline">{effectiveTitle}</p>
-          )}
+          <div className="justify-self-center">
+            {effectiveTitle && (
+              <p className="badge badge-lg badge-secondary badge-soft badge-outline max-w-40">
+                {effectiveTitle}
+              </p>
+            )}
+          </div>
         </div>
 
         {week ? (
@@ -107,7 +109,8 @@ export function WeekScheduleView({
                             Vikt: {formatWeight(module.weightKg)}
                           </span>
                           <span className="badge badge-outline badge-xs">
-                            Tid: {formatDuration(
+                            Tid:{" "}
+                            {formatDuration(
                               module.durationMinutes,
                               module.durationSeconds
                             ) || "-"}
@@ -141,7 +144,9 @@ export function WeekScheduleView({
                 <p className="text-xs font-semibold uppercase tracking-wide text-neutral">
                   Blockdetaljer
                 </p>
-                <h3 className="text-xl font-semibold">{selectedModule.title}</h3>
+                <h3 className="text-xl font-semibold">
+                  {selectedModule.title}
+                </h3>
               </div>
               <button
                 className="btn btn-circle btn-ghost btn-sm"
@@ -153,7 +158,9 @@ export function WeekScheduleView({
 
             <div className="space-y-3 rounded-2xl border border-base-300 bg-base-100 p-4">
               <div className="space-y-1">
-                <p className="text-xs uppercase tracking-wide text-neutral">Titel</p>
+                <p className="text-xs uppercase tracking-wide text-neutral">
+                  Titel
+                </p>
                 <p className="text-base font-semibold text-base-content">
                   {selectedModule.title}
                 </p>
@@ -197,14 +204,18 @@ export function WeekScheduleView({
                 </div>
 
                 <div className="space-y-1">
-                  <p className="text-xs uppercase tracking-wide text-neutral">Vikt</p>
+                  <p className="text-xs uppercase tracking-wide text-neutral">
+                    Vikt
+                  </p>
                   <p className="text-sm text-base-content/80">
                     {formatWeight(selectedModule.weightKg)}
                   </p>
                 </div>
 
                 <div className="space-y-1 sm:col-span-2">
-                  <p className="text-xs uppercase tracking-wide text-neutral">Tid</p>
+                  <p className="text-xs uppercase tracking-wide text-neutral">
+                    Tid
+                  </p>
                   <p className="text-sm text-base-content/80">
                     {formatDuration(
                       selectedModule.durationMinutes,

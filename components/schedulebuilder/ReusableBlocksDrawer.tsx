@@ -89,7 +89,7 @@ export function ReusableBlocksDrawer({
                   moduleId: module.id,
                 })
               }
-              className="card cursor-grab overflow-hidden border border-base-200 bg-base-100 transition hover:border-primary"
+              className="card cursor-grab overflow-hidden border border-base-200 bg-base-100 transition hover:border-primary rounded-2xl"
             >
               <div className="card-body flex flex-col gap-2 p-4">
                 <div className="flex items-start justify-between gap-3">

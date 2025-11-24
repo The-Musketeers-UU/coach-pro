@@ -50,18 +50,20 @@ export function ScheduleSection({
     <section className="w-full max-w-full self-center space-y-6">
       <div className="card bg-base-200 border border-base-300 shadow-md">
         <div className="card-body gap-6">
-          <header className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+          <div className="grid grid-cols-3 items-center w-full">
             <div>
               <p className="text-xs font-semibold uppercase tracking-wide text-neutral">
                 Schedule in progress
               </p>
-              <h2 className="text-3xl font-semibold">Camp Momentum · Week 43</h2>
+              <h2 className="text-2xl font-semibold">Camp Momentum</h2>
             </div>
-
-            <button className="btn btn-secondary btn-sm" onClick={onAssignClick}>
+            <p className="badge badge-lg badge-secondary badge-soft badge-outline max-w-40 justify-self-center">
+              Vecka 34
+            </p>
+            <button className="btn btn-secondary btn-sm max-w-35 justify-self-end" onClick={onAssignClick}>
               Assign schedule
             </button>
-          </header>
+          </div>
 
           <div className="grid grid-cols-1 gap-1 md:grid-cols-2 xl:grid-cols-7">
             {days.map((day) => (
