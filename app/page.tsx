@@ -159,6 +159,7 @@ export default function CoachDashboard() {
     null
   );
   const [editFormError, setEditFormError] = useState<string | null>(null);
+  const [isEditMode, setIsEditMode] = useState(false);
   const [dropPreview, setDropPreview] = useState<
     { dayId: string; index: number } | null
   >(null);
@@ -315,10 +316,12 @@ export default function CoachDashboard() {
     setEditingContext(null);
     setEditingModuleForm(null);
     setEditFormError(null);
+    setIsEditMode(false);
   };
 
   const startEditingModule = (module: Module, context: EditingContext) => {
     setEditFormError(null);
+    setIsEditMode(false);
     setEditingContext(context);
     setEditingModuleForm({
       title: module.title,
@@ -950,10 +953,12 @@ export default function CoachDashboard() {
               <div>
                 <p className="text-xs font-semibold uppercase tracking-wide text-neutral">
                   {editingContext?.type === "schedule"
-                    ? "Redigera schemalagt block"
-                    : "Redigera återanvändbart block"}
+                    ? "Schemalagt block"
+                    : "Återanvändbart block"}
                 </p>
-                <h3 className="text-xl font-semibold">Redigera block</h3>
+                <h3 className="text-xl font-semibold">
+                  {isEditMode ? "Redigera block" : "Blockdetaljer"}
+                </h3>
               </div>
               <button
                 className="btn btn-circle btn-ghost btn-sm"
@@ -968,187 +973,282 @@ export default function CoachDashboard() {
             )}
 
             {editingModuleForm && (
-              <form className="space-y-3" onSubmit={handleSaveEditedModule}>
-                <div className="flex flex-col gap-4">
-                  <label className="form-control flex flex-col gap-1">
-                    <span className="label-text text-sm">Titel:</span>
-                    <input
-                      type="text"
-                      value={editingModuleForm.title}
-                      onChange={(event) =>
-                        setEditingModuleForm((prev) =>
-                          prev
-                            ? {
-                                ...prev,
-                                title: event.target.value,
-                              }
-                            : prev
-                        )
-                      }
-                      className="input input-sm input-bordered w-full"
-                      placeholder="t.ex. Explosiv acceleration"
-                    />
-                  </label>
+              <div className="space-y-4">
+                {!isEditMode && (
+                  <div className="space-y-3 rounded-2xl border border-base-300 bg-base-100 p-4">
+                    <div className="space-y-1">
+                      <p className="text-xs uppercase tracking-wide text-neutral">Titel</p>
+                      <p className="text-base font-semibold text-base-content">
+                        {editingModuleForm.title}
+                      </p>
+                    </div>
 
-                  <label className="form-control flex-col flex gap-1">
-                    <span className="label-text text-sm">Beskrivning:</span>
-                    <textarea
-                      className="textarea textarea-bordered w-full"
-                      rows={3}
-                      placeholder="Vad är syftet med blocket?"
-                      value={editingModuleForm.description}
-                      onChange={(event) =>
-                        setEditingModuleForm((prev) =>
-                          prev
-                            ? {
-                                ...prev,
-                                description: event.target.value,
-                              }
-                            : prev
-                        )
-                      }
-                    />
-                  </label>
+                    <div className="space-y-1">
+                      <p className="text-xs uppercase tracking-wide text-neutral">
+                        Beskrivning
+                      </p>
+                      <p className="text-sm leading-relaxed text-base-content/80">
+                        {editingModuleForm.description}
+                      </p>
+                    </div>
 
-                  <label className="form-control flex flex-col gap-1">
-                    <span className="label-text text-sm">Kategori:</span>
-                    <select
-                      className="select select-bordered select-sm"
-                      value={editingModuleForm.category}
-                      onChange={(event) =>
-                        setEditingModuleForm((prev) =>
-                          prev
-                            ? {
-                                ...prev,
-                                category: event.target.value as Category,
-                              }
-                            : prev
-                        )
-                      }
-                      required
-                    >
-                      <option value="" disabled>
-                        Välj kategori
-                      </option>
-                      <option value="warmup">Uppvärmning</option>
-                      <option value="kondition">Kondition</option>
-                      <option value="styrka">Styrka</option>
-                    </select>
-                  </label>
+                    <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                      <div className="space-y-1">
+                        <p className="text-xs uppercase tracking-wide text-neutral">
+                          Kategori
+                        </p>
+                        <p className="badge badge-outline capitalize">
+                          {editingModuleForm.category}
+                        </p>
+                      </div>
 
-                  <label className="form-control flex flex-col gap-1">
-                    <span className="label-text text-sm">Underkategori:</span>
-                    <input
-                      type="text"
-                      className="input input-sm input-bordered"
-                      value={editingModuleForm.subcategory}
-                      onChange={(event) =>
-                        setEditingModuleForm((prev) =>
-                          prev
-                            ? { ...prev, subcategory: event.target.value }
-                            : prev
-                        )
-                      }
-                      placeholder="t.ex. Intervaller, baslyft"
-                    />
-                  </label>
-                  <label className="form-control flex gap-4 items-end">
-                    <span className="label-text text-sm">Distans (m):</span>
-                    <input
-                      type="number"
-                      min="0"
-                      className="input input-sm input-bordered w-20"
-                      value={editingModuleForm.distanceMeters}
-                      onChange={(event) =>
-                        setEditingModuleForm((prev) =>
-                          prev
-                            ? { ...prev, distanceMeters: event.target.value }
-                            : prev
-                        )
-                      }
-                      placeholder=""
-                    />
-                  </label>
+                      <div className="space-y-1">
+                        <p className="text-xs uppercase tracking-wide text-neutral">
+                          Underkategori
+                        </p>
+                        <p className="text-sm text-base-content/80">
+                          {editingModuleForm.subcategory || "-"}
+                        </p>
+                      </div>
 
-                  <label className="form-control flex gap-4 items-end">
-                    <span className="label-text text-sm">Vikt (kg):</span>
-                    <input
-                      type="number"
-                      min="0"
-                      className="input input-sm input-bordered w-20"
-                      value={editingModuleForm.weightKg}
-                      onChange={(event) =>
-                        setEditingModuleForm((prev) =>
-                          prev
-                            ? { ...prev, weightKg: event.target.value }
-                            : prev
-                        )
-                      }
-                      placeholder=""
-                    />
-                  </label>
-                  <div className="flex flex-row gap-2 items-end">
-                    <label className="form-control flex gap-4 items-end">
-                      <span className="label-text text-sm">Tid: </span>
-                      <input
-                        type="number"
-                        min="0"
-                        className="input input-sm input-bordered w-15"
-                        value={editingModuleForm.durationMinutes}
-                        onChange={(event) =>
-                          setEditingModuleForm((prev) =>
-                            prev
-                              ? {
-                                  ...prev,
-                                  durationMinutes: event.target.value,
-                                }
-                              : prev
-                          )
-                        }
-                        placeholder=""
-                      />
-                    </label>
+                      <div className="space-y-1">
+                        <p className="text-xs uppercase tracking-wide text-neutral">
+                          Distans
+                        </p>
+                        <p className="text-sm text-base-content/80">
+                          {editingModuleForm.distanceMeters
+                            ? `${editingModuleForm.distanceMeters} m`
+                            : "-"}
+                        </p>
+                      </div>
 
-                    <p className="text-sm">min</p>
+                      <div className="space-y-1">
+                        <p className="text-xs uppercase tracking-wide text-neutral">Vikt</p>
+                        <p className="text-sm text-base-content/80">
+                          {editingModuleForm.weightKg
+                            ? `${editingModuleForm.weightKg} kg`
+                            : "-"}
+                        </p>
+                      </div>
 
-                    <label className="form-control">
-                      <span className="label-text text-sm"></span>
-                      <input
-                        type="number"
-                        min="0"
-                        max="59"
-                        className="input input-sm input-bordered w-15"
-                        value={editingModuleForm.durationSeconds}
-                        onChange={(event) =>
-                          setEditingModuleForm((prev) =>
-                            prev
-                              ? {
-                                  ...prev,
-                                  durationSeconds: event.target.value,
-                                }
-                              : prev
-                          )
-                        }
-                        placeholder=""
-                      />
-                    </label>
-                    <p className="text-sm">sek</p>
+                      <div className="space-y-1">
+                        <p className="text-xs uppercase tracking-wide text-neutral">Tid</p>
+                        <p className="text-sm text-base-content/80">
+                          {editingModuleForm.durationMinutes || editingModuleForm.durationSeconds
+                            ? `${editingModuleForm.durationMinutes || 0} min ${
+                                editingModuleForm.durationSeconds || 0
+                              } sek`
+                            : "-"}
+                        </p>
+                      </div>
+                    </div>
                   </div>
-                </div>
+                )}
 
-                <div className="flex flex-row gap-2 sm:flex-row mt-7">
-                  <button
-                    type="button"
-                    className="btn flex-1"
-                    onClick={closeEditModal}
-                  >
-                    Avbryt
-                  </button>
-                  <button type="submit" className="btn btn-secondary flex-1">
-                    Spara ändringar
-                  </button>
-                </div>
-              </form>
+                {isEditMode && (
+                  <form className="space-y-3" onSubmit={handleSaveEditedModule}>
+                    <div className="flex flex-col gap-4">
+                      <label className="form-control flex flex-col gap-1">
+                        <span className="label-text text-sm">Titel:</span>
+                        <input
+                          type="text"
+                          value={editingModuleForm.title}
+                          onChange={(event) =>
+                            setEditingModuleForm((prev) =>
+                              prev
+                                ? {
+                                    ...prev,
+                                    title: event.target.value,
+                                  }
+                                : prev
+                            )
+                          }
+                          className="input input-sm input-bordered w-full"
+                          placeholder="t.ex. Explosiv acceleration"
+                        />
+                      </label>
+
+                      <label className="form-control flex-col flex gap-1">
+                        <span className="label-text text-sm">Beskrivning:</span>
+                        <textarea
+                          className="textarea textarea-bordered w-full"
+                          rows={3}
+                          placeholder="Vad är syftet med blocket?"
+                          value={editingModuleForm.description}
+                          onChange={(event) =>
+                            setEditingModuleForm((prev) =>
+                              prev
+                                ? {
+                                    ...prev,
+                                    description: event.target.value,
+                                  }
+                                : prev
+                            )
+                          }
+                          required
+                        ></textarea>
+                      </label>
+
+                      <label className="form-control flex flex-col gap-1">
+                        <span className="label-text text-sm">Kategori:</span>
+                        <select
+                          className="select select-bordered select-sm"
+                          value={editingModuleForm.category}
+                          onChange={(event) =>
+                            setEditingModuleForm((prev) =>
+                              prev
+                                ? {
+                                    ...prev,
+                                    category: event.target.value as Category,
+                                  }
+                                : prev
+                            )
+                          }
+                          required
+                        >
+                          <option value="" disabled>
+                            Välj kategori
+                          </option>
+                          <option value="warmup">Uppvärmning</option>
+                          <option value="kondition">Kondition</option>
+                          <option value="styrka">Styrka</option>
+                        </select>
+                      </label>
+
+                      <label className="form-control flex flex-col gap-1">
+                        <span className="label-text text-sm">Underkategori:</span>
+                        <input
+                          type="text"
+                          className="input input-sm input-bordered"
+                          value={editingModuleForm.subcategory}
+                          onChange={(event) =>
+                            setEditingModuleForm((prev) =>
+                              prev
+                                ? { ...prev, subcategory: event.target.value }
+                                : prev
+                            )
+                          }
+                          placeholder="t.ex. Intervaller, baslyft"
+                        />
+                      </label>
+                      <label className="form-control flex gap-4 items-end">
+                        <span className="label-text text-sm">Distans (m):</span>
+                        <input
+                          type="number"
+                          min="0"
+                          className="input input-sm input-bordered w-20"
+                          value={editingModuleForm.distanceMeters}
+                          onChange={(event) =>
+                            setEditingModuleForm((prev) =>
+                              prev
+                                ? { ...prev, distanceMeters: event.target.value }
+                                : prev
+                            )
+                          }
+                          placeholder=""
+                        />
+                      </label>
+
+                      <label className="form-control flex gap-4 items-end">
+                        <span className="label-text text-sm">Vikt (kg):</span>
+                        <input
+                          type="number"
+                          min="0"
+                          className="input input-sm input-bordered w-20"
+                          value={editingModuleForm.weightKg}
+                          onChange={(event) =>
+                            setEditingModuleForm((prev) =>
+                              prev
+                                ? { ...prev, weightKg: event.target.value }
+                                : prev
+                            )
+                          }
+                          placeholder=""
+                        />
+                      </label>
+                      <div className="flex flex-row gap-2 items-end">
+                        <label className="form-control flex gap-4 items-end">
+                          <span className="label-text text-sm">Tid: </span>
+                          <input
+                            type="number"
+                            min="0"
+                            className="input input-sm input-bordered w-15"
+                            value={editingModuleForm.durationMinutes}
+                            onChange={(event) =>
+                              setEditingModuleForm((prev) =>
+                                prev
+                                  ? {
+                                      ...prev,
+                                      durationMinutes: event.target.value,
+                                    }
+                                  : prev
+                              )
+                            }
+                            placeholder=""
+                          />
+                        </label>
+
+                        <p className="text-sm">min</p>
+
+                        <label className="form-control">
+                          <span className="label-text text-sm"></span>
+                          <input
+                            type="number"
+                            min="0"
+                            max="59"
+                            className="input input-sm input-bordered w-15"
+                            value={editingModuleForm.durationSeconds}
+                            onChange={(event) =>
+                              setEditingModuleForm((prev) =>
+                                prev
+                                  ? {
+                                      ...prev,
+                                      durationSeconds: event.target.value,
+                                    }
+                                  : prev
+                              )
+                            }
+                            placeholder=""
+                          />
+                        </label>
+                        <p className="text-sm">sek</p>
+                      </div>
+                    </div>
+
+                    <div className="flex flex-row gap-2 sm:flex-row mt-7">
+                      <button
+                        type="button"
+                        className="btn flex-1"
+                        onClick={closeEditModal}
+                      >
+                        Avbryt
+                      </button>
+                      <button type="submit" className="btn btn-secondary flex-1">
+                        Spara ändringar
+                      </button>
+                    </div>
+                  </form>
+                )}
+
+                {!isEditMode && (
+                  <div className="flex flex-row gap-2 sm:flex-row">
+                    <button
+                      type="button"
+                      className="btn flex-1"
+                      onClick={closeEditModal}
+                    >
+                      Stäng
+                    </button>
+                    <button
+                      type="button"
+                      className="btn btn-secondary flex-1"
+                      onClick={() => setIsEditMode(true)}
+                    >
+                      Redigera
+                    </button>
+                  </div>
+                )}
+              </div>
             )}
           </div>
           <form
