@@ -3,7 +3,7 @@
 export function ThemeToggle() {
   return (
     <div className="dropdown">
-      <div tabIndex={0} role="button" className="btn btn-secondary btn-sm rounded-full px-4">
+      <div tabIndex={0} role="button" className="btn btn-ghost btn-sm rounded-full px-4">
         Färgtema
         <svg
           width="12px"
