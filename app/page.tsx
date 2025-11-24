@@ -945,7 +945,7 @@ export default function CoachDashboard() {
         </dialog>
 
         <dialog className={`modal ${editingContext ? "modal-open" : ""}`}>
-          <div className="modal-box max-w-2xl space-y-6">
+          <div className="modal-box max-w-md space-y-4">
             <div className="flex items-start justify-between gap-4">
               <div>
                 <p className="text-xs font-semibold uppercase tracking-wide text-neutral">
@@ -953,9 +953,7 @@ export default function CoachDashboard() {
                     ? "Redigera schemalagt block"
                     : "Redigera återanvändbart block"}
                 </p>
-                <h3 className="text-xl font-semibold">
-                  {editingModuleForm?.title}
-                </h3>
+                <h3 className="text-xl font-semibold">Redigera block</h3>
               </div>
               <button
                 className="btn btn-circle btn-ghost btn-sm"
@@ -970,104 +968,96 @@ export default function CoachDashboard() {
             )}
 
             {editingModuleForm && (
-              <form
-                className="space-y-3 flex flex-col"
-                onSubmit={handleSaveEditedModule}
-              >
-                <label className="form-control">
-                  <span className="label-text text-sm">Titel</span>
-                  <input
-                    type="text"
-                    value={editingModuleForm.title}
-                    onChange={(event) =>
-                      setEditingModuleForm((prev) =>
-                        prev
-                          ? {
-                              ...prev,
-                              title: event.target.value,
-                            }
-                          : prev
-                      )
-                    }
-                    className="input input-sm input-bordered"
-                    placeholder="t.ex. Explosiv acceleration"
-                  />
-                </label>
+              <form className="space-y-3" onSubmit={handleSaveEditedModule}>
+                <div className="flex flex-col gap-4">
+                  <label className="form-control flex flex-col gap-1">
+                    <span className="label-text text-sm">Titel:</span>
+                    <input
+                      type="text"
+                      value={editingModuleForm.title}
+                      onChange={(event) =>
+                        setEditingModuleForm((prev) =>
+                          prev
+                            ? {
+                                ...prev,
+                                title: event.target.value,
+                              }
+                            : prev
+                        )
+                      }
+                      className="input input-sm input-bordered w-full"
+                      placeholder="t.ex. Explosiv acceleration"
+                    />
+                  </label>
 
-                <label className="form-control">
-                  <span className="label-text text-sm">Beskrivning</span>
-                  <textarea
-                    className="textarea textarea-bordered"
-                    rows={3}
-                    placeholder="Vad är syftet med blocket?"
-                    value={editingModuleForm.description}
-                    onChange={(event) =>
-                      setEditingModuleForm((prev) =>
-                        prev
-                          ? {
-                              ...prev,
-                              description: event.target.value,
-                            }
-                          : prev
-                      )
-                    }
-                  />
-                </label>
+                  <label className="form-control flex-col flex gap-1">
+                    <span className="label-text text-sm">Beskrivning:</span>
+                    <textarea
+                      className="textarea textarea-bordered w-full"
+                      rows={3}
+                      placeholder="Vad är syftet med blocket?"
+                      value={editingModuleForm.description}
+                      onChange={(event) =>
+                        setEditingModuleForm((prev) =>
+                          prev
+                            ? {
+                                ...prev,
+                                description: event.target.value,
+                              }
+                            : prev
+                        )
+                      }
+                    />
+                  </label>
 
-                <label className="form-control">
-                  <span className="label-text text-sm">Kategori</span>
-                  <select
-                    className="select select-bordered select-sm"
-                    value={editingModuleForm.category}
-                    onChange={(event) =>
-                      setEditingModuleForm((prev) =>
-                        prev
-                          ? {
-                              ...prev,
-                              category: event.target.value as Category,
-                            }
-                          : prev
-                      )
-                    }
-                    required
-                  >
-                    <option value="" disabled>
-                      Välj kategori
-                    </option>
-                    <option value="warmup">Uppvärmning</option>
-                    <option value="kondition">Kondition</option>
-                    <option value="styrka">Styrka</option>
-                  </select>
-                </label>
+                  <label className="form-control flex flex-col gap-1">
+                    <span className="label-text text-sm">Kategori:</span>
+                    <select
+                      className="select select-bordered select-sm"
+                      value={editingModuleForm.category}
+                      onChange={(event) =>
+                        setEditingModuleForm((prev) =>
+                          prev
+                            ? {
+                                ...prev,
+                                category: event.target.value as Category,
+                              }
+                            : prev
+                        )
+                      }
+                      required
+                    >
+                      <option value="" disabled>
+                        Välj kategori
+                      </option>
+                      <option value="warmup">Uppvärmning</option>
+                      <option value="kondition">Kondition</option>
+                      <option value="styrka">Styrka</option>
+                    </select>
+                  </label>
 
-                <label className="form-control">
-                  <span className="label-text label.sm">
-                    Underkategori (valfritt)
-                  </span>
-                  <input
-                    type="text"
-                    className="input input-sm input-bordered"
-                    value={editingModuleForm.subcategory}
-                    onChange={(event) =>
-                      setEditingModuleForm((prev) =>
-                        prev
-                          ? { ...prev, subcategory: event.target.value }
-                          : prev
-                      )
-                    }
-                    placeholder="t.ex. Intervaller, baslyft"
-                  />
-                </label>
-
-                <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
-                  <label className="form-control">
-                    <span className="label-text text-sm">
-                      Distans (meter, valfritt)
-                    </span>
+                  <label className="form-control flex flex-col gap-1">
+                    <span className="label-text text-sm">Underkategori:</span>
+                    <input
+                      type="text"
+                      className="input input-sm input-bordered"
+                      value={editingModuleForm.subcategory}
+                      onChange={(event) =>
+                        setEditingModuleForm((prev) =>
+                          prev
+                            ? { ...prev, subcategory: event.target.value }
+                            : prev
+                        )
+                      }
+                      placeholder="t.ex. Intervaller, baslyft"
+                    />
+                  </label>
+                  <label className="form-control flex gap-4 items-end">
+                    <span className="label-text text-sm">Distans (m):</span>
                     <input
                       type="number"
                       min="0"
-                      className="input input-sm input-bordered"
+                      className="input input-sm input-bordered w-20"
                       value={editingModuleForm.distanceMeters}
                       onChange={(event) =>
                         setEditingModuleForm((prev) =>
@@ -1076,18 +1066,16 @@ export default function CoachDashboard() {
                             : prev
                         )
                       }
-                      placeholder="t.ex. 5000"
+                      placeholder=""
                     />
                   </label>
 
-                  <label className="form-control">
-                    <span className="label-text text-sm">
-                      Vikt (kg, valfritt)
-                    </span>
+                  <label className="form-control flex gap-4 items-end">
+                    <span className="label-text text-sm">Vikt (kg):</span>
                     <input
                       type="number"
                       min="0"
-                      className="input input-sm input-bordered"
+                      className="input input-sm input-bordered w-20"
                       value={editingModuleForm.weightKg}
                       onChange={(event) =>
                         setEditingModuleForm((prev) =>
@@ -1096,62 +1084,68 @@ export default function CoachDashboard() {
                             : prev
                         )
                       }
-                      placeholder="t.ex. 20"
+                      placeholder=""
                     />
                   </label>
+                  <div className="flex flex-row gap-2 items-end">
+                    <label className="form-control flex gap-4 items-end">
+                      <span className="label-text text-sm">Tid: </span>
+                      <input
+                        type="number"
+                        min="0"
+                        className="input input-sm input-bordered w-15"
+                        value={editingModuleForm.durationMinutes}
+                        onChange={(event) =>
+                          setEditingModuleForm((prev) =>
+                            prev
+                              ? {
+                                  ...prev,
+                                  durationMinutes: event.target.value,
+                                }
+                              : prev
+                          )
+                        }
+                        placeholder=""
+                      />
+                    </label>
+
+                    <p className="text-sm">min</p>
+
+                    <label className="form-control">
+                      <span className="label-text text-sm"></span>
+                      <input
+                        type="number"
+                        min="0"
+                        max="59"
+                        className="input input-sm input-bordered w-15"
+                        value={editingModuleForm.durationSeconds}
+                        onChange={(event) =>
+                          setEditingModuleForm((prev) =>
+                            prev
+                              ? {
+                                  ...prev,
+                                  durationSeconds: event.target.value,
+                                }
+                              : prev
+                          )
+                        }
+                        placeholder=""
+                      />
+                    </label>
+                    <p className="text-sm">sek</p>
+                  </div>
                 </div>
 
-                <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
-                  <label className="form-control">
-                    <span className="label-text text-sm">
-                      Tid (minuter, valfritt)
-                    </span>
-                    <input
-                      type="number"
-                      min="0"
-                      className="input input-sm input-bordered"
-                      value={editingModuleForm.durationMinutes}
-                      onChange={(event) =>
-                        setEditingModuleForm((prev) =>
-                          prev
-                            ? { ...prev, durationMinutes: event.target.value }
-                            : prev
-                        )
-                      }
-                      placeholder="t.ex. 30"
-                    />
-                  </label>
-
-                  <label className="form-control">
-                    <span className="label-text text-sm">
-                      Tid (sekunder, valfritt)
-                    </span>
-                    <input
-                      type="number"
-                      min="0"
-                      max="59"
-                      className="input input-sm input-bordered"
-                      value={editingModuleForm.durationSeconds}
-                      onChange={(event) =>
-                        setEditingModuleForm((prev) =>
-                          prev
-                            ? { ...prev, durationSeconds: event.target.value }
-                            : prev
-                        )
-                      }
-                      placeholder="0-59"
-                    />
-                  </label>
-                </div>
-
-                <div className="flex gap-2 sm:flex-col">
-                  <p className="text-sm">
-                    {editingContext?.type === "schedule"
-                      ? "Changes will apply only to this block in the schedule. Reusable templates and other scheduled blocks remain unchanged."
-                      : "Changes will affect only the reusable block template, no blocks in schedules will be affected."}
-                  </p>
-                  <button type="submit" className="btn btn-secondary w-full">
-                    Save changes
+                <div className="flex flex-row gap-2 sm:flex-row mt-7">
+                  <button
+                    type="button"
+                    className="btn flex-1"
+                    onClick={closeEditModal}
+                  >
+                    Avbryt
+                  </button>
+                  <button type="submit" className="btn btn-secondary flex-1">
+                    Spara ändringar
                   </button>
                 </div>
               </form>
@@ -1165,6 +1159,7 @@ export default function CoachDashboard() {
             <button>close</button>
           </form>
         </dialog>
+
       </div>
 
       <div className="drawer-side">
