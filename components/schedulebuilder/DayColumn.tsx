@@ -5,9 +5,9 @@ import type {
   DropPreviewLocation,
   EditingContext,
   Module,
-} from "@/components/dashboard/types";
-import { DropPreviewBar } from "@/components/dashboard/DropPreviewBar";
-import { ScheduledModuleCard } from "@/components/dashboard/ScheduledModuleCard";
+} from "@/components/schedulebuilder/types";
+import { DropPreviewBar } from "@/components/schedulebuilder/DropPreviewBar";
+import { ScheduledModuleCard } from "@/components/schedulebuilder/ScheduledModuleCard";
 
 type DayColumnProps = {
   day: { id: string; label: string };

@@ -25,17 +25,17 @@ const createInitialFormState = (): ModuleForm => ({
 const createEmptySchedule = (days: Day[]): DaySchedule =>
   days.reduce((acc, day) => ({ ...acc, [day.id]: [] }), {} as DaySchedule);
 
-type UseDashboardStateArgs = {
+type UseScheduleBuilderStateArgs = {
   days: Day[];
   initialModules: Module[];
   athletes: Athlete[];
 };
 
-export const useDashboardState = ({
+export const useScheduleBuilderState = ({
   days,
   initialModules,
   athletes,
-}: UseDashboardStateArgs) => {
+}: UseScheduleBuilderStateArgs) => {
   const [search, setSearch] = useState("");
   const [activeDrag, setActiveDrag] = useState<ActiveDrag | null>(null);
   const [moduleLibrary, setModuleLibrary] = useState<Module[]>(initialModules);

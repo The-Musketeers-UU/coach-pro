@@ -6,8 +6,8 @@ import type {
   DropPreviewLocation,
   EditingContext,
   Module,
-} from "@/components/dashboard/types";
-import { DayColumn } from "@/components/dashboard/DayColumn";
+} from "@/components/schedulebuilder/types";
+import { DayColumn } from "@/components/schedulebuilder/DayColumn";
 
 type ScheduleSectionProps = {
   days: { id: string; label: string }[];

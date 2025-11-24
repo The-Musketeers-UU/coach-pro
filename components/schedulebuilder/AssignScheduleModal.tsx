@@ -1,4 +1,4 @@
-import type { Athlete } from "@/components/dashboard/types";
+import type { Athlete } from "@/components/schedulebuilder/types";
 
 type AssignScheduleModalProps = {
   isOpen: boolean;

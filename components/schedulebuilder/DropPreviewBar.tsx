@@ -1,6 +1,6 @@
 import type { DragEvent } from "react";
 
-import type { DropPreviewLocation } from "@/components/dashboard/types";
+import type { DropPreviewLocation } from "@/components/schedulebuilder/types";
 
 type DropPreviewBarProps = DropPreviewLocation & {
   isActive: boolean;

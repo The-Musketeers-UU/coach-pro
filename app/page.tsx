@@ -10,8 +10,8 @@ import {
   EditModuleModal,
   ReusableBlocksDrawer,
   ScheduleSection,
-  useDashboardState,
-} from "@/components/dashboard";
+  useScheduleBuilderState,
+} from "@/components/schedulebuilder";
 
 const initialModules: Module[] = [
   {
@@ -90,7 +90,7 @@ export default function CoachDashboard() {
     editingControls,
     assignControls,
     dragState,
-  } = useDashboardState({
+  } = useScheduleBuilderState({
     days,
     initialModules,
     athletes,

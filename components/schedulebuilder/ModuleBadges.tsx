@@ -1,4 +1,4 @@
-import type { Module } from "@/components/dashboard/types";
+import type { Module } from "@/components/schedulebuilder/types";
 
 const formatDuration = (minutes?: number, seconds?: number) => {
   const parts: string[] = [];

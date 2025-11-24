@@ -1,7 +1,7 @@
 import type { Dispatch, FormEvent, SetStateAction } from "react";
 
-import type { ModuleForm } from "@/components/dashboard/types";
-import { ModuleFormFields } from "@/components/dashboard/ModuleFormFields";
+import type { ModuleForm } from "@/components/schedulebuilder/types";
+import { ModuleFormFields } from "@/components/schedulebuilder/ModuleFormFields";
 
 type CreateModuleModalProps = {
   isOpen: boolean;

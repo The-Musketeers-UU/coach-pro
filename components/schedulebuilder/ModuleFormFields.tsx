@@ -1,6 +1,6 @@
 import type { Dispatch, SetStateAction } from "react";
 
-import type { Category, ModuleForm } from "@/components/dashboard/types";
+import type { Category, ModuleForm } from "@/components/schedulebuilder/types";
 
 type ModuleFormFieldsProps = {
   formState: ModuleForm;
