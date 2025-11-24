@@ -141,9 +141,6 @@ export function WeekScheduleView({
           <div className="modal-box max-w-md space-y-4">
             <div className="flex items-start justify-between gap-4">
               <div>
-                <p className="text-xs font-semibold uppercase tracking-wide text-neutral">
-                  Blockdetaljer
-                </p>
                 <h3 className="text-xl font-semibold">
                   {selectedModule.title}
                 </h3>

@@ -22,9 +22,9 @@ export function AssignScheduleModal({
       <div className="modal-box max-w-md space-y-4">
         <div className="flex items-start justify-between gap-4">
           <div>
-            <h3 className="text-xl font-semibold">Assign schedule</h3>
+            <h3 className="text-xl font-semibold">Tilldela schema</h3>
             <p className="text-sm text-base-content/60">
-              Select athletes to receive this training week.
+              Välj aktiva att dela veckoschemat med. 
             </p>
           </div>
           <button className="btn btn-circle btn-ghost btn-sm" onClick={onClose}>
@@ -34,7 +34,7 @@ export function AssignScheduleModal({
 
         <div className="space-y-4">
           <section className="space-y-2">
-            <p className="text-xs font-semibold uppercase tracking-wide text-neutral">Athletes</p>
+            <p className="text-xs font-semibold uppercase tracking-wide text-neutral">Aktiva</p>
             <div className="grid gap-2">
               {athletes.map((athlete) => (
                 <label

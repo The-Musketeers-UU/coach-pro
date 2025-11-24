@@ -78,7 +78,7 @@ export function ScheduledModuleCard({
               className="btn btn-ghost btn-xs text-error"
               aria-label={`Delete ${module.title}`}
             >
-              Delete
+              Radera
             </button>
           </div>
           <p className="text-xs text-base-content/70">{module.description}</p>

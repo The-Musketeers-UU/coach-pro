@@ -18,7 +18,7 @@ export default function AthleteSchedulePage() {
   return (
     <div className="min-h-screen">
       <div className="mx-auto max-w-full space-y-8 px-5 py-5">
-              <h1 className="text-xl font-semibold">Jordan&apos;s Schedules</h1>
+              <h1 className="text-xl font-semibold">Jordan&apos;s scheman</h1>
 
         <section className="space-y-4">
           <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">

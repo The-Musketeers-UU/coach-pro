@@ -1,6 +1,11 @@
 import type { Dispatch, MutableRefObject, SetStateAction } from "react";
 
-import type { ActiveDrag, DropPreviewLocation, EditingContext, Module } from "@/components/schedulebuilder/types";
+import type {
+  ActiveDrag,
+  DropPreviewLocation,
+  EditingContext,
+  Module,
+} from "@/components/schedulebuilder/types";
 import { ModuleBadges } from "@/components/schedulebuilder/ModuleBadges";
 
 type ReusableBlocksDrawerProps = {
@@ -38,9 +43,12 @@ export function ReusableBlocksDrawer({
       <div className="flex h-full w-65 min-w-[150px] flex-col gap-3 border-r border-base-300 bg-primary-content p-4">
         <div className="flex items-center justify-between gap-2">
           <p className="text-xs font-semibold uppercase tracking-wide text-neutral">
-            Reusable blocks
+            Sparade moduler
           </p>
-          <label htmlFor="reusable-blocks-drawer" className="btn btn-ghost btn-circle btn-xs lg:hidden">
+          <label
+            htmlFor="reusable-blocks-drawer"
+            className="btn btn-ghost btn-circle btn-xs lg:hidden"
+          >
             ✕
           </label>
         </div>
@@ -50,7 +58,7 @@ export function ReusableBlocksDrawer({
               type="search"
               value={search}
               onChange={(event) => setSearch(event.target.value)}
-              placeholder="Search blocks"
+              placeholder="Sök"
               className="grow"
             />
           </label>
@@ -62,7 +70,7 @@ export function ReusableBlocksDrawer({
               openCreateModal();
             }}
           >
-            Create block
+            Skapa ny modul
           </button>
         </div>
         <div className="min-h-0 flex-1 space-y-3 overflow-y-auto pr-1">
@@ -71,7 +79,9 @@ export function ReusableBlocksDrawer({
               key={module.id}
               draggable
               onDragStart={(event) => {
-                const rect = (event.currentTarget as HTMLDivElement).getBoundingClientRect();
+                const rect = (
+                  event.currentTarget as HTMLDivElement
+                ).getBoundingClientRect();
                 dragPointerOffsetYRef.current = event.clientY - rect.top;
 
                 setActiveDrag({
@@ -103,7 +113,7 @@ export function ReusableBlocksDrawer({
                     className="btn btn-ghost btn-xs text-error"
                     aria-label={`Delete ${module.title}`}
                   >
-                    Delete
+                    Radera
                   </button>
                 </div>
                 <p className="max-h-16 overflow-hidden text-xs text-base-content/70">
@@ -116,7 +126,7 @@ export function ReusableBlocksDrawer({
 
           {filteredModules.length === 0 && (
             <p className="rounded-2xl border border-dashed border-base-200 p-6 text-center text-sm text-base-content/60">
-              No modules match your search. Clear filters to see more.
+              Inga moduler matchar sökningen.
             </p>
           )}
         </div>

@@ -66,7 +66,7 @@ export function DayColumn({
       <div className="mt-3 flex-1 space-y-1">
         {modules.length === 0 && (
           <div className="flex h-full items-center justify-center rounded-xl border border-dashed border-base-200 bg-base-100/60 p-4 text-center text-xs text-base-content/60">
-            Drag a module to begin
+            Dra en modul hit
           </div>
         )}
 

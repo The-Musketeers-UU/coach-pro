@@ -10,11 +10,11 @@ const viewOptions = [
 ];
 
 const coachLinks = [
-  { href: "/", label: "Program Builder" },
-  { href: "/dashboard", label: "Training Dashboard" },
+  { href: "/", label: "Schemabyggare" },
+  { href: "/dashboard", label: "Träningsöversikt" },
 ];
 
-const athleteLinks = [{ href: "/athlete", label: "My Schedules" }];
+const athleteLinks = [{ href: "/athlete", label: "Mina scheman" }];
 
 export function SiteNav() {
   const pathname = usePathname();

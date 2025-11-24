@@ -66,13 +66,13 @@ const initialModules: Module[] = [
 ];
 
 const days: Day[] = [
-  { id: "mon", label: "Monday" },
-  { id: "tue", label: "Tuesday" },
-  { id: "wed", label: "Wednesday" },
-  { id: "thu", label: "Thursday" },
-  { id: "fri", label: "Friday" },
-  { id: "sat", label: "Saturday" },
-  { id: "sun", label: "Sunday" },
+  { id: "mon", label: "Måndag" },
+  { id: "tue", label: "Tisdag" },
+  { id: "wed", label: "Onsdag" },
+  { id: "thu", label: "Torsdag" },
+  { id: "fri", label: "Fredag" },
+  { id: "sat", label: "Lördag" },
+  { id: "sun", label: "Söndag" },
 ];
 
 const athletes: Athlete[] = [

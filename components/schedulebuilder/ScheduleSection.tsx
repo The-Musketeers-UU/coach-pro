@@ -53,15 +53,15 @@ export function ScheduleSection({
           <div className="grid grid-cols-3 items-center w-full">
             <div>
               <p className="text-xs font-semibold uppercase tracking-wide text-neutral">
-                Schedule in progress
+                Skapar schema
               </p>
-              <h2 className="text-2xl font-semibold">Camp Momentum</h2>
+              <h2 className="text-2xl font-semibold">Träningsläger</h2>
             </div>
             <p className="badge badge-lg badge-secondary badge-soft badge-outline max-w-40 justify-self-center">
               Vecka 34
             </p>
             <button className="btn btn-secondary btn-sm max-w-35 justify-self-end" onClick={onAssignClick}>
-              Assign schedule
+              Tilldela schema
             </button>
           </div>
 
