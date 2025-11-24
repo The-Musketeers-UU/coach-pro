@@ -17,7 +17,7 @@ export default function AthleteSchedulePage() {
 
   return (
     <div className="min-h-screen">
-      <div className="mx-auto max-w-6xl space-y-8 px-4 py-10">
+      <div className="mx-auto max-w-full space-y-8 px-5 py-10">
         <header className="rounded-3xl border border-base-300 bg-base-200 p-6 shadow-sm">
           <div className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
             <div>
