@@ -40,6 +40,7 @@ export function WeekScheduleView({
   const [selectedModule, setSelectedModule] = useState<ProgramModule | null>(
     null
   );
+  const effectiveTitle = title ?? `Vecka ${weekNumber}`;
 
   return (
     <div className="card bg-base-200 border border-base-300 shadow-md">
@@ -55,7 +56,9 @@ export function WeekScheduleView({
                 : emptyWeekDescription}
             </p>
           </div>
-          {title && <p className="badge badge-lg badge-outline">{title}</p>}
+          {effectiveTitle && (
+            <p className="badge badge-lg badge-outline">{effectiveTitle}</p>
+          )}
         </div>
 
         {week ? (
