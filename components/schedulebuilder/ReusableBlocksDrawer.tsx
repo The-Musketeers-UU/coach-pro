@@ -1,4 +1,5 @@
-import type { Dispatch, MutableRefObject, SetStateAction } from "react";
+import { useRef } from "react";
+import type { Dispatch, DragEvent, MutableRefObject, SetStateAction } from "react";
 
 import type {
   ActiveDrag,
@@ -22,7 +23,7 @@ type ReusableBlocksDrawerProps = {
   onHoverOpen: () => void;
   onHoverClose: () => void;
   onClose: () => void;
-  onDragEndClose: () => void;
+  onDragOutsideBounds: () => void;
 };
 
 export function ReusableBlocksDrawer({
@@ -39,13 +40,36 @@ export function ReusableBlocksDrawer({
   onHoverOpen,
   onHoverClose,
   onClose,
-  onDragEndClose,
+  onDragOutsideBounds,
 }: ReusableBlocksDrawerProps) {
+  const drawerRef = useRef<HTMLDivElement | null>(null);
+  const hasLeftDrawerDuringDragRef = useRef(false);
+
+  const closeWhenDraggingOutside = (event: DragEvent<HTMLElement>) => {
+    if (hasLeftDrawerDuringDragRef.current) return;
+
+    const rect = drawerRef.current?.getBoundingClientRect();
+    if (!rect) return;
+
+    const { clientX, clientY } = event;
+    const isOutside =
+      clientX < rect.left ||
+      clientX > rect.right ||
+      clientY < rect.top ||
+      clientY > rect.bottom;
+
+    if (isOutside) {
+      hasLeftDrawerDuringDragRef.current = true;
+      onDragOutsideBounds();
+    }
+  };
+
   return (
     <div
       className="drawer-side lg:fixed lg:inset-y-0 lg:left-0 lg:z-40 lg:w-65"
       onMouseEnter={onHoverOpen}
       onMouseLeave={onHoverClose}
+      ref={drawerRef}
     >
       <label
         htmlFor="reusable-blocks-drawer"
@@ -97,16 +121,18 @@ export function ReusableBlocksDrawer({
                   event.currentTarget as HTMLDivElement
                 ).getBoundingClientRect();
                 dragPointerOffsetYRef.current = event.clientY - rect.top;
+                hasLeftDrawerDuringDragRef.current = false;
 
                 setActiveDrag({
                   module,
                   source: { type: "library" },
                 });
               }}
+              onDrag={(event) => closeWhenDraggingOutside(event)}
               onDragEnd={() => {
                 setActiveDrag(null);
                 setDropPreview(null);
-                onDragEndClose();
+                hasLeftDrawerDuringDragRef.current = false;
               }}
               onClick={() =>
                 startEditingModule(module, {
