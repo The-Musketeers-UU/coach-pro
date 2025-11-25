@@ -17,20 +17,20 @@ const formatDuration = (minutes?: number, seconds?: number) => {
 export function ModuleBadges({ module }: { module: Module }) {
   return (
     <div className="flex flex-wrap gap-1">
-      <span className="badge badge-outline badge-xs capitalize">{module.category}</span>
+      <span className="badge badge-xs capitalize badge-accent">{module.category}</span>
       {module.subcategory && (
-        <span className="badge badge-outline badge-xs">Underkategori: {module.subcategory}</span>
+        <span className="badge badge-outline badge-xs capitalize badge-accent badge-soft">{module.subcategory}</span>
       )}
       {module.distanceMeters !== undefined && (
-        <span className="badge badge-outline badge-xs">Distans: {module.distanceMeters} m</span>
+        <span className="badge badge-xs">Distans: {module.distanceMeters} m</span>
       )}
       {formatDuration(module.durationMinutes, module.durationSeconds) && (
-        <span className="badge badge-outline badge-xs">
+        <span className="badge badge-xs">
           Tid: {formatDuration(module.durationMinutes, module.durationSeconds)}
         </span>
       )}
       {module.weightKg !== undefined && (
-        <span className="badge badge-outline badge-xs">Vikt: {module.weightKg} kg</span>
+        <span className="badge badge-xs">Vikt: {module.weightKg} kg</span>
       )}
     </div>
   );
