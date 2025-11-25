@@ -1,6 +1,7 @@
 export { AssignScheduleModal } from "./AssignScheduleModal";
 export { CreateModuleModal } from "./CreateModuleModal";
 export { DayColumn } from "./DayColumn";
+export { DrawerHandle } from "./DrawerHandle";
 export { DrawerToggle } from "./DrawerToggle";
 export { DropPreviewBar } from "./DropPreviewBar";
 export { EditModuleModal } from "./EditModuleModal";
