@@ -20,6 +20,10 @@ You can start editing the page by modifying `app/page.tsx`. The page auto-update
 
 This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
 
+## Supabase and Prisma
+
+If you see PostgREST errors like `Could not find the table 'public.user' in the schema cache`, make sure your Prisma schema has been applied to your Supabase database. See [docs/supabase-prisma.md](docs/supabase-prisma.md) for the steps to point Prisma at Supabase, deploy migrations locally, and run them from CI (e.g., Vercel) when you do not have direct terminal access.
+
 ## Learn More
 
 To learn more about Next.js, take a look at the following resources:
