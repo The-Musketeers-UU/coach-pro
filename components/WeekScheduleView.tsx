@@ -56,13 +56,6 @@ export function WeekScheduleView({
               {week ? `${focusLabel}: ${week.focus}` : emptyWeekDescription}
             </p>
           </div>
-          <div className="justify-self-center">
-            {effectiveTitle && (
-              <p className="badge badge-lg badge-secondary badge-soft badge-outline max-w-40">
-                {effectiveTitle}
-              </p>
-            )}
-          </div>
         </div>
 
         {week ? (
