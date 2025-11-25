@@ -77,7 +77,7 @@ export function ReusableBlocksDrawer({
         className="drawer-overlay 2xl:hidden"
         onClick={onClose}
       ></label>
-      <div className="flex h-full w-[210px] min-w-[150px] flex-col gap-3 border-r border-base-300 bg-primary-content p-4 shadow-2xl 2xl:h-screen 2xl:w-[260px] 2xl:border-r-0 2xl:border-r-transparent 2xl:shadow-xl">
+      <div className="flex h-full w-[225px] flex-col gap-3 border-r border-base-300 bg-primary-content p-4 pr-2 shadow-2xl 2xl:h-screen 2xl:w-[250px] 2xl:border-r-0 2xl:border-r-transparent 2xl:shadow-xl">
         <div className="flex items-center justify-between gap-2">
           <p className="text-xs font-semibold uppercase tracking-wide text-neutral">
             Sparade moduler
