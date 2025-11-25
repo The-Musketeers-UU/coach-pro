@@ -105,16 +105,14 @@ export default function CoachDashboard() {
   useEffect(() => {
     const mediaQuery = window.matchMedia("(min-width: 1024px)");
 
-    const openDrawerOnLargeScreens = () => {
-      if (mediaQuery.matches) {
-        setIsDrawerOpen(true);
-      }
+    const syncDrawerWithScreenSize = () => {
+      setIsDrawerOpen(mediaQuery.matches);
     };
 
-    openDrawerOnLargeScreens();
-    mediaQuery.addEventListener("change", openDrawerOnLargeScreens);
+    syncDrawerWithScreenSize();
+    mediaQuery.addEventListener("change", syncDrawerWithScreenSize);
 
-    return () => mediaQuery.removeEventListener("change", openDrawerOnLargeScreens);
+    return () => mediaQuery.removeEventListener("change", syncDrawerWithScreenSize);
   }, []);
 
   const handleSetActiveDrag = (drag: ActiveDrag | null) => {
