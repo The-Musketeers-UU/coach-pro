@@ -103,7 +103,7 @@ export default function CoachDashboard() {
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
 
   useEffect(() => {
-    const mediaQuery = window.matchMedia("(min-width: 1024px)");
+    const mediaQuery = window.matchMedia("(min-width: 1536px)");
 
     const syncDrawerWithScreenSize = () => {
       setIsDrawerOpen(mediaQuery.matches);
@@ -120,7 +120,7 @@ export default function CoachDashboard() {
   };
 
   return (
-    <div className={`drawer ${isDrawerOpen ? "drawer-open" : ""} lg:drawer-open`}>
+    <div className={`drawer ${isDrawerOpen ? "drawer-open" : ""} 2xl:drawer-open`}>
       <input
         id="reusable-blocks-drawer"
         type="checkbox"
@@ -128,7 +128,7 @@ export default function CoachDashboard() {
         checked={isDrawerOpen}
         onChange={(event) => setIsDrawerOpen(event.target.checked)}
       />
-      <div className="drawer-content min-h-screen lg:ml-[260px]">
+      <div className="drawer-content min-h-screen 2xl:ml-[260px]">
         <DrawerHandle
           isOpen={isDrawerOpen}
           onOpen={() => setIsDrawerOpen(true)}

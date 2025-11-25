@@ -66,7 +66,7 @@ export function ReusableBlocksDrawer({
 
   return (
     <div
-      className="drawer-side lg:fixed lg:inset-y-0 lg:left-0 lg:z-40 lg:w-[260px]"
+      className="drawer-side 2xl:fixed 2xl:inset-y-0 2xl:left-0 2xl:z-40 2xl:w-[260px]"
       onMouseEnter={onHoverOpen}
       onMouseLeave={onHoverClose}
       ref={drawerRef}
@@ -74,17 +74,17 @@ export function ReusableBlocksDrawer({
       <label
         htmlFor="reusable-blocks-drawer"
         aria-label="close sidebar"
-        className="drawer-overlay lg:hidden"
+        className="drawer-overlay 2xl:hidden"
         onClick={onClose}
       ></label>
-      <div className="flex h-full w-[210px] min-w-[150px] flex-col gap-3 border-r border-base-300 bg-primary-content p-4 shadow-2xl lg:h-screen lg:w-[260px] lg:border-r-0 lg:border-r-transparent lg:shadow-xl">
+      <div className="flex h-full w-[210px] min-w-[150px] flex-col gap-3 border-r border-base-300 bg-primary-content p-4 shadow-2xl 2xl:h-screen 2xl:w-[260px] 2xl:border-r-0 2xl:border-r-transparent 2xl:shadow-xl">
         <div className="flex items-center justify-between gap-2">
           <p className="text-xs font-semibold uppercase tracking-wide text-neutral">
             Sparade moduler
           </p>
           <label
             htmlFor="reusable-blocks-drawer"
-            className="btn btn-ghost btn-circle btn-xs lg:hidden"
+            className="btn btn-ghost btn-circle btn-xs 2xl:hidden"
             onClick={onClose}
           >
             ✕
