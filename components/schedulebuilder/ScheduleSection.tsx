@@ -28,6 +28,9 @@ type ScheduleSectionProps = {
   ) => void;
   setDropPreview: Dispatch<SetStateAction<DropPreviewLocation | null>>;
   onAssignClick: () => void;
+  weekOptions: { value: string; label: string }[];
+  selectedWeek: string;
+  onWeekChange: (value: string) => void;
 };
 
 export function ScheduleSection({
@@ -45,6 +48,9 @@ export function ScheduleSection({
   registerScheduleCardRef,
   setDropPreview,
   onAssignClick,
+  weekOptions,
+  selectedWeek,
+  onWeekChange,
 }: ScheduleSectionProps) {
   return (
     <section className="w-full max-w-full self-center space-y-6">
@@ -57,9 +63,23 @@ export function ScheduleSection({
               </p>
               <h2 className="text-2xl font-semibold">Träningsläger</h2>
             </div>
-            <p className="badge badge-lg badge-secondary badge-soft badge-outline max-w-40 justify-self-center">
-              Vecka 34
-            </p>
+            <div className="form-control max-w-40 justify-self-center">
+              <label className="label sr-only" htmlFor="week-select">
+                Välj vecka
+              </label>
+              <select
+                id="week-select"
+                className="select select-sm select-bordered w-full"
+                value={selectedWeek}
+                onChange={(event) => onWeekChange(event.target.value)}
+              >
+                {weekOptions.map((week) => (
+                  <option key={week.value} value={week.value}>
+                    {week.label}
+                  </option>
+                ))}
+              </select>
+            </div>
             <button className="btn btn-secondary btn-sm max-w-35 justify-self-end" onClick={onAssignClick}>
               Tilldela schema
             </button>

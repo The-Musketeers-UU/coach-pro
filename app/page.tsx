@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 
 import {
   type ActiveDrag,
@@ -16,6 +16,57 @@ import {
   ScheduleSection,
   useScheduleBuilderState,
 } from "@/components/schedulebuilder";
+
+type WeekOption = { value: string; label: string };
+
+const MILLISECONDS_IN_WEEK = 7 * 24 * 60 * 60 * 1000;
+
+const getIsoWeekInfo = (date: Date) => {
+  const target = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()));
+  const dayNumber = (target.getUTCDay() + 6) % 7;
+  target.setUTCDate(target.getUTCDate() - dayNumber + 3);
+
+  const firstThursday = new Date(Date.UTC(target.getUTCFullYear(), 0, 4));
+  const firstThursdayDayNumber = (firstThursday.getUTCDay() + 6) % 7;
+  firstThursday.setUTCDate(firstThursday.getUTCDate() - firstThursdayDayNumber + 3);
+
+  const weekNumber =
+    1 + Math.round((target.getTime() - firstThursday.getTime()) / MILLISECONDS_IN_WEEK);
+
+  return { weekNumber, year: target.getUTCFullYear() } as const;
+};
+
+const getStartOfIsoWeek = (date: Date) => {
+  const result = new Date(date);
+  const day = result.getDay();
+  const diff = day === 0 ? -6 : 1 - day;
+  result.setDate(result.getDate() + diff);
+  result.setHours(0, 0, 0, 0);
+
+  return result;
+};
+
+const createRollingWeekOptions = (): WeekOption[] => {
+  const today = new Date();
+  const startOfCurrentWeek = getStartOfIsoWeek(today);
+  const endDate = new Date(startOfCurrentWeek);
+  endDate.setFullYear(endDate.getFullYear() + 1);
+
+  const options: WeekOption[] = [];
+  let currentWeekStart = startOfCurrentWeek;
+
+  while (currentWeekStart <= endDate) {
+    const { weekNumber, year } = getIsoWeekInfo(currentWeekStart);
+    const value = `${year}-W${weekNumber}`;
+    const label = `Vecka ${weekNumber} (${year})`;
+
+    options.push({ value, label });
+
+    currentWeekStart = new Date(currentWeekStart.getTime() + MILLISECONDS_IN_WEEK);
+  }
+
+  return options;
+};
 
 const initialModules: Module[] = [
   {
@@ -88,6 +139,9 @@ const athletes: Athlete[] = [
 ];
 
 export default function CoachDashboard() {
+  const weekOptions = useMemo(() => createRollingWeekOptions(), []);
+  const [selectedWeek, setSelectedWeek] = useState<string>(() => weekOptions[0]?.value ?? "");
+
   const {
     libraryControls,
     scheduleControls,
@@ -154,6 +208,9 @@ export default function CoachDashboard() {
             registerScheduleCardRef={scheduleControls.registerScheduleCardRef}
             setDropPreview={dragState.setDropPreview}
             onAssignClick={assignControls.openAssignModal}
+            weekOptions={weekOptions}
+            selectedWeek={selectedWeek}
+            onWeekChange={setSelectedWeek}
           />
         </div>
 
