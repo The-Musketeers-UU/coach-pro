@@ -41,7 +41,7 @@ export function ReusableBlocksDrawer({
 }: ReusableBlocksDrawerProps) {
   return (
     <div
-      className="drawer-side"
+      className="drawer-side lg:fixed lg:inset-y-0 lg:left-0 lg:z-40 lg:w-65"
       onMouseEnter={onHoverOpen}
       onMouseLeave={onHoverClose}
     >
@@ -51,7 +51,7 @@ export function ReusableBlocksDrawer({
         className="drawer-overlay"
         onClick={onClose}
       ></label>
-      <div className="flex h-full w-65 min-w-[150px] flex-col gap-3 border-r border-base-300 bg-primary-content p-4">
+      <div className="flex h-full w-65 min-w-[150px] flex-col gap-3 border-r border-base-300 bg-primary-content p-4 shadow-2xl lg:h-screen lg:border-r-0 lg:border-r-transparent lg:shadow-xl">
         <div className="flex items-center justify-between gap-2">
           <p className="text-xs font-semibold uppercase tracking-wide text-neutral">
             Sparade moduler

@@ -102,10 +102,6 @@ export default function CoachDashboard() {
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
 
   const handleSetActiveDrag = (drag: ActiveDrag | null) => {
-    if (drag) {
-      setIsDrawerOpen(false);
-    }
-
     dragState.setActiveDrag(drag);
   };
 
@@ -191,7 +187,7 @@ export default function CoachDashboard() {
         resetModuleForm={libraryControls.resetModuleForm}
         openCreateModal={libraryControls.openCreateModal}
         onHoverOpen={() => setIsDrawerOpen(true)}
-        onHoverClose={() => !dragState.activeDrag && setIsDrawerOpen(false)}
+        onHoverClose={() => setIsDrawerOpen(false)}
         onClose={() => setIsDrawerOpen(false)}
       />
     </div>
