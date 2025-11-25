@@ -141,6 +141,7 @@ const athletes: Athlete[] = [
 export default function CoachDashboard() {
   const weekOptions = useMemo(() => createRollingWeekOptions(), []);
   const [selectedWeek, setSelectedWeek] = useState<string>(() => weekOptions[0]?.value ?? "");
+  const [scheduleTitle, setScheduleTitle] = useState("Träningsläger");
 
   const {
     libraryControls,
@@ -211,6 +212,8 @@ export default function CoachDashboard() {
             weekOptions={weekOptions}
             selectedWeek={selectedWeek}
             onWeekChange={setSelectedWeek}
+            scheduleTitle={scheduleTitle}
+            onScheduleTitleChange={setScheduleTitle}
           />
         </div>
 
