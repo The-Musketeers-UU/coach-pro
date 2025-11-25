@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { AuthGuard, AuthProvider } from "@/components/auth-provider";
 import { SiteNav } from "@/components/site-nav";
 import "./globals.css";
 
@@ -15,12 +16,16 @@ export default function RootLayout({
   return (
     <html lang="en" data-theme="light">
       <body>
-        <div className="flex min-h-screen flex-col">
-          <SiteNav />
-          <main className="flex-1">
-            {children}
-          </main>
-        </div>
+        <AuthProvider>
+          <div className="flex min-h-screen flex-col">
+            <SiteNav />
+            <AuthGuard>
+              <main className="flex-1">
+                {children}
+              </main>
+            </AuthGuard>
+          </div>
+        </AuthProvider>
       </body>
     </html>
   );
