@@ -12,6 +12,9 @@ import { DayColumn } from "@/components/schedulebuilder/DayColumn";
 type ScheduleSectionProps = {
   days: { id: string; label: string }[];
   schedule: DaySchedule;
+  selectedWeek: string;
+  weekOptions: { value: string; label: string }[];
+  onChangeWeek: (week: string) => void;
   handleDayDragOver: (event: DragEvent<HTMLElement>, dayId: string) => void;
   handleDrop: (dayId: string, targetIndex?: number) => void;
   allowDrop: (event: DragEvent) => void;
@@ -33,6 +36,9 @@ type ScheduleSectionProps = {
 export function ScheduleSection({
   days,
   schedule,
+  selectedWeek,
+  weekOptions,
+  onChangeWeek,
   handleDayDragOver,
   handleDrop,
   allowDrop,
@@ -57,9 +63,20 @@ export function ScheduleSection({
               </p>
               <h2 className="text-2xl font-semibold">Träningsläger</h2>
             </div>
-            <p className="badge badge-lg badge-secondary badge-soft badge-outline max-w-40 justify-self-center">
-              Vecka 34
-            </p>
+            <label className="form-control w-full max-w-48 justify-self-center">
+              <span className="label-text text-sm font-semibold text-neutral">Vecka</span>
+              <select
+                className="select select-bordered select-sm"
+                value={selectedWeek}
+                onChange={(event) => onChangeWeek(event.target.value)}
+              >
+                {weekOptions.map((option) => (
+                  <option key={option.value} value={option.value}>
+                    {option.label}
+                  </option>
+                ))}
+              </select>
+            </label>
             <button className="btn btn-secondary btn-sm max-w-35 justify-self-end" onClick={onAssignClick}>
               Tilldela schema
             </button>

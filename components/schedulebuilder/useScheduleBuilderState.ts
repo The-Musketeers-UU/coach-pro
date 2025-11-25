@@ -1,5 +1,40 @@
 import { type DragEvent, type FormEvent, useMemo, useRef, useState } from "react";
 
+const getISOWeekInfo = (date: Date) => {
+  const utcDate = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()));
+  const dayNumber = utcDate.getUTCDay() || 7;
+
+  utcDate.setUTCDate(utcDate.getUTCDate() + 4 - dayNumber);
+
+  const yearStart = new Date(Date.UTC(utcDate.getUTCFullYear(), 0, 1));
+  const weekNumber = Math.ceil(((utcDate.getTime() - yearStart.getTime()) / 86400000 + 1) / 7);
+
+  return { weekNumber, year: utcDate.getUTCFullYear() };
+};
+
+const generateWeekOptions = (startDate: Date, endDate: Date) => {
+  const options: { value: string; label: string }[] = [];
+  const seen = new Set<string>();
+  const cursor = new Date(Date.UTC(startDate.getFullYear(), startDate.getMonth(), startDate.getDate()));
+
+  while (cursor <= endDate) {
+    const { weekNumber, year } = getISOWeekInfo(cursor);
+    const weekValue = `${year}-W${String(weekNumber).padStart(2, "0")}`;
+
+    if (!seen.has(weekValue)) {
+      seen.add(weekValue);
+      options.push({
+        value: weekValue,
+        label: `Vecka ${weekNumber} (${year})`,
+      });
+    }
+
+    cursor.setUTCDate(cursor.getUTCDate() + 7);
+  }
+
+  return options;
+};
+
 import {
   type ActiveDrag,
   type Athlete,
@@ -36,11 +71,21 @@ export const useScheduleBuilderState = ({
   initialModules,
   athletes,
 }: UseScheduleBuilderStateArgs) => {
+  const today = useMemo(() => new Date(), []);
+  const weekOptions = useMemo(() => {
+    const endDate = new Date(today);
+    endDate.setFullYear(endDate.getFullYear() + 1);
+    return generateWeekOptions(today, endDate);
+  }, [today]);
+
   const [search, setSearch] = useState("");
   const [activeDrag, setActiveDrag] = useState<ActiveDrag | null>(null);
   const [moduleLibrary, setModuleLibrary] = useState<Module[]>(initialModules);
   const [schedule, setSchedule] = useState<DaySchedule>(() =>
     createEmptySchedule(days)
+  );
+  const [selectedWeek, setSelectedWeek] = useState(
+    () => weekOptions[0]?.value ?? ""
   );
   const [newModule, setNewModule] = useState<ModuleForm>(() =>
     createInitialFormState()
@@ -394,6 +439,9 @@ export const useScheduleBuilderState = ({
     },
     scheduleControls: {
       schedule,
+      selectedWeek,
+      weekOptions,
+      setSelectedWeek,
       handleDayDragOver,
       handleDrop,
       allowDrop,

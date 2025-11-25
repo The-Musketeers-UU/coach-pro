@@ -142,6 +142,9 @@ export default function CoachDashboard() {
           <ScheduleSection
             days={days}
             schedule={scheduleControls.schedule}
+            selectedWeek={scheduleControls.selectedWeek}
+            weekOptions={scheduleControls.weekOptions}
+            onChangeWeek={scheduleControls.setSelectedWeek}
             handleDayDragOver={scheduleControls.handleDayDragOver}
             handleDrop={scheduleControls.handleDrop}
             allowDrop={scheduleControls.allowDrop}
