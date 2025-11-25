@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { ThemeToggle } from "@/components/theme_toggle";
+import { useAuth } from "@/components/auth-provider";
 
 const viewOptions = [
   { href: "/athlete", label: "Athlete view" },
@@ -20,8 +21,16 @@ const athleteLinks = [{ href: "/athlete", label: "My Schedules" }];
 export function SiteNav() {
   const pathname = usePathname();
   const router = useRouter();
+  const { user, signOut, isLoading } = useAuth();
   const activeView = viewOptions.find((view) => pathname.startsWith(view.href)) ?? viewOptions[1];
-  const navLinks = activeView.href === "/athlete" ? athleteLinks : coachLinks;
+  const navLinks =
+    activeView.href === "/athlete"
+      ? athleteLinks
+      : coachLinks.filter((link) => (user ? link.href !== "/login" : true));
+
+  const handleSignOut = async () => {
+    await signOut();
+  };
 
   return (
     <header className="border-b border-base-300 bg-base-200 z-40">
@@ -52,8 +61,6 @@ export function SiteNav() {
         </div>
 
         <nav className="flex flex-wrap items-center gap-3">
-          
-
           {navLinks.map((link) => {
             const isActive =
               link.href === "/" ? pathname === link.href : pathname.startsWith(link.href);
@@ -69,6 +76,27 @@ export function SiteNav() {
               </Link>
             );
           })}
+
+          {user ? (
+            <div className="flex flex-wrap items-center gap-2 rounded-full border border-base-300 bg-base-100 px-3 py-2 text-sm">
+              <div className="flex flex-col leading-tight">
+                <span className="text-xs uppercase text-neutral">Signed in</span>
+                <span className="font-semibold">{user.email}</span>
+              </div>
+              <button className="btn btn-xs btn-ghost" onClick={handleSignOut} disabled={isLoading}>
+                Sign out
+              </button>
+            </div>
+          ) : (
+            <Link
+              href="/login"
+              className={`btn btn-sm ${
+                pathname.startsWith("/login") ? "btn-primary" : "btn-ghost border-base-200"
+              } rounded-full px-4`}
+            >
+              Login
+            </Link>
+          )}
         </nav>
       </div>
     </header>
