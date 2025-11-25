@@ -97,7 +97,7 @@ export function WeekScheduleView({
                         <p className="text-xs text-base-content/70">
                           {module.description}
                         </p>
-                        <ModuleBadges module={module} showPlaceholders />
+                        <ModuleBadges module={module}/>
                       </div>
                     </button>
                   ))}
