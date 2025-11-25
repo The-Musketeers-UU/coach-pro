@@ -1,6 +1,6 @@
 "use client";
 
-import { FormEvent, Suspense, useEffect, useState } from "react";
+import { FormEvent, useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 
 import { useAuth } from "@/components/auth-provider";
@@ -21,14 +21,6 @@ const defaultFormState: AuthFormState = {
 };
 
 export default function LoginPage() {
-  return (
-    <Suspense>
-      <LoginPageContent />
-    </Suspense>
-  );
-}
-
-function LoginPageContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const redirectTo = searchParams.get("redirectTo") ?? "/";
