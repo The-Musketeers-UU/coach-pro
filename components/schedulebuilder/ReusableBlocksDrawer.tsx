@@ -74,7 +74,7 @@ export function ReusableBlocksDrawer({
       <label
         htmlFor="reusable-blocks-drawer"
         aria-label="close sidebar"
-        className="drawer-overlay"
+        className="drawer-overlay lg:hidden"
         onClick={onClose}
       ></label>
       <div className="flex h-full w-65 min-w-[150px] flex-col gap-3 border-r border-base-300 bg-primary-content p-4 shadow-2xl lg:h-screen lg:border-r-0 lg:border-r-transparent lg:shadow-xl sm:w-[210px]">

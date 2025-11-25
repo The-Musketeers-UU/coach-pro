@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 import {
   type ActiveDrag,
@@ -102,12 +102,27 @@ export default function CoachDashboard() {
 
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
 
+  useEffect(() => {
+    const mediaQuery = window.matchMedia("(min-width: 1024px)");
+
+    const openDrawerOnLargeScreens = () => {
+      if (mediaQuery.matches) {
+        setIsDrawerOpen(true);
+      }
+    };
+
+    openDrawerOnLargeScreens();
+    mediaQuery.addEventListener("change", openDrawerOnLargeScreens);
+
+    return () => mediaQuery.removeEventListener("change", openDrawerOnLargeScreens);
+  }, []);
+
   const handleSetActiveDrag = (drag: ActiveDrag | null) => {
     dragState.setActiveDrag(drag);
   };
 
   return (
-    <div className={`drawer ${isDrawerOpen ? "drawer-open" : ""}`}>
+    <div className={`drawer ${isDrawerOpen ? "drawer-open" : ""} lg:drawer-open`}>
       <input
         id="reusable-blocks-drawer"
         type="checkbox"
