@@ -66,7 +66,7 @@ export function ReusableBlocksDrawer({
 
   return (
     <div
-      className="drawer-side 2xl:fixed 2xl:inset-y-0 2xl:left-0 2xl:z-40 2xl:w-[260px]"
+      className="drawer-side fixed inset-y-0 left-0 z-40 w-full max-w-[260px] 2xl:w-[260px]"
       onMouseEnter={onHoverOpen}
       onMouseLeave={onHoverClose}
       ref={drawerRef}
