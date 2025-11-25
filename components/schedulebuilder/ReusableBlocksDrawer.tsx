@@ -22,6 +22,7 @@ type ReusableBlocksDrawerProps = {
   onHoverOpen: () => void;
   onHoverClose: () => void;
   onClose: () => void;
+  onDragEndClose: () => void;
 };
 
 export function ReusableBlocksDrawer({
@@ -38,6 +39,7 @@ export function ReusableBlocksDrawer({
   onHoverOpen,
   onHoverClose,
   onClose,
+  onDragEndClose,
 }: ReusableBlocksDrawerProps) {
   return (
     <div
@@ -104,6 +106,7 @@ export function ReusableBlocksDrawer({
               onDragEnd={() => {
                 setActiveDrag(null);
                 setDropPreview(null);
+                onDragEndClose();
               }}
               onClick={() =>
                 startEditingModule(module, {

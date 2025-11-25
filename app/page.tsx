@@ -189,6 +189,7 @@ export default function CoachDashboard() {
         onHoverOpen={() => setIsDrawerOpen(true)}
         onHoverClose={() => setIsDrawerOpen(false)}
         onClose={() => setIsDrawerOpen(false)}
+        onDragEndClose={() => setIsDrawerOpen(false)}
       />
     </div>
   );
