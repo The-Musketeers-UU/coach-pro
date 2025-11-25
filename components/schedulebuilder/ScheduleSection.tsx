@@ -1,4 +1,9 @@
-import type { Dispatch, DragEvent, MutableRefObject, SetStateAction } from "react";
+import type {
+  Dispatch,
+  DragEvent,
+  MutableRefObject,
+  SetStateAction,
+} from "react";
 
 import type {
   ActiveDrag,
@@ -61,26 +66,30 @@ export function ScheduleSection({
       <div className="card bg-base-200 border border-base-300 shadow-md">
         <div className="card-body gap-6">
           <div className="grid grid-cols-3 items-center w-full">
-            <form className="form-control gap-2" onSubmit={(event) => event.preventDefault()}>
-              <label className="text-xs font-semibold uppercase tracking-wide text-neutral" htmlFor="schedule-title">
-                Skapar schema
-              </label>
-              <input
-                id="schedule-title"
-                type="text"
-                className="input input-sm input-bordered max-w-xs"
-                value={scheduleTitle}
-                onChange={(event) => onScheduleTitleChange(event.target.value)}
-                placeholder="Ange schematitel"
-              />
+            <form
+              className="form-control gap-2"
+              onSubmit={(event) => event.preventDefault()}
+            >
+              <div className=" flex flex-col gap-2">
+                <input
+                  id="schedule-title"
+                  type="text-xl"
+                  className="input input-lg input-bordered max-w-xs"
+                  onChange={(event) =>
+                    onScheduleTitleChange(event.target.value)
+                  }
+                  placeholder="Ange schematitel"
+                />
+              </div>
             </form>
+
             <div className="form-control max-w-40 justify-self-center">
               <label className="label sr-only" htmlFor="week-select">
                 Välj vecka
               </label>
               <select
                 id="week-select"
-                className="select select-sm select-bordered w-full"
+                className="select select-sm select-secondary w-full"
                 value={selectedWeek}
                 onChange={(event) => onWeekChange(event.target.value)}
               >
@@ -91,7 +100,10 @@ export function ScheduleSection({
                 ))}
               </select>
             </div>
-            <button className="btn btn-secondary btn-sm max-w-35 justify-self-end" onClick={onAssignClick}>
+            <button
+              className="btn btn-secondary btn-sm max-w-35 justify-self-end"
+              onClick={onAssignClick}
+            >
               Tilldela schema
             </button>
           </div>
