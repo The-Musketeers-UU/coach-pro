@@ -1,7 +1,7 @@
 "use client";
 
 import { FormEvent, useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 
 import { useAuth } from "@/components/auth-provider";
 import { supabaseBrowserClient } from "@/lib/supabase/browser-client";
@@ -22,7 +22,8 @@ const defaultFormState: AuthFormState = {
 
 export default function LoginPage() {
   const router = useRouter();
-  const [redirectTo, setRedirectTo] = useState("/");
+  const searchParams = useSearchParams();
+  const redirectTo = searchParams.get("redirectTo") ?? "/";
 
   const { user, isLoading } = useAuth();
 
@@ -31,15 +32,6 @@ export default function LoginPage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
-
-  useEffect(() => {
-    const params = new URLSearchParams(window.location.search);
-    const redirectParam = params.get("redirectTo");
-
-    if (redirectParam) {
-      setRedirectTo(redirectParam);
-    }
-  }, []);
 
   useEffect(() => {
     if (!isLoading && user) {
