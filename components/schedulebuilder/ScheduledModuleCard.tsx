@@ -1,7 +1,7 @@
 import type { Dispatch, DragEvent, MutableRefObject, SetStateAction } from "react";
 
 import type { ActiveDrag, DropPreviewLocation, EditingContext, Module } from "@/components/schedulebuilder/types";
-import { ModuleBadges } from "@/components/schedulebuilder/ModuleBadges";
+import { ModuleBadges } from "@/components/ModuleBadges";
 
 type ScheduledModuleCardProps = DropPreviewLocation & {
   module: Module;

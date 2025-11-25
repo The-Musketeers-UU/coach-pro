@@ -5,7 +5,7 @@ export { DrawerHandle } from "./DrawerHandle";
 export { DrawerToggle } from "./DrawerToggle";
 export { DropPreviewBar } from "./DropPreviewBar";
 export { EditModuleModal } from "./EditModuleModal";
-export { ModuleBadges } from "./ModuleBadges";
+export { ModuleBadges } from "../ModuleBadges";
 export { ModuleFormFields } from "./ModuleFormFields";
 export { ReusableBlocksDrawer } from "./ReusableBlocksDrawer";
 export { ScheduleSection } from "./ScheduleSection";

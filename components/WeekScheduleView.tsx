@@ -1,7 +1,9 @@
 "use client";
 
 import { useState } from "react";
+
 import { ProgramModule, ProgramWeek } from "@/app/data/program-weeks";
+import { ModuleBadges } from "@/components/ModuleBadges";
 
 type WeekScheduleViewProps = {
   week?: ProgramWeek;
@@ -95,27 +97,7 @@ export function WeekScheduleView({
                         <p className="text-xs text-base-content/70">
                           {module.description}
                         </p>
-                        <div className="flex flex-wrap gap-1">
-                          <span className="badge badge-outline badge-xs capitalize">
-                            Kategori: {module.category || "-"}
-                          </span>
-                          <span className="badge badge-outline badge-xs">
-                            Underkategori: {module.subcategory || "-"}
-                          </span>
-                          <span className="badge badge-outline badge-xs">
-                            Distans: {formatDistance(module.distanceMeters)}
-                          </span>
-                          <span className="badge badge-outline badge-xs">
-                            Vikt: {formatWeight(module.weightKg)}
-                          </span>
-                          <span className="badge badge-outline badge-xs">
-                            Tid:{" "}
-                            {formatDuration(
-                              module.durationMinutes,
-                              module.durationSeconds
-                            ) || "-"}
-                          </span>
-                        </div>
+                        <ModuleBadges module={module} showPlaceholders />
                       </div>
                     </button>
                   ))}

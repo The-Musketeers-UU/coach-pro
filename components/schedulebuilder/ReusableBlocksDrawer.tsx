@@ -7,7 +7,7 @@ import type {
   EditingContext,
   Module,
 } from "@/components/schedulebuilder/types";
-import { ModuleBadges } from "@/components/schedulebuilder/ModuleBadges";
+import { ModuleBadges } from "@/components/ModuleBadges";
 
 type ReusableBlocksDrawerProps = {
   search: string;
