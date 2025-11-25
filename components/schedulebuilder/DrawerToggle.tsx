@@ -1,9 +1,19 @@
-export function DrawerToggle({ targetId }: { targetId: string }) {
+type DrawerToggleProps = {
+  targetId: string;
+  onOpen: () => void;
+};
+
+export function DrawerToggle({ targetId, onOpen }: DrawerToggleProps) {
   return (
     <div className="flex items-center justify-between">
-      <label htmlFor={targetId} className="btn btn-primary btn-sm lg:hidden">
+      <button
+        type="button"
+        aria-controls={targetId}
+        className="btn btn-primary btn-sm lg:hidden"
+        onClick={onOpen}
+      >
         Visa reusable blocks
-      </label>
+      </button>
     </div>
   );
 }

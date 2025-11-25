@@ -422,6 +422,7 @@ export const useScheduleBuilderState = ({
       athletes,
     },
     dragState: {
+      activeDrag,
       setActiveDrag,
       dragPointerOffsetYRef,
       updateDropPreviewFromDragTop,

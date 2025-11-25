@@ -1,6 +1,9 @@
 "use client";
 
+import { useState } from "react";
+
 import {
+  type ActiveDrag,
   type Athlete,
   type Day,
   type Module,
@@ -96,16 +99,35 @@ export default function CoachDashboard() {
     athletes,
   });
 
+  const [isDrawerOpen, setIsDrawerOpen] = useState(false);
+
+  const handleSetActiveDrag = (drag: ActiveDrag | null) => {
+    if (drag) {
+      setIsDrawerOpen(false);
+    }
+
+    dragState.setActiveDrag(drag);
+  };
+
   return (
-    <div className="drawer lg:drawer-open">
+    <div className={`drawer ${isDrawerOpen ? "drawer-open" : ""}`}>
       <input
         id="reusable-blocks-drawer"
         type="checkbox"
         className="drawer-toggle"
+        checked={isDrawerOpen}
+        onChange={(event) => setIsDrawerOpen(event.target.checked)}
       />
       <div className="drawer-content min-h-screen">
+        <div
+          className="pointer-events-auto fixed inset-y-0 left-0 z-30 hidden w-3 lg:block"
+          onMouseEnter={() => setIsDrawerOpen(true)}
+        />
         <div className="mx-auto max-w-full px-5 py-5">
-          <DrawerToggle targetId="reusable-blocks-drawer" />
+          <DrawerToggle
+            targetId="reusable-blocks-drawer"
+            onOpen={() => setIsDrawerOpen(true)}
+          />
 
           <ScheduleSection
             days={days}
@@ -116,7 +138,7 @@ export default function CoachDashboard() {
             isPreviewLocation={scheduleControls.isPreviewLocation}
             updateDropPreviewFromDragTop={dragState.updateDropPreviewFromDragTop}
             dragPointerOffsetYRef={dragState.dragPointerOffsetYRef}
-            setActiveDrag={dragState.setActiveDrag}
+            setActiveDrag={handleSetActiveDrag}
             startEditingModule={editingControls.startEditingModule}
             handleRemoveModule={scheduleControls.handleRemoveModule}
             registerScheduleCardRef={scheduleControls.registerScheduleCardRef}
@@ -161,13 +183,16 @@ export default function CoachDashboard() {
         search={libraryControls.search}
         setSearch={libraryControls.setSearch}
         filteredModules={libraryControls.filteredModules}
-        setActiveDrag={dragState.setActiveDrag}
+        setActiveDrag={handleSetActiveDrag}
         dragPointerOffsetYRef={dragState.dragPointerOffsetYRef}
         setDropPreview={dragState.setDropPreview}
         startEditingModule={editingControls.startEditingModule}
         handleRemoveLibraryModule={libraryControls.handleRemoveLibraryModule}
         resetModuleForm={libraryControls.resetModuleForm}
         openCreateModal={libraryControls.openCreateModal}
+        onHoverOpen={() => setIsDrawerOpen(true)}
+        onHoverClose={() => !dragState.activeDrag && setIsDrawerOpen(false)}
+        onClose={() => setIsDrawerOpen(false)}
       />
     </div>
   );

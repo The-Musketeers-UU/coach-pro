@@ -19,6 +19,9 @@ type ReusableBlocksDrawerProps = {
   handleRemoveLibraryModule: (moduleId: string) => void;
   resetModuleForm: () => void;
   openCreateModal: () => void;
+  onHoverOpen: () => void;
+  onHoverClose: () => void;
+  onClose: () => void;
 };
 
 export function ReusableBlocksDrawer({
@@ -32,13 +35,21 @@ export function ReusableBlocksDrawer({
   handleRemoveLibraryModule,
   resetModuleForm,
   openCreateModal,
+  onHoverOpen,
+  onHoverClose,
+  onClose,
 }: ReusableBlocksDrawerProps) {
   return (
-    <div className="drawer-side">
+    <div
+      className="drawer-side"
+      onMouseEnter={onHoverOpen}
+      onMouseLeave={onHoverClose}
+    >
       <label
         htmlFor="reusable-blocks-drawer"
         aria-label="close sidebar"
         className="drawer-overlay"
+        onClick={onClose}
       ></label>
       <div className="flex h-full w-65 min-w-[150px] flex-col gap-3 border-r border-base-300 bg-primary-content p-4">
         <div className="flex items-center justify-between gap-2">
@@ -48,6 +59,7 @@ export function ReusableBlocksDrawer({
           <label
             htmlFor="reusable-blocks-drawer"
             className="btn btn-ghost btn-circle btn-xs lg:hidden"
+            onClick={onClose}
           >
             ✕
           </label>
