@@ -130,7 +130,7 @@ export default function CoachDashboard() {
         checked={isDrawerOpen}
         onChange={(event) => setIsDrawerOpen(event.target.checked)}
       />
-      <div className="drawer-content min-h-screen"> 
+      <div className="drawer-content min-h-screen lg:ml-[260px]">
         <DrawerHandle
           isOpen={isDrawerOpen}
           onOpen={() => setIsDrawerOpen(true)}
