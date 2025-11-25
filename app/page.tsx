@@ -115,10 +115,18 @@ export default function CoachDashboard() {
         onChange={(event) => setIsDrawerOpen(event.target.checked)}
       />
       <div className="drawer-content min-h-screen">
-        <div
-          className="pointer-events-auto fixed inset-y-0 left-0 z-30 hidden w-3 lg:block"
-          onMouseEnter={() => setIsDrawerOpen(true)}
-        />
+        {!isDrawerOpen && (
+          <button
+            type="button"
+            className="pointer-events-auto fixed left-0 top-1/2 z-30 hidden -translate-y-1/2 transform items-center gap-2 rounded-r-lg bg-primary/90 px-1.5 py-3 text-[10px] font-semibold uppercase tracking-[0.12em] text-primary-content shadow-lg transition hover:bg-primary lg:flex"
+            onMouseEnter={() => setIsDrawerOpen(true)}
+            onFocus={() => setIsDrawerOpen(true)}
+            onClick={() => setIsDrawerOpen(true)}
+            aria-label="Visa sparade moduler"
+          >
+            <span className="rotate-90 whitespace-nowrap">Sparade moduler</span>
+          </button>
+        )}
         <div className="mx-auto max-w-full px-5 py-5">
           <DrawerToggle
             targetId="reusable-blocks-drawer"
