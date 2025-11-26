@@ -3,6 +3,8 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
+import {signUpUser, signInUser} from "@/lib/auth/auth-service"
+
 
 export default function SignupPage() {
   const router = useRouter();
@@ -33,29 +35,25 @@ export default function SignupPage() {
     setLoading(true);
 
     try {
-      const { data, error: signUpError } = await supabase.auth.signUp({
-        email: formData.email,
-        password: formData.password,
-        options: {
-          data: {
-            name: formData.name,
-            isCoach: formData.isCoach,
-          },
-        },
+      const result = await signUpUser({
+      email: formData.email,
+      password: formData.password,
+      name: formData.name,
+      isCoach: formData.isCoach,
       });
 
 
-      if (signUpError) {
-        setError(signUpError.message);
+      if (!result) {
+        // setError(result.message);
+        alert("there was an error")
         return;
       }
 
-      if (data.user) {
         
         // Redirect to dashboard or confirmation page
         router.push("/dashboard");
         router.refresh();
-      }
+      
     } catch (err) {
       setError("An unexpected error occurred");
     } finally {
