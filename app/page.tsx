@@ -88,13 +88,10 @@ export default function CoachDashboard() {
   }, []);
 
   useEffect(() => {
-    if (profile?.id) {
-      setModuleForm((prev) => ({ ...prev, ownerId: profile.id }));
-      setWeekForm((prev) => ({ ...prev, ownerId: profile.id }));
-    } else {
-      setModuleForm((prev) => ({ ...prev, ownerId: "" }));
-      setWeekForm((prev) => ({ ...prev, ownerId: "" }));
-    }
+    const ownerId = profile?.id ? String(profile.id) : "";
+
+    setModuleForm((prev) => ({ ...prev, ownerId }));
+    setWeekForm((prev) => ({ ...prev, ownerId }));
   }, [profile]);
 
   const handleCreateModule = async (event: FormEvent<HTMLFormElement>) => {
@@ -106,7 +103,10 @@ export default function CoachDashboard() {
     try {
       const sanitizedInput: CreateModuleInput = {
         ...moduleForm,
-        ownerId: moduleForm.ownerId.trim(),
+        ownerId:
+          typeof moduleForm.ownerId === "string"
+            ? moduleForm.ownerId.trim()
+            : String(moduleForm.ownerId ?? "").trim(),
         name: moduleForm.name.trim(),
         category: moduleForm.category.trim(),
         subCategory: moduleForm.subCategory?.trim() || undefined,
@@ -138,7 +138,10 @@ export default function CoachDashboard() {
 
     try {
       const weekInput: CreateScheduleWeekInput = {
-        ownerId: weekForm.ownerId.trim(),
+        ownerId:
+          typeof weekForm.ownerId === "string"
+            ? weekForm.ownerId.trim()
+            : String(weekForm.ownerId ?? "").trim(),
         athleteId: weekForm.athleteId.trim(),
         week: Number(weekForm.week) || 0,
       };
