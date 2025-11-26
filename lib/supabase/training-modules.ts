@@ -1,3 +1,5 @@
+import type { User as SupabaseAuthUser } from "@supabase/supabase-js";
+
 import { supabaseRequest } from "./client";
 
 type ModuleRow = {
@@ -198,4 +200,41 @@ export const createUser = async (input: CreateUserInput): Promise<AthleteRow> =>
   });
 
   return data[0];
+};
+
+export const findUserByEmail = async (email: string): Promise<AthleteRow | null> => {
+  const users = await supabaseRequest<AthleteRow[]>("user", {
+    searchParams: {
+      select: "id,name,email,isCoach",
+      email: `eq.${email}`,
+      limit: "1",
+    },
+  });
+
+  return users[0] ?? null;
+};
+
+export const ensureUserForAuth = async (
+  authUser: SupabaseAuthUser,
+): Promise<AthleteRow> => {
+  if (!authUser.email) {
+    throw new Error("Authenticated user is missing an email.");
+  }
+
+  const existingUser = await findUserByEmail(authUser.email);
+  if (existingUser) return existingUser;
+
+  const nameFromMetadata =
+    typeof authUser.user_metadata?.name === "string"
+      ? authUser.user_metadata.name.trim()
+      : "";
+
+  const name = nameFromMetadata || authUser.email;
+  const isCoach = Boolean(authUser.user_metadata?.isCoach);
+
+  return createUser({
+    email: authUser.email,
+    name,
+    isCoach,
+  });
 };

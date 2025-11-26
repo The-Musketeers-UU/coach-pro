@@ -11,13 +11,16 @@ import {
 } from "react";
 
 import { supabaseBrowserClient } from "@/lib/supabase/browser-client";
+import { ensureUserForAuth, type AthleteRow } from "@/lib/supabase/training-modules";
 
 import type { Session, User } from "@supabase/supabase-js";
 
 type AuthContextValue = {
   user: User | null;
   session: Session | null;
+  profile: AthleteRow | null;
   isLoading: boolean;
+  isLoadingProfile: boolean;
   signOut: () => Promise<void>;
 };
 
@@ -26,7 +29,9 @@ const AuthContext = createContext<AuthContextValue | undefined>(undefined);
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   const [session, setSession] = useState<Session | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
+  const [profile, setProfile] = useState<AthleteRow | null>(null);
+  const [isLoadingProfile, setIsLoadingProfile] = useState(false);
+  const [isLoadingSession, setIsLoadingSession] = useState(true);
 
   useEffect(() => {
     const getInitialSession = async () => {
@@ -34,7 +39,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       if (!error) {
         setSession(data.session);
       }
-      setIsLoading(false);
+      setIsLoadingSession(false);
     };
 
     void getInitialSession();
@@ -48,14 +53,45 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     };
   }, []);
 
+  useEffect(() => {
+    if (!session?.user) {
+      setProfile(null);
+      return;
+    }
+
+    const syncProfile = async () => {
+      setIsLoadingProfile(true);
+      try {
+        const userProfile = await ensureUserForAuth(session.user);
+        setProfile(userProfile);
+      } catch (profileError) {
+        console.error("Failed to sync profile", profileError);
+        setProfile(null);
+      } finally {
+        setIsLoadingProfile(false);
+      }
+    };
+
+    void syncProfile();
+  }, [session]);
+
   const signOut = useCallback(async () => {
     await supabaseBrowserClient.auth.signOut();
     router.push("/login");
   }, [router]);
 
+  const combinedIsLoading = isLoadingSession || isLoadingProfile;
+
   const value = useMemo<AuthContextValue>(
-    () => ({ user: session?.user ?? null, session, isLoading, signOut }),
-    [session, isLoading, signOut],
+    () => ({
+      user: session?.user ?? null,
+      session,
+      profile,
+      isLoading: combinedIsLoading,
+      isLoadingProfile,
+      signOut,
+    }),
+    [session, combinedIsLoading, isLoadingProfile, profile, signOut],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
