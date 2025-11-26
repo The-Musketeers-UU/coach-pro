@@ -12,12 +12,14 @@ type AuthFormState = {
   email: string;
   password: string;
   name: string;
+  isCoach: boolean;
 };
 
 const defaultFormState: AuthFormState = {
   email: "",
   password: "",
   name: "",
+  isCoach: false,
 };
 
 export default function LoginClient() {
@@ -59,7 +61,10 @@ export default function LoginClient() {
           email: formState.email,
           password: formState.password,
           options: {
-            data: formState.name.trim() ? { name: formState.name.trim() } : undefined,
+            data: {
+              name: formState.name.trim() || undefined,
+              isCoach: formState.isCoach,
+            },
           },
         });
 
@@ -163,6 +168,20 @@ export default function LoginClient() {
                     }
                     placeholder="Alex Coachman"
                   />
+                </label>
+              )}
+
+              {mode === "signup" && (
+                <label className="label cursor-pointer justify-start gap-3">
+                  <input
+                    type="checkbox"
+                    className="checkbox"
+                    checked={formState.isCoach}
+                    onChange={(event) =>
+                      setFormState((prev) => ({ ...prev, isCoach: event.target.checked }))
+                    }
+                  />
+                  <span className="label-text">I&apos;m signing up as a coach</span>
                 </label>
               )}
 

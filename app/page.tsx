@@ -2,6 +2,7 @@
 
 import { FormEvent, useEffect, useState } from "react";
 
+import { useAuth } from "@/components/auth-provider";
 import {
   addModuleToScheduleDay,
   createModule,
@@ -14,8 +15,8 @@ import {
   type CreateScheduleWeekInput,
 } from "@/lib/supabase/training-modules";
 
-const createDefaultModuleForm = (): CreateModuleInput => ({
-  ownerId: "",
+const createDefaultModuleForm = (ownerId = ""): CreateModuleInput => ({
+  ownerId,
   name: "",
   category: "",
   subCategory: "",
@@ -26,8 +27,8 @@ const createDefaultModuleForm = (): CreateModuleInput => ({
   description: "",
 });
 
-const createDefaultWeekForm = (): CreateScheduleWeekInput => ({
-  ownerId: "",
+const createDefaultWeekForm = (ownerId = ""): CreateScheduleWeekInput => ({
+  ownerId,
   athleteId: "",
   week: 1,
 });
@@ -39,10 +40,13 @@ const createDefaultScheduleDayForm = (): AddModuleToScheduleDayInput => ({
 });
 
 export default function CoachDashboard() {
+  const { profile, isLoadingProfile } = useAuth();
   const [moduleForm, setModuleForm] = useState<CreateModuleInput>(
-    createDefaultModuleForm,
+    () => createDefaultModuleForm(profile?.id ?? ""),
   );
-  const [weekForm, setWeekForm] = useState<CreateScheduleWeekInput>(createDefaultWeekForm);
+  const [weekForm, setWeekForm] = useState<CreateScheduleWeekInput>(
+    () => createDefaultWeekForm(profile?.id ?? ""),
+  );
   const [scheduleDayForm, setScheduleDayForm] = useState<AddModuleToScheduleDayInput>(
     createDefaultScheduleDayForm,
   );
@@ -83,6 +87,16 @@ export default function CoachDashboard() {
     void fetchPeople();
   }, []);
 
+  useEffect(() => {
+    if (profile?.id) {
+      setModuleForm((prev) => ({ ...prev, ownerId: profile.id }));
+      setWeekForm((prev) => ({ ...prev, ownerId: profile.id }));
+    } else {
+      setModuleForm((prev) => ({ ...prev, ownerId: "" }));
+      setWeekForm((prev) => ({ ...prev, ownerId: "" }));
+    }
+  }, [profile]);
+
   const handleCreateModule = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     setIsSubmittingModule(true);
@@ -108,7 +122,7 @@ export default function CoachDashboard() {
       };
       const createdModule = await createModule(sanitizedInput);
       setModuleResult(`Created module “${createdModule.name}” with id ${createdModule.id}.`);
-      setModuleForm(createDefaultModuleForm());
+      setModuleForm(createDefaultModuleForm(profile?.id ?? ""));
     } catch (supabaseError) {
       setError(supabaseError instanceof Error ? supabaseError.message : String(supabaseError));
     } finally {
@@ -132,7 +146,7 @@ export default function CoachDashboard() {
       setWeekResult(
         `Created week ${createdWeek.week} for athlete ${createdWeek.athlete} owned by ${createdWeek.owner} (id ${createdWeek.id}).`,
       );
-      setWeekForm(createDefaultWeekForm());
+      setWeekForm(createDefaultWeekForm(profile?.id ?? ""));
     } catch (supabaseError) {
       setError(supabaseError instanceof Error ? supabaseError.message : String(supabaseError));
     } finally {
@@ -362,18 +376,19 @@ export default function CoachDashboard() {
                     <span className="label-text">Owner ID</span>
                     <input
                       type="text"
-                      list="coach-options"
                       className="input input-bordered"
                       required
                       value={moduleForm.ownerId}
-                      onChange={(event) =>
-                        setModuleForm((prev) => ({
-                          ...prev,
-                          ownerId: event.target.value,
-                        }))
+                      readOnly
+                      placeholder={
+                        isLoadingProfile
+                          ? "Loading your user id..."
+                          : "Sign in to load your user id"
                       }
-                      placeholder="Select a coach id"
                     />
+                    <span className="label-text-alt text-xs text-base-content/70">
+                      Automatically set to the signed-in coach.
+                    </span>
                   </label>
                 </div>
 
@@ -390,7 +405,11 @@ export default function CoachDashboard() {
                   />
                 </label>
 
-                <button className="btn btn-primary w-full" type="submit" disabled={isSubmittingModule}>
+                <button
+                  className="btn btn-primary w-full"
+                  type="submit"
+                  disabled={isSubmittingModule || !moduleForm.ownerId}
+                >
                   {isSubmittingModule ? "Saving module..." : "Save module to Supabase"}
                 </button>
               </form>
@@ -413,30 +432,44 @@ export default function CoachDashboard() {
                     <span className="label-text">Owner ID</span>
                     <input
                       type="text"
-                      list="coach-options"
                       className="input input-bordered"
                       required
                       value={weekForm.ownerId}
-                      onChange={(event) =>
-                        setWeekForm((prev) => ({ ...prev, ownerId: event.target.value }))
+                      readOnly
+                      placeholder={
+                        isLoadingProfile
+                          ? "Loading your user id..."
+                          : "Sign in to load your user id"
                       }
-                      placeholder="Select a coach id"
                     />
+                    <span className="label-text-alt text-xs text-base-content/70">
+                      Filled with the logged-in coach ID.
+                    </span>
                   </label>
 
                   <label className="form-control">
                     <span className="label-text">Athlete ID</span>
-                    <input
-                      type="text"
-                      list="athlete-options"
-                      className="input input-bordered"
+                    <select
+                      className="select select-bordered"
                       required
                       value={weekForm.athleteId}
                       onChange={(event) =>
                         setWeekForm((prev) => ({ ...prev, athleteId: event.target.value }))
                       }
-                      placeholder="Select an athlete id"
-                    />
+                      disabled={isLoadingOptions || athletes.length === 0}
+                    >
+                      <option value="" disabled>
+                        {isLoadingOptions ? "Loading athletes..." : "Select an athlete"}
+                      </option>
+                      {athletes.map((athlete) => (
+                        <option key={athlete.id} value={athlete.id}>
+                          {athlete.name} ({athlete.email})
+                        </option>
+                      ))}
+                    </select>
+                    <span className="label-text-alt text-xs text-base-content/70">
+                      Choose from the existing athletes list.
+                    </span>
                   </label>
                 </div>
 
@@ -455,7 +488,11 @@ export default function CoachDashboard() {
                   />
                 </label>
 
-                <button className="btn btn-secondary w-full" type="submit" disabled={isSubmittingWeek}>
+                <button
+                  className="btn btn-secondary w-full"
+                  type="submit"
+                  disabled={isSubmittingWeek || !weekForm.ownerId || !weekForm.athleteId}
+                >
                   {isSubmittingWeek ? "Saving week..." : "Save schedule week"}
                 </button>
               </form>
