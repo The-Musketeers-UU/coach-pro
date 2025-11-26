@@ -1,0 +1,57 @@
+"use client";
+
+import { useState } from "react";
+import { programWeeks } from "@/app/data/program-weeks";
+import { WeekScheduleView } from "@/components/WeekScheduleView";
+
+export default function AthleteSchedulePage() {
+  const [weekIndex, setWeekIndex] = useState(0);
+  const activeWeek = programWeeks[weekIndex];
+  const weekNumber = 33 + weekIndex;
+
+  const goToPreviousWeek = () => setWeekIndex((prev) => Math.max(0, prev - 1));
+
+  const goToNextWeek = () =>
+    setWeekIndex((prev) => Math.min(programWeeks.length - 1, prev + 1));
+
+  return (
+    <div className="min-h-screen">
+      <div className="mx-auto max-w-full space-y-5 px-5 py-5">
+        <div className="grid grid-cols-3">
+          <h1 className="text-xl font-semibold pl-5">Jordan&apos;s scheman</h1>
+
+          <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between justify-self-center">
+            <div className="flex items-center gap-3">
+              <button
+                className="btn btn-outline btn-xs btn-primary"
+                onClick={goToPreviousWeek}
+                aria-label="Previous week"
+                disabled={weekIndex === 0}
+              >
+                &lt;
+              </button>
+              <p className="badge-md badge badge-outline badge-secondary font-semibold uppercase tracking-wide">
+                Vecka {weekNumber}
+              </p>
+              <button
+                className="btn btn-outline btn-xs btn-primary"
+                onClick={goToNextWeek}
+                aria-label="Next week"
+                disabled={weekIndex === programWeeks.length - 1}
+              >
+                &gt;
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <WeekScheduleView
+          week={activeWeek}
+          weekNumber={weekNumber}
+          emptyWeekTitle="Inget program"
+          emptyWeekDescription="Ingen data för veckan."
+        />
+      </div>
+    </div>
+  );
+}
