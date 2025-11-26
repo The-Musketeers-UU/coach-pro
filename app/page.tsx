@@ -3,7 +3,6 @@
 import { useEffect, useMemo, useState } from "react";
 
 import {
-  type ActiveDrag,
   type Athlete,
   type Day,
   type Module,
@@ -170,10 +169,6 @@ export default function CoachDashboard() {
     return () => mediaQuery.removeEventListener("change", syncDrawerWithScreenSize);
   }, []);
 
-  const handleSetActiveDrag = (drag: ActiveDrag | null) => {
-    dragState.setActiveDrag(drag);
-  };
-
   return (
     <div className={`drawer ${isDrawerOpen ? "drawer-open" : ""} 2xl:drawer-open`}>
       <input
@@ -203,7 +198,7 @@ export default function CoachDashboard() {
             isPreviewLocation={scheduleControls.isPreviewLocation}
             updateDropPreviewFromDragTop={dragState.updateDropPreviewFromDragTop}
             dragPointerOffsetYRef={dragState.dragPointerOffsetYRef}
-            setActiveDrag={handleSetActiveDrag}
+            setActiveDrag={dragState.setActiveDrag}
             startEditingModule={editingControls.startEditingModule}
             handleRemoveModule={scheduleControls.handleRemoveModule}
             registerScheduleCardRef={scheduleControls.registerScheduleCardRef}
@@ -253,7 +248,7 @@ export default function CoachDashboard() {
         search={libraryControls.search}
         setSearch={libraryControls.setSearch}
         filteredModules={libraryControls.filteredModules}
-        setActiveDrag={handleSetActiveDrag}
+        setActiveDrag={dragState.setActiveDrag}
         dragPointerOffsetYRef={dragState.dragPointerOffsetYRef}
         setDropPreview={dragState.setDropPreview}
         startEditingModule={editingControls.startEditingModule}
