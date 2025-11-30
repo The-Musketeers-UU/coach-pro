@@ -2,8 +2,9 @@ import { createClient, User, AuthError } from '@supabase/supabase-js';
 import { emit } from 'process';
 import{supabaseBrowser} from "@/lib/supabase/supabase-browser"
 // Initialize Supabase client
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
-const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
+//To be deleted, using browser instead !
+// const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
+// const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
 const supabase = supabaseBrowser();
 
 interface SignUpData {
@@ -259,13 +260,15 @@ console.log("auth.getUser result:", user);
         error: authError?.message || "No authenticated user"
       };
     }
-        console.log("object")
+        console.log("Call before")
 
     const { data: profileData, error: profileError } = await supabase
       .from("user")
       .select("*")
-      .eq("id", user.id)
+      .eq("email", user.email)
       .single();
+console.log("PROFILE FETCH ERROR:", profileError);
+console.log("PROFILE FETCH RESPONSE:", profileData);
 
     if (profileError) {
       return {
@@ -284,6 +287,7 @@ console.log("auth.getUser result:", user);
         isCoach: profileData.isCoach ?? profileData.is_coach,
       },
     };
+    console.log("calling after")
 console.log(fullUser.profile.name)
 
     return { user: fullUser, error: null };
