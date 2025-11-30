@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { FormEvent, useEffect, useMemo, useState } from "react";
 
 import {
   type Athlete,
@@ -137,7 +137,143 @@ const athletes: Athlete[] = [
   },
 ];
 
-export default function CoachDashboard() {
+const AUTH_STORAGE_KEY = "coach-pro-authenticated";
+
+type AuthMode = "login" | "signup";
+
+function AuthLanding({ onAuthenticated }: { onAuthenticated: () => void }) {
+  const [mode, setMode] = useState<AuthMode>("login");
+  const [formData, setFormData] = useState({
+    email: "",
+    password: "",
+    confirmPassword: "",
+  });
+  const [error, setError] = useState("");
+
+  const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+
+    if (!formData.email || !formData.password) {
+      setError("Fyll i både e-post och lösenord.");
+      return;
+    }
+
+    if (mode === "signup" && formData.password !== formData.confirmPassword) {
+      setError("Lösenorden måste matcha.");
+      return;
+    }
+
+    localStorage.setItem(AUTH_STORAGE_KEY, "true");
+    setError("");
+    onAuthenticated();
+  };
+
+  return (
+    <div className="flex min-h-screen items-center justify-center bg-base-200 px-6 py-10">
+      <div className="w-full max-w-3xl rounded-2xl bg-base-100 p-8 shadow-2xl">
+        <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
+          <div>
+            <p className="text-sm uppercase tracking-wide text-secondary">Camp Momentum</p>
+            <h1 className="text-3xl font-bold text-primary">Logga in för att fortsätta</h1>
+            <p className="text-base-content/70">Hantera dina scheman och idrottare på ett ställe.</p>
+          </div>
+          <div className="join">
+            <button
+              className={`btn join-item ${mode === "login" ? "btn-primary" : "btn-ghost"}`}
+              onClick={() => setMode("login")}
+              type="button"
+            >
+              Logga in
+            </button>
+            <button
+              className={`btn join-item ${mode === "signup" ? "btn-primary" : "btn-ghost"}`}
+              onClick={() => setMode("signup")}
+              type="button"
+            >
+              Skapa konto
+            </button>
+          </div>
+        </div>
+
+        <div className="grid gap-6 lg:grid-cols-2">
+          <div className="space-y-3 rounded-xl bg-base-200 p-6">
+            <h2 className="text-lg font-semibold">
+              {mode === "login" ? "Logga in med dina uppgifter" : "Skapa ett nytt konto"}
+            </h2>
+            <p className="text-base-content/70">
+              Välj om du vill logga in eller skapa ett konto för att börja bygga scheman.
+            </p>
+            <ul className="list-disc space-y-1 pl-4 text-base-content/80">
+              <li>Snabb åtkomst till dina träningsplaner</li>
+              <li>Skapa nya idrottare och moduler</li>
+              <li>Samarbeta med ditt team</li>
+            </ul>
+          </div>
+
+          <form className="space-y-4 rounded-xl border p-6" onSubmit={handleSubmit}>
+            <div className="form-control">
+              <label className="label">
+                <span className="label-text">E-post</span>
+              </label>
+              <input
+                type="email"
+                className="input input-bordered"
+                placeholder="du@example.com"
+                value={formData.email}
+                onChange={(event) =>
+                  setFormData((prev) => ({ ...prev, email: event.target.value }))
+                }
+              />
+            </div>
+
+            <div className="form-control">
+              <label className="label">
+                <span className="label-text">Lösenord</span>
+              </label>
+              <input
+                type="password"
+                className="input input-bordered"
+                placeholder="••••••••"
+                value={formData.password}
+                onChange={(event) =>
+                  setFormData((prev) => ({ ...prev, password: event.target.value }))
+                }
+              />
+            </div>
+
+            {mode === "signup" && (
+              <div className="form-control">
+                <label className="label">
+                  <span className="label-text">Bekräfta lösenord</span>
+                </label>
+                <input
+                  type="password"
+                  className="input input-bordered"
+                  placeholder="••••••••"
+                  value={formData.confirmPassword}
+                  onChange={(event) =>
+                    setFormData((prev) => ({
+                      ...prev,
+                      confirmPassword: event.target.value,
+                    }))
+                  }
+                />
+              </div>
+            )}
+
+            {error ? <p className="text-sm text-error">{error}</p> : null}
+
+            <button className="btn btn-primary w-full" type="submit">
+              {mode === "login" ? "Logga in" : "Skapa konto"}
+            </button>
+          </form>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function AuthenticatedDashboard({ onLogout }: { onLogout: () => void }) {
   const weekOptions = useMemo(() => createRollingWeekOptions(), []);
   const [selectedWeek, setSelectedWeek] = useState<string>(() => weekOptions[0]?.value ?? "");
   const [scheduleTitle, setScheduleTitle] = useState("Träningsläger");
@@ -184,6 +320,17 @@ export default function CoachDashboard() {
           onOpen={() => setIsDrawerOpen(true)}
         />
         <div className="mx-auto max-w-full px-5 py-5">
+          <div className="mb-4 flex items-center justify-between rounded-xl border bg-base-100 p-4 shadow-sm">
+            <div>
+              <p className="text-xs uppercase tracking-wide text-secondary">Inloggad</p>
+              <p className="text-sm text-base-content/70">
+                Du har åtkomst till verktygen för schemaläggning.
+              </p>
+            </div>
+            <button className="btn btn-ghost btn-sm" onClick={onLogout} type="button">
+              Logga ut
+            </button>
+          </div>
           <DrawerToggle
             targetId="reusable-blocks-drawer"
             onOpen={() => setIsDrawerOpen(true)}
@@ -262,4 +409,26 @@ export default function CoachDashboard() {
       />
     </div>
   );
+}
+
+export default function CoachDashboard() {
+  const [isAuthenticated, setIsAuthenticated] = useState<boolean>(() => {
+    if (typeof window === "undefined") {
+      return false;
+    }
+
+    return localStorage.getItem(AUTH_STORAGE_KEY) === "true";
+  });
+
+  const handleAuthenticated = () => setIsAuthenticated(true);
+  const handleLogout = () => {
+    setIsAuthenticated(false);
+    localStorage.removeItem(AUTH_STORAGE_KEY);
+  };
+
+  if (!isAuthenticated) {
+    return <AuthLanding onAuthenticated={handleAuthenticated} />;
+  }
+
+  return <AuthenticatedDashboard onLogout={handleLogout} />;
 }

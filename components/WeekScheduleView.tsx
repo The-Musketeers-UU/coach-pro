@@ -42,7 +42,10 @@ export function WeekScheduleView({
   const [selectedModule, setSelectedModule] = useState<ProgramModule | null>(
     null
   );
-  const effectiveTitle = title ?? `Vecka ${weekNumber}`;
+  const headerTitle = title ?? (week ? `Vecka ${weekNumber}` : emptyWeekTitle);
+  const headerDescription = week
+    ? `${focusLabel}: ${week.focus}`
+    : emptyWeekDescription;
 
   return (
     <div className="card bg-base-200 border border-base-300 shadow-md">
@@ -50,11 +53,9 @@ export function WeekScheduleView({
         <div className="grid grid-cols-3 items-center w-full">
           <div>
             <h2 className="text-xl font-semibold">
-              {week ? week.label : emptyWeekTitle}
+              {headerTitle}
             </h2>
-            <p className="text-sm text-base-content/70">
-              {week ? `${focusLabel}: ${week.focus}` : emptyWeekDescription}
-            </p>
+            <p className="text-sm text-base-content/70">{headerDescription}</p>
           </div>
         </div>
 
