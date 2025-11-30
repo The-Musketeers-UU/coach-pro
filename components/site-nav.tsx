@@ -3,8 +3,6 @@
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { ThemeToggle } from "@/components/theme_toggle";
-import { useEffect } from "react";
-import {getCurrentUser} from "@/lib/auth/auth-service"
 import {ProfileBox} from './ProfileBox'
 
 const viewOptions = [

@@ -1,5 +1,4 @@
 import { supabaseRequest } from "./client";
-
 type ModuleRow = {
   id: string;
   owner: string;

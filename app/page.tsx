@@ -1,7 +1,8 @@
 "use client";
 
 import { FormEvent, useEffect, useState } from "react";
-
+import {addNewModule} from "@/lib/submission/training"
+import {type ModuleInput} from "@/lib/submission/training"
 import {
   addModuleToScheduleDay,
   createModule,
@@ -61,6 +62,9 @@ export default function CoachDashboard() {
   const [error, setError] = useState<string | null>(null);
   const [listError, setListError] = useState<string | null>(null);
 
+
+
+  
   useEffect(() => {
     const fetchAthletes = async () => {
       setIsLoadingAthletes(true);
@@ -107,9 +111,9 @@ export default function CoachDashboard() {
     setModuleResult(null);
 
     try {
-      const sanitizedInput: CreateModuleInput = {
+     
+      const sanitizedInput: ModuleInput = {
         ...moduleForm,
-        ownerId: moduleForm.ownerId.trim(),
         name: moduleForm.name.trim(),
         category: moduleForm.category.trim(),
         subCategory: moduleForm.subCategory?.trim() || undefined,
@@ -123,8 +127,8 @@ export default function CoachDashboard() {
           : undefined,
         weight: Number.isFinite(moduleForm.weight) ? Number(moduleForm.weight) : undefined,
       };
-      const createdModule = await createModule(sanitizedInput);
-      setModuleResult(`Created module “${createdModule.name}” with id ${createdModule.id}.`);
+      const createdModule = await addNewModule(sanitizedInput);
+      setModuleResult(`Created module “${addNewModule.name}” with id.`);
       setModuleForm(createDefaultModuleForm());
     } catch (supabaseError) {
       setError(supabaseError instanceof Error ? supabaseError.message : String(supabaseError));

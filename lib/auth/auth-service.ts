@@ -1,6 +1,7 @@
 import { createClient, User, AuthError } from '@supabase/supabase-js';
 import { emit } from 'process';
 import{supabaseBrowser} from "@/lib/supabase/supabase-browser"
+
 // Initialize Supabase client
 //To be deleted, using browser instead !
 // const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
@@ -267,6 +268,7 @@ console.log("auth.getUser result:", user);
       .select("*")
       .eq("email", user.email)
       .single();
+  // logst TBD
 console.log("PROFILE FETCH ERROR:", profileError);
 console.log("PROFILE FETCH RESPONSE:", profileData);
 
