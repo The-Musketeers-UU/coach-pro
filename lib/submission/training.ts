@@ -13,6 +13,13 @@ export interface ModuleInput {
   description?: string | null;
 }
 
+export type AthleteRow = {
+  id: string;
+  name: string;
+  email: string;
+  isCoach: boolean;
+};
+
 
 
 export async function addNewModule(data:ModuleInput) {
@@ -78,4 +85,41 @@ export async function addNewModule(data:ModuleInput) {
     };
   }
 
+}
+
+export async function getAthletes(data:AthleteRow) {
+    console.log('🔵 getAthletes called');
+
+    try{
+      const { data:athlete, error } = await supabase
+      .from('user')
+      .select()
+
+      if(error){
+              console.error("❌ getAthletes error:", error);
+      return {
+        success: false,
+        message: error.message,
+        error,
+      };
+    }
+
+    console.log("✅ Module created successfully:", athlete);
+      return {
+        success: true,
+        data: athlete,
+        message: "Module created successfully",
+      };
+
+
+
+    }catch(err){
+    console.error("❌ Unexpected error in getAthletes:", err);
+      return {
+        success: false,
+        message: "Unexpected error",
+        error: err,
+      };
+    }
+  
 }

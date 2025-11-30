@@ -1,7 +1,6 @@
 import { createClient, User, AuthError } from '@supabase/supabase-js';
 import { emit } from 'process';
 import{supabaseBrowser} from "@/lib/supabase/supabase-browser"
-
 // Initialize Supabase client
 //To be deleted, using browser instead !
 // const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;

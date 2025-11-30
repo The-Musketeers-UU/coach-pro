@@ -1,6 +1,6 @@
 "use client";
 
-import { getCurrentUser } from "@/lib/auth/auth-service";
+import { getCurrentUser, signOutUser } from "@/lib/auth/auth-service";
 import type { FullUser } from "@/lib/auth/auth-service";
 import { useEffect, useState } from "react";
 
@@ -52,9 +52,19 @@ export function ProfileBox() {
         {currentUser.profile.name}
       </h3>
 
-      <p className="text-sm text-gray-600">
+          <p className="text-sm text-gray-600">
         {currentUser.profile.email}
       </p>
+
+      <button
+        onClick={async () => {
+          await signOutUser();
+          window.location.href = "/login";
+        }}
+        className="mt-6 px-6 py-2.5 bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 text-white font-semibold rounded-lg shadow-md hover:shadow-lg transform hover:scale-105 transition-all duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2"
+      >
+        Sign Out
+      </button>
     </div>
   );
 }
