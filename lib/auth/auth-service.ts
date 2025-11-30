@@ -1,5 +1,6 @@
 import { createClient, User, AuthError } from '@supabase/supabase-js';
-
+import { emit } from 'process';
+import{supabaseBrowser} from "@/lib/supabase/supabase-browser"
 // Initialize Supabase client
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
@@ -19,6 +20,19 @@ interface AuthResult {
   error?: string | null;
   details?: AuthError | Error | unknown; // Added for debugging
 }
+
+export type UserProfile = {
+  name: string;
+  email: string;
+  isCoach: boolean;
+};
+
+export type FullUser = {
+  id: string;
+  email: string;
+  profile: UserProfile;
+};
+
 
 /**
  * Sign up a new user with email and password
@@ -217,32 +231,65 @@ export async function signOutUser(): Promise<AuthResult> {
 /**
  * Get the current authenticated user
  */
+
 export async function getCurrentUser() {
+  
+ 
+  
   console.log('🔵 getCurrentUser called');
 
+
   try {
-    const { data: { user }, error } = await supabase.auth.getUser();
+    const { data: { session } } = await supabase.auth.getSession();
 
-    console.log('🟡 getCurrentUser response:', {
-      hasUser: !!user,
-      userId: user?.id,
-      error: error
-    });
+if (session) {
+  console.log('User has active session');
+} else {
+  console.log('No active session');
+}
 
-    if (error) {
-      console.error('❌ GetUser error:', error);
-      return { user: null, error: error.message };
+    const { data:{user}, error: authError } = await supabase.auth.getUser();
+console.log("auth.getUser result:", user);
+
+    if ( !user) {
+      return {
+        user: null,
+        error: authError?.message || "No authenticated user"
+      };
+    }
+        console.log("object")
+
+    const { data: profileData, error: profileError } = await supabase
+      .from("user")
+      .select("*")
+      .eq("id", user.id)
+      .single();
+
+    if (profileError) {
+      return {
+        user: null,
+        error: profileError.message
+      };
     }
 
-    console.log('✅ Current user retrieved:', user?.id);
 
-    return { user, error: null };
-  } catch (error) {
-    console.error('❌ Unexpected error in getCurrentUser:', error);
-    
+    const fullUser: FullUser  = {
+      id: user.id,
+      email: user.email ?? profileData.email,
+      profile: {
+        name: profileData.name,
+        email: profileData.email,
+        isCoach: profileData.isCoach ?? profileData.is_coach,
+      },
+    };
+console.log(fullUser.profile.name)
+
+    return { user: fullUser, error: null };
+
+  } catch (err) {
     return {
       user: null,
-      error: error instanceof Error ? error.message : 'An unexpected error occurred'
+      error:  "Unexpected error"
     };
   }
 }

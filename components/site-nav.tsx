@@ -3,6 +3,9 @@
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { ThemeToggle } from "@/components/theme_toggle";
+import { useEffect } from "react";
+import {getCurrentUser} from "@/lib/auth/auth-service"
+import {ProfileBox} from './ProfileBox'
 
 const viewOptions = [
   { href: "/athlete", label: "Athlete view" },
@@ -15,6 +18,7 @@ const coachLinks = [
 ];
 
 const athleteLinks = [{ href: "/athlete", label: "My Schedules" }];
+
 
 export function SiteNav() {
   const pathname = usePathname();
@@ -31,9 +35,12 @@ export function SiteNav() {
           </Link>
           <ThemeToggle />
           <div className="dropdown dropdown-end">
+                        <ProfileBox></ProfileBox>
+
             <label tabIndex={0} className="btn btn-sm btn-ghost rounded-full border-base-200 px-4">
               {activeView.label}
               <span className="ml-1">▾</span>
+              
             </label>
             <ul tabIndex={0} className="menu dropdown-content z-1 mt-2 w-48 rounded-box border border-base-300 bg-base-200 p-2 shadow">
               {viewOptions.map((view) => (
@@ -44,8 +51,10 @@ export function SiteNav() {
                   >
                     {view.label}
                   </button>
+                  
                 </li>
               ))}
+              
             </ul>
           </div>
         </div>
