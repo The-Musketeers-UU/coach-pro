@@ -4,7 +4,7 @@ import{supabaseBrowser} from "@/lib/supabase/supabase-browser"
 // Initialize Supabase client
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
-const supabase = createClient(supabaseUrl, supabaseAnonKey);
+const supabase = supabaseBrowser();
 
 interface SignUpData {
   email: string;
@@ -107,10 +107,12 @@ export async function signUpUser(data: SignUpData): Promise<AuthResult> {
     }
 
     console.log('✅ User signed up successfully:', authData.user?.id);
+const { data: sessionData } = await supabase.auth.getSession();
+console.log("DEBUG A — SESSION RIGHT AFTER LOGIN:", sessionData);
 
     return {
       success: true,
-      message: 'Account created successfully. Please check your email to confirm.',
+      message: `Account created successfully. ${sessionData} is in progress. Please check your email to confirm.`,
       user: authData.user
     };
   } catch (error) {
