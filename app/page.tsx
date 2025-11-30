@@ -5,7 +5,6 @@ import {addNewModule} from "@/lib/submission/training"
 import {type ModuleInput} from "@/lib/submission/training"
 import {
   addModuleToScheduleDay,
-  createModule,
   createScheduleWeek,
   type AddModuleToScheduleDayInput,
   type AthleteRow,
