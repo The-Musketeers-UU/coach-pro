@@ -188,13 +188,20 @@ export default function CoachDashboard() {
   }, []);
 
   useEffect(() => {
-    if (!isLoading && !user) {
+    if (isLoading || isLoadingProfile) return;
+
+    if (!user) {
       router.replace("/login?redirectTo=/schedule_builder");
+      return;
     }
-  }, [isLoading, user, router]);
+
+    if (!profile?.isCoach) {
+      router.replace("/athlete");
+    }
+  }, [isLoading, isLoadingProfile, profile?.isCoach, router, user]);
 
   useEffect(() => {
-    if (!profile?.id) return;
+    if (!profile?.id || !profile.isCoach) return;
 
     const loadData = async () => {
       setIsLoadingData(true);
@@ -220,7 +227,7 @@ export default function CoachDashboard() {
     };
 
     void loadData();
-  }, [profile?.id]);
+  }, [profile?.id, profile?.isCoach]);
 
   const handleAssignToAthletes = async () => {
     if (!profile?.id) {
@@ -293,6 +300,14 @@ export default function CoachDashboard() {
   }
 
   if (!user) return null;
+
+  if (!profile?.isCoach) {
+    return (
+      <div className="flex min-h-screen items-center justify-center">
+        <span className="loading loading-spinner" aria-label="Omdirigerar" />
+      </div>
+    );
+  }
 
   const handleOpenAssignModal = () => {
     setAssignError(null);
