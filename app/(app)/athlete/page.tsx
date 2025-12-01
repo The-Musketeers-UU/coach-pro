@@ -50,11 +50,15 @@ export default function AthleteSchedulePage() {
   const currentWeekNumber = getIsoWeekNumber(new Date());
 
   const viewWeeks = useMemo(() => rawWeeks.map(toProgramWeek), [rawWeeks]);
-  const activeWeek = viewWeeks[weekIndex];
-  const weekNumber = rawWeeks[weekIndex]?.week ?? currentWeekNumber;
+  const safeWeekIndex = Math.min(
+    Math.max(weekIndex, 0),
+    Math.max(viewWeeks.length - 1, 0),
+  );
+  const activeWeek = viewWeeks[safeWeekIndex];
+  const weekNumber = rawWeeks[safeWeekIndex]?.week ?? currentWeekNumber;
 
   const goToPreviousWeek = () =>
-    setWeekIndex((prev) => Math.max(0, prev - 1));
+    setWeekIndex((prev) => Math.max(0, Math.min(prev, viewWeeks.length - 1) - 1));
 
   const goToNextWeek = () =>
     setWeekIndex((prev) => Math.min(viewWeeks.length - 1, prev + 1));

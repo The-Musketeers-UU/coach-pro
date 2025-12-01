@@ -79,6 +79,11 @@ export type AddModuleToScheduleDayInput = {
   day: number;
 };
 
+export type GetScheduleWeekByWeekInput = {
+  athleteId: string;
+  week: number;
+};
+
 const sanitizeNumber = (value: number | undefined) =>
   Number.isFinite(value) ? Number(value) : undefined;
 
@@ -197,10 +202,16 @@ export const getScheduleWeeksWithModules = async (
   athleteId: string,
 ): Promise<ScheduleWeekWithModules[]> => {
   const weeks = await getScheduleWeeksByAthlete(athleteId);
+  const seenWeeks = new Set<number>();
+  const uniqueWeeks = weeks.filter((week) => {
+    if (seenWeeks.has(week.week)) return false;
+    seenWeeks.add(week.week);
+    return true;
+  });
 
   const weeksWithModules: ScheduleWeekWithModules[] = [];
 
-  for (const week of weeks) {
+  for (const week of uniqueWeeks) {
     const days = await getScheduleDaysWithModules(week.id);
     weeksWithModules.push({
       ...week,
@@ -209,6 +220,69 @@ export const getScheduleWeeksWithModules = async (
   }
 
   return weeksWithModules;
+};
+
+export const getScheduleWeekByAthleteAndWeek = async (
+  input: GetScheduleWeekByWeekInput,
+): Promise<ScheduleWeekRow | null> => {
+  const existingWeeks = await supabaseRequest<ScheduleWeekRow[]>(
+    "scheduleWeek",
+    {
+      searchParams: {
+        select: "id,week,owner,athlete",
+        athlete: `eq.${input.athleteId}`,
+        week: `eq.${input.week}`,
+        order: "id.asc",
+      },
+    },
+  );
+
+  if (existingWeeks.length > 1) {
+    throw new Error(
+      "Flera scheman finns redan för samma vecka. Rensa dubbletter innan du fortsätter.",
+    );
+  }
+
+  return existingWeeks[0] ?? null;
+};
+
+const deleteScheduleLinksForDays = async (dayIds: string[]) => {
+  if (dayIds.length === 0) return;
+
+  await supabaseRequest("_ModuleToScheduleDay", {
+    method: "DELETE",
+    searchParams: {
+      B: buildInFilter(dayIds),
+    },
+  });
+};
+
+const deleteScheduleDays = async (weekId: string, dayIds: string[]) => {
+  if (dayIds.length === 0) return;
+
+  await supabaseRequest("scheduleDay", {
+    method: "DELETE",
+    searchParams: {
+      id: buildInFilter(dayIds),
+      weekId: `eq.${weekId}`,
+    },
+  });
+};
+
+export const clearScheduleWeek = async (weekId: string): Promise<void> => {
+  const existingDays = await supabaseRequest<ScheduleDayRow[]>("scheduleDay", {
+    searchParams: {
+      select: "id",
+      weekId: `eq.${weekId}`,
+    },
+  });
+
+  const dayIds = existingDays.map((day) => day.id);
+
+  if (dayIds.length === 0) return;
+
+  await deleteScheduleLinksForDays(dayIds);
+  await deleteScheduleDays(weekId, dayIds);
 };
 
 export const getScheduleWeekWithModulesById = async (
@@ -257,6 +331,15 @@ export const createModule = async (input: CreateModuleInput): Promise<ModuleRow>
 export const createScheduleWeek = async (
   input: CreateScheduleWeekInput,
 ): Promise<ScheduleWeekRow> => {
+  const existingWeek = await getScheduleWeekByAthleteAndWeek({
+    athleteId: input.athleteId,
+    week: input.week,
+  });
+
+  if (existingWeek) {
+    throw new Error("Ett schema för den här veckan finns redan för atleten.");
+  }
+
   const payload = {
     owner: input.ownerId,
     athlete: input.athleteId,

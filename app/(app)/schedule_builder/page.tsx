@@ -25,8 +25,10 @@ import {
   createModule,
   addModuleToScheduleDay,
   createScheduleWeek,
+  clearScheduleWeek,
   getAthletes,
   getModulesByOwner,
+  getScheduleWeekByAthleteAndWeek,
   getScheduleWeekWithModulesById,
 } from "@/lib/supabase/training-modules";
 
@@ -379,11 +381,26 @@ function ScheduleBuilderPage() {
 
     try {
       for (const athleteId of assignControls.selectedAthletes) {
-        const weekRow = await createScheduleWeek({
-          ownerId: profile.id,
+        const existingWeek = await getScheduleWeekByAthleteAndWeek({
           athleteId,
           week: weekNumber,
         });
+
+        if (existingWeek && existingWeek.owner !== profile.id) {
+          throw new Error(
+            "Veckan ägs av en annan tränare och kan inte ersättas.",
+          );
+        }
+
+        const weekRow =
+          existingWeek ??
+          (await createScheduleWeek({
+            ownerId: profile.id,
+            athleteId,
+            week: weekNumber,
+          }));
+
+        await clearScheduleWeek(weekRow.id);
 
         const scheduleEntries = Object.entries(scheduleControls.schedule);
         for (const [dayId, modulesForDay] of scheduleEntries) {
