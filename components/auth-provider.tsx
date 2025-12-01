@@ -52,7 +52,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     return () => {
       data.subscription.unsubscribe();
     };
-  }, []);
+  }, [supabaseBrowserClient]);
 
   useEffect(() => {
     if (!session?.user) {
@@ -77,9 +77,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, [session]);
 
   const signOut = useCallback(async () => {
-    await supabaseBrowserClient.auth.signOut();
-    router.push("/login");
-  }, [router]);
+    try {
+      await supabaseBrowserClient.auth.signOut();
+    } finally {
+      setSession(null);
+      setProfile(null);
+      router.push("/login");
+      router.refresh();
+    }
+  }, [router, supabaseBrowserClient]);
 
   const combinedIsLoading = isLoadingSession || isLoadingProfile;
 

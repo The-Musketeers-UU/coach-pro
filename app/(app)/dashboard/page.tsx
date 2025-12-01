@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import { useRouter } from "next/navigation";
 
 import { WeekScheduleView, type ProgramWeek } from "@/components/WeekScheduleView";
 import { useAuth } from "@/components/auth-provider";
@@ -43,7 +44,8 @@ const toProgramWeek = (week: ScheduleWeekWithModules): ProgramWeek => ({
 });
 
 export default function AthleteSchedulePage() {
-  const { user, isLoading, isLoadingProfile } = useAuth();
+  const router = useRouter();
+  const { user, profile, isLoading, isLoadingProfile } = useAuth();
   const [weekIndex, setWeekIndex] = useState(0);
   const [rawWeeks, setRawWeeks] = useState<ScheduleWeekWithModules[]>([]);
   const [athletes, setAthletes] = useState<AthleteRow[]>([]);
@@ -63,6 +65,21 @@ export default function AthleteSchedulePage() {
     setWeekIndex((prev) => Math.min(viewWeeks.length - 1, prev + 1));
 
   useEffect(() => {
+    if (isLoading || isLoadingProfile) return;
+
+    if (!user) {
+      router.replace("/login?redirectTo=/dashboard");
+      return;
+    }
+
+    if (!profile?.isCoach) {
+      router.replace("/athlete");
+    }
+  }, [isLoading, isLoadingProfile, profile?.isCoach, router, user]);
+
+  useEffect(() => {
+    if (!profile?.isCoach) return;
+
     const loadAthletes = async () => {
       setError(null);
       try {
@@ -79,10 +96,10 @@ export default function AthleteSchedulePage() {
     };
 
     void loadAthletes();
-  }, []);
+  }, [profile?.isCoach]);
 
   useEffect(() => {
-    if (!selectedAthlete) return;
+    if (!selectedAthlete || !profile?.isCoach) return;
 
     const loadWeeks = async () => {
       setIsFetching(true);
@@ -103,7 +120,7 @@ export default function AthleteSchedulePage() {
     };
 
     void loadWeeks();
-  }, [currentWeekNumber, selectedAthlete]);
+    }, [currentWeekNumber, profile?.isCoach, selectedAthlete]);
 
   if (isLoading || isLoadingProfile || isFetching) {
     return (
@@ -114,6 +131,14 @@ export default function AthleteSchedulePage() {
   }
 
   if (!user) return null;
+
+  if (!profile?.isCoach) {
+    return (
+      <div className="flex min-h-screen items-center justify-center">
+        <span className="loading loading-spinner" aria-label="Omdirigerar" />
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen">
