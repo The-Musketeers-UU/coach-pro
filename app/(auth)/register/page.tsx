@@ -19,10 +19,6 @@ export default function RegisterPage() {
         <div className="card-body">
           <h1 className="text-2xl font-bold text-center">Skapa konto</h1>
 
-          <p className="text-sm text-center mb-4">
-            Kom igång på ett par sekunder 🚀
-          </p>
-
           <form className="space-y-4" onSubmit={handleSubmit}>
             <div className="form-control">
               <label className="label">
@@ -62,7 +58,7 @@ export default function RegisterPage() {
 
             <div className="form-control">
               <label className="label">
-                <span className="label-text">Registrera dig som</span>
+                <span className="label-text pb-2">Registrera dig som</span>
               </label>
 
               <div className="flex items-center gap-4">
@@ -72,9 +68,9 @@ export default function RegisterPage() {
                     name="role"
                     className="radio radio-primary"
                     defaultChecked
-                    value="coach"
+                    value="aktiv"
                   />
-                  <span className="label-text">Coach</span>
+                  <span className="label-text">Aktiv</span>
                 </label>
 
                 <label className="label cursor-pointer justify-start gap-3">
@@ -82,9 +78,9 @@ export default function RegisterPage() {
                     type="radio"
                     name="role"
                     className="radio radio-primary"
-                    value="aktiv"
+                    value="coach"
                   />
-                  <span className="label-text">Aktiv</span>
+                  <span className="label-text">Coach</span>
                 </label>
               </div>
             </div>
