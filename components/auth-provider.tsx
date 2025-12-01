@@ -10,7 +10,7 @@ import {
   useState,
 } from "react";
 
-import { supabaseBrowserClient } from "@/lib/supabase/browser-client";
+import { getSupabaseBrowserClient } from "@/lib/supabase/browser-client";
 import { ensureUserForAuth, type AthleteRow } from "@/lib/supabase/training-modules";
 
 import type { Session, User } from "@supabase/supabase-js";
@@ -28,6 +28,7 @@ const AuthContext = createContext<AuthContextValue | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const router = useRouter();
+  const supabaseBrowserClient = getSupabaseBrowserClient();
   const [session, setSession] = useState<Session | null>(null);
   const [profile, setProfile] = useState<AthleteRow | null>(null);
   const [isLoadingProfile, setIsLoadingProfile] = useState(false);

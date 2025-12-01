@@ -1,8 +1,7 @@
-import { redirect } from "next/navigation";
+"use client";
 
-export default function Home() {
-  redirect("/login");
 import { FormEvent, useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 
 import { useAuth } from "@/components/auth-provider";
 import {
@@ -42,7 +41,14 @@ const createDefaultScheduleDayForm = (): AddModuleToScheduleDayInput => ({
 });
 
 export default function CoachDashboard() {
-  const { profile, isLoadingProfile } = useAuth();
+  const router = useRouter();
+  const { user, profile, isLoading, isLoadingProfile } = useAuth();
+
+  useEffect(() => {
+    if (!isLoading && !user) {
+      router.replace("/login?redirectTo=/");
+    }
+  }, [isLoading, user, router]);
   const [moduleForm, setModuleForm] = useState<CreateModuleInput>(
     () => createDefaultModuleForm(profile?.id ?? ""),
   );
@@ -65,6 +71,8 @@ export default function CoachDashboard() {
   const [listError, setListError] = useState<string | null>(null);
 
   useEffect(() => {
+    if (!user) return;
+
     const fetchPeople = async () => {
       setIsLoadingOptions(true);
       setListError(null);
@@ -87,7 +95,7 @@ export default function CoachDashboard() {
     };
 
     void fetchPeople();
-  }, []);
+  }, [user]);
 
   useEffect(() => {
     const ownerId = profile?.id ? String(profile.id) : "";
@@ -181,6 +189,16 @@ export default function CoachDashboard() {
       setIsSubmittingScheduleDay(false);
     }
   };
+
+  if (isLoading || isLoadingProfile) {
+    return (
+      <div className="flex min-h-screen items-center justify-center">
+        <span className="loading loading-spinner" aria-label="Checking session" />
+      </div>
+    );
+  }
+
+  if (!user) return null;
 
   return (
     <div className="min-h-screen">

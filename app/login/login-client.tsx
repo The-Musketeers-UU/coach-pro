@@ -4,7 +4,7 @@ import { FormEvent, useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 
 import { useAuth } from "@/components/auth-provider";
-import { supabaseBrowserClient } from "@/lib/supabase/browser-client";
+import { getSupabaseBrowserClient } from "@/lib/supabase/browser-client";
 
 type AuthMode = "signin" | "signup";
 
@@ -28,6 +28,7 @@ export default function LoginClient() {
   const redirectTo = searchParams.get("redirectTo") ?? "/";
 
   const { user, isLoading } = useAuth();
+  const supabase = getSupabaseBrowserClient();
 
   const [mode, setMode] = useState<AuthMode>("signin");
   const [formState, setFormState] = useState<AuthFormState>(defaultFormState);
@@ -49,7 +50,7 @@ export default function LoginClient() {
 
     try {
       if (mode === "signin") {
-        const { error: signInError } = await supabaseBrowserClient.auth.signInWithPassword({
+        const { error: signInError } = await supabase.auth.signInWithPassword({
           email: formState.email,
           password: formState.password,
         });
@@ -57,7 +58,7 @@ export default function LoginClient() {
         if (signInError) throw signInError;
         setMessage("Signed in successfully. Redirecting...");
       } else {
-        const { error: signUpError } = await supabaseBrowserClient.auth.signUp({
+        const { error: signUpError } = await supabase.auth.signUp({
           email: formState.email,
           password: formState.password,
           options: {
