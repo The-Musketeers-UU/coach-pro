@@ -1,16 +1,57 @@
 "use client";
 
 import Link from "next/link";
-import { useRouter } from "next/navigation";
-import type { FormEvent } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
+import { FormEvent, useEffect, useState } from "react";
+
+import { useAuth } from "@/components/auth-provider";
+import { getSupabaseBrowserClient } from "@/lib/supabase/browser-client";
 
 export default function RegisterPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const redirectTo = searchParams.get("redirectTo") ?? "/";
 
-  function handleSubmit(event: FormEvent<HTMLFormElement>) {
+  const supabase = getSupabaseBrowserClient();
+  const { user, isLoading } = useAuth();
+
+  const [name, setName] = useState("");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [role, setRole] = useState<"aktiv" | "coach">("aktiv");
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!isLoading && user) {
+      router.replace(redirectTo);
+    }
+  }, [isLoading, user, router, redirectTo]);
+
+  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    // här kan du senare lägga riktig registreringslogik
-    router.push("/dashboard");
+    setIsSubmitting(true);
+    setError(null);
+
+    try {
+      const { error: signUpError } = await supabase.auth.signUp({
+        email,
+        password,
+        options: {
+          data: {
+            name: name.trim() || undefined,
+            isCoach: role === "coach",
+          },
+        },
+      });
+
+      if (signUpError) throw signUpError;
+      router.replace(redirectTo);
+    } catch (authError) {
+      setError(authError instanceof Error ? authError.message : String(authError));
+    } finally {
+      setIsSubmitting(false);
+    }
   }
 
   return (
@@ -18,6 +59,8 @@ export default function RegisterPage() {
       <div className="card w-full max-w-md bg-base-100 shadow-xl">
         <div className="card-body">
           <h1 className="text-2xl font-bold text-center">Skapa konto</h1>
+
+          {error && <div className="alert alert-error mt-2">{error}</div>}
 
           <form className="space-y-4" onSubmit={handleSubmit}>
             <div className="form-control">
@@ -29,6 +72,8 @@ export default function RegisterPage() {
                 placeholder="För- och efternamn"
                 className="input input-bordered w-full"
                 required
+                value={name}
+                onChange={(event) => setName(event.target.value)}
               />
             </div>
 
@@ -41,6 +86,8 @@ export default function RegisterPage() {
                 placeholder="du@exempel.se"
                 className="input input-bordered w-full"
                 required
+                value={email}
+                onChange={(event) => setEmail(event.target.value)}
               />
             </div>
 
@@ -53,6 +100,8 @@ export default function RegisterPage() {
                 placeholder="••••••••"
                 className="input input-bordered w-full"
                 required
+                value={password}
+                onChange={(event) => setPassword(event.target.value)}
               />
             </div>
 
@@ -67,8 +116,9 @@ export default function RegisterPage() {
                     type="radio"
                     name="role"
                     className="radio radio-primary"
-                    defaultChecked
                     value="aktiv"
+                    checked={role === "aktiv"}
+                    onChange={() => setRole("aktiv")}
                   />
                   <span className="label-text">Aktiv</span>
                 </label>
@@ -79,6 +129,8 @@ export default function RegisterPage() {
                     name="role"
                     className="radio radio-primary"
                     value="coach"
+                    checked={role === "coach"}
+                    onChange={() => setRole("coach")}
                   />
                   <span className="label-text">Coach</span>
                 </label>
@@ -86,8 +138,12 @@ export default function RegisterPage() {
             </div>
 
             <div className="form-control mt-2 pt-4">
-              <button type="submit" className="btn btn-primary w-full">
-                Skapa konto
+              <button
+                type="submit"
+                className="btn btn-primary w-full"
+                disabled={isSubmitting || isLoading}
+              >
+                {isSubmitting ? "Skapar..." : "Skapa konto"}
               </button>
             </div>
           </form>

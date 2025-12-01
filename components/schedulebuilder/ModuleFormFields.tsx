@@ -1,6 +1,6 @@
 import type { Dispatch, SetStateAction } from "react";
 
-import type { Category, ModuleForm } from "@/components/schedulebuilder/types";
+import type { ModuleForm } from "@/components/schedulebuilder/types";
 
 type ModuleFormFieldsProps = {
   formState: ModuleForm;
@@ -44,24 +44,19 @@ export function ModuleFormFields({ formState, onChange }: ModuleFormFieldsProps)
 
       <label className="form-control flex flex-col gap-1">
         <span className="label-text text-sm">Kategori:</span>
-        <select
-          className="select select-bordered select-sm"
+        <input
+          type="text"
+          className="input input-sm input-bordered w-full"
           value={formState.category}
           onChange={(event) =>
             onChange((prev) => ({
               ...prev,
-              category: event.target.value as Category,
+              category: event.target.value,
             }))
           }
+          placeholder="t.ex. Kondition"
           required
-        >
-          <option value="" disabled>
-            Välj kategori
-          </option>
-          <option value="warmup">Uppvärmning</option>
-          <option value="kondition">Kondition</option>
-          <option value="styrka">Styrka</option>
-        </select>
+        />
       </label>
 
       <label className="form-control flex flex-col gap-1">

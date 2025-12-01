@@ -2,8 +2,31 @@
 
 import { useState } from "react";
 
-import { ProgramModule, ProgramWeek } from "@/app/data/program-weeks";
 import { ModuleBadges } from "@/components/ModuleBadges";
+
+export type ProgramModule = {
+  title: string;
+  description: string;
+  category: string;
+  subcategory?: string;
+  distanceMeters?: number;
+  weightKg?: number;
+  durationMinutes?: number;
+  durationSeconds?: number;
+};
+
+export type ProgramDay = {
+  id: string;
+  label: string;
+  modules: ProgramModule[];
+};
+
+export type ProgramWeek = {
+  id: string;
+  label: string;
+  focus: string;
+  days: ProgramDay[];
+};
 
 type WeekScheduleViewProps = {
   week?: ProgramWeek;
@@ -42,16 +65,18 @@ export function WeekScheduleView({
   const [selectedModule, setSelectedModule] = useState<ProgramModule | null>(
     null
   );
-  const effectiveTitle = title ?? `Vecka ${weekNumber}`;
+  const heading =
+    title ??
+    (week
+      ? week.label || `Vecka ${weekNumber}`
+      : emptyWeekTitle || `Vecka ${weekNumber}`);
 
   return (
     <div className="card bg-base-200 border border-base-300 shadow-md">
       <div className="card-body gap-6">
         <div className="grid grid-cols-3 items-center w-full">
           <div>
-            <h2 className="text-xl font-semibold">
-              {week ? week.label : emptyWeekTitle}
-            </h2>
+            <h2 className="text-xl font-semibold">{heading}</h2>
             <p className="text-sm text-base-content/70">
               {week ? `${focusLabel}: ${week.focus}` : emptyWeekDescription}
             </p>

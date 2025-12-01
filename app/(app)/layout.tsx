@@ -1,5 +1,4 @@
 import type { Metadata } from "next";
-import { SiteNav } from "@/components/site-nav";
 import "./app.css";
 
 export const metadata: Metadata = {
@@ -13,11 +12,6 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-        <div className="flex min-h-screen flex-col">
-          <SiteNav />
-          <main className="flex-1">
-            {children}
-          </main>
-        </div>
+    <>{children}</>
   );
 }

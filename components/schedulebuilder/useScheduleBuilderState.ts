@@ -1,4 +1,11 @@
-import { type DragEvent, type FormEvent, useMemo, useRef, useState } from "react";
+import {
+  type DragEvent,
+  type FormEvent,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 
 import {
   type ActiveDrag,
@@ -29,12 +36,14 @@ type UseScheduleBuilderStateArgs = {
   days: Day[];
   initialModules: Module[];
   athletes: Athlete[];
+  persistModule: (module: Module) => Promise<Module>;
 };
 
 export const useScheduleBuilderState = ({
   days,
   initialModules,
   athletes,
+  persistModule,
 }: UseScheduleBuilderStateArgs) => {
   const [search, setSearch] = useState("");
   const [activeDrag, setActiveDrag] = useState<ActiveDrag | null>(null);
@@ -49,6 +58,7 @@ export const useScheduleBuilderState = ({
   const [isCreateModuleModalOpen, setIsCreateModuleModalOpen] = useState(false);
   const [isAssignModalOpen, setIsAssignModalOpen] = useState(false);
   const [selectedAthletes, setSelectedAthletes] = useState<string[]>([]);
+  const [isSavingModule, setIsSavingModule] = useState(false);
   const [editingContext, setEditingContext] = useState<EditingContext | null>(
     null
   );
@@ -65,6 +75,12 @@ export const useScheduleBuilderState = ({
   const scheduledModuleCounter = useRef(0);
   const dragPointerOffsetYRef = useRef<number | null>(null);
   const scheduleCardRefs = useRef<Record<string, (HTMLDivElement | null)[]>>({});
+
+  useEffect(() => {
+    // Keep the builder library in sync when Supabase data refreshes.
+    setModuleLibrary(initialModules);
+    libraryModuleCounter.current = initialModules.length;
+  }, [initialModules]);
 
   const filteredModules = useMemo(() => {
     return moduleLibrary.filter((module) =>
@@ -85,6 +101,7 @@ export const useScheduleBuilderState = ({
       durationMinutes: module.durationMinutes,
       durationSeconds: module.durationSeconds,
       weightKg: module.weightKg,
+      sourceModuleId: module.sourceModuleId ?? module.id,
     };
   };
 
@@ -261,12 +278,15 @@ export const useScheduleBuilderState = ({
         durationMinutes: durationMinutesResult.value,
         durationSeconds: durationSecondsResult.value,
         weightKg: weightResult.value,
+        sourceModuleId: moduleId,
       },
     };
   };
 
-  const handleAddModule = (event: FormEvent<HTMLFormElement>) => {
+  const handleAddModule = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
+
+    if (isSavingModule) return;
 
     const result = prepareModuleToSave(newModule);
 
@@ -277,10 +297,24 @@ export const useScheduleBuilderState = ({
 
     if (!result.module) return;
 
-    setModuleLibrary((prev) => [result.module as Module, ...prev]);
+    setFormError(null);
+    setIsSavingModule(true);
 
-    resetModuleForm();
-    setIsCreateModuleModalOpen(false);
+    try {
+      const savedModule = await persistModule(result.module);
+      setModuleLibrary((prev) => [savedModule, ...prev]);
+
+      resetModuleForm();
+      setIsCreateModuleModalOpen(false);
+    } catch (persistError) {
+      setFormError(
+        persistError instanceof Error
+          ? persistError.message
+          : String(persistError)
+      );
+    } finally {
+      setIsSavingModule(false);
+    }
   };
 
   const closeCreateModuleModal = () => {
@@ -355,7 +389,11 @@ export const useScheduleBuilderState = ({
         [editingContext.dayId]: prev[editingContext.dayId].map(
           (module, index) =>
             index === editingContext.moduleIndex
-              ? { ...result.module!, id: module.id }
+              ? {
+                  ...result.module!,
+                  id: module.id,
+                  sourceModuleId: module.sourceModuleId ?? result.module?.id,
+                }
               : module
         ),
       }));
@@ -387,6 +425,7 @@ export const useScheduleBuilderState = ({
       setNewModule,
       handleAddModule,
       resetModuleForm,
+      isSavingModule,
       isCreateModuleModalOpen,
       openCreateModal: () => setIsCreateModuleModalOpen(true),
       closeCreateModal: closeCreateModuleModal,
