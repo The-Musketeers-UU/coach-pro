@@ -51,11 +51,11 @@ export function SiteNav() {
           {user ? (
             <div className="flex flex-wrap items-center gap-2 rounded-full border border-base-300 bg-base-100 px-3 py-2 text-sm">
               <div className="flex flex-col leading-tight">
-                <span className="text-xs uppercase text-neutral">Signed in</span>
+                <span className="text-xs uppercase text-neutral">Inloggad</span>
                 <span className="font-semibold">{user.email}</span>
               </div>
               <button className="btn btn-xs btn-ghost" onClick={handleSignOut} disabled={isLoading}>
-                Sign out
+                Logga ut
               </button>
             </div>
           ) : (

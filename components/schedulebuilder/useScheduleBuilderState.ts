@@ -1,6 +1,7 @@
 import {
   type DragEvent,
   type FormEvent,
+  useCallback,
   useEffect,
   useMemo,
   useRef,
@@ -81,6 +82,25 @@ export const useScheduleBuilderState = ({
     setModuleLibrary(initialModules);
     libraryModuleCounter.current = initialModules.length;
   }, [initialModules]);
+
+  const calculateScheduledModuleCount = useCallback(
+    (nextSchedule: DaySchedule) =>
+      Object.values(nextSchedule).reduce(
+        (total, modulesForDay) => total + modulesForDay.length,
+        0
+      ),
+    []
+  );
+
+  const setScheduleState = useCallback(
+    (nextSchedule: DaySchedule, scheduledCount?: number) => {
+      setSchedule(nextSchedule);
+      const totalModules =
+        scheduledCount ?? calculateScheduledModuleCount(nextSchedule);
+      scheduledModuleCounter.current = totalModules;
+    },
+    [calculateScheduledModuleCount]
+  );
 
   const filteredModules = useMemo(() => {
     return moduleLibrary.filter((module) =>
@@ -433,6 +453,7 @@ export const useScheduleBuilderState = ({
     },
     scheduleControls: {
       schedule,
+      setScheduleState,
       handleDayDragOver,
       handleDrop,
       allowDrop,

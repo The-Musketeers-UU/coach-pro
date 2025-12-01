@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 
 import { useAuth } from "@/components/auth-provider";
 import {
@@ -15,16 +15,19 @@ import {
   EditModuleModal,
   ReusableBlocksDrawer,
   ScheduleSection,
+  type DaySchedule,
   useScheduleBuilderState,
 } from "@/components/schedulebuilder";
 import {
   type AthleteRow,
   type ModuleRow,
+  type ScheduleWeekWithModules,
   createModule,
   addModuleToScheduleDay,
   createScheduleWeek,
   getAthletes,
   getModulesByOwner,
+  getScheduleWeekWithModulesById,
 } from "@/lib/supabase/training-modules";
 
 type WeekOption = { value: string; label: string };
@@ -98,6 +101,55 @@ const dayIdToWeekdayNumber: Record<string, number> = {
   sun: 7,
 };
 
+const weekdayNumberToDayId: Record<number, Day["id"]> = {
+  1: "mon",
+  2: "tue",
+  3: "wed",
+  4: "thu",
+  5: "fri",
+  6: "sat",
+  7: "sun",
+};
+
+const createEmptySchedule = (days: Day[]): DaySchedule =>
+  days.reduce(
+    (acc, day) => ({
+      ...acc,
+      [day.id]: [],
+    }),
+    {} as DaySchedule
+  );
+
+const createScheduleFromWeek = (
+  week: ScheduleWeekWithModules,
+): { schedule: DaySchedule; scheduledCount: number } => {
+  const initialSchedule = createEmptySchedule(days);
+  let scheduledCount = 0;
+
+  week.days.forEach((day) => {
+    const dayId = weekdayNumberToDayId[day.day];
+    if (!dayId) return;
+
+    initialSchedule[dayId] = day.modules.map((moduleRow) => {
+      scheduledCount += 1;
+      return {
+        id: `scheduled-${moduleRow.id}-${scheduledCount}`,
+        title: moduleRow.name,
+        description: moduleRow.description ?? "",
+        category: (moduleRow.category as Module["category"]) ?? "kondition",
+        subcategory: moduleRow.subCategory ?? undefined,
+        distanceMeters: moduleRow.distance ?? undefined,
+        durationMinutes: moduleRow.durationMinutes ?? undefined,
+        durationSeconds: moduleRow.durationSeconds ?? undefined,
+        weightKg: moduleRow.weight ?? undefined,
+        sourceModuleId: moduleRow.id,
+      } satisfies Module;
+    });
+  });
+
+  return { schedule: initialSchedule, scheduledCount } as const;
+};
+
 const parseWeekNumber = (value: string): number | null => {
   const match = /^\d{4}-W(\d{1,2})$/.exec(value);
   if (!match) return null;
@@ -127,6 +179,7 @@ const mapAthleteRow = (row: AthleteRow): Athlete => ({
 
 export default function CoachDashboard() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const { user, profile, isLoading, isLoadingProfile } = useAuth();
   const weekOptions = useMemo(() => createRollingWeekOptions(), []);
   const [selectedWeek, setSelectedWeek] = useState<string>(() => weekOptions[0]?.value ?? "");
@@ -135,9 +188,12 @@ export default function CoachDashboard() {
   const [athletes, setAthletes] = useState<Athlete[]>([]);
   const [dataError, setDataError] = useState<string | null>(null);
   const [isLoadingData, setIsLoadingData] = useState(true);
+  const [isLoadingExistingWeek, setIsLoadingExistingWeek] = useState(false);
+  const [existingWeekError, setExistingWeekError] = useState<string | null>(null);
   const [assignError, setAssignError] = useState<string | null>(null);
   const [assignSuccess, setAssignSuccess] = useState<string | null>(null);
   const [isAssigning, setIsAssigning] = useState(false);
+  const editingWeekId = searchParams.get("weekId");
 
   const persistModule = async (module: Module): Promise<Module> => {
     if (!profile?.id) {
@@ -172,7 +228,78 @@ export default function CoachDashboard() {
     persistModule,
   });
 
+  const { setScheduleState } = scheduleControls;
+
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
+
+  useEffect(() => {
+    if (!editingWeekId || !profile?.id || !profile.isCoach) return;
+
+    let isCancelled = false;
+
+    const loadExistingWeek = async () => {
+      setIsLoadingExistingWeek(true);
+      setExistingWeekError(null);
+
+      try {
+        const existingWeek = await getScheduleWeekWithModulesById(editingWeekId);
+
+        if (!existingWeek) {
+          if (!isCancelled) {
+            setExistingWeekError("Det gick inte att hitta den valda veckan.");
+          }
+          return;
+        }
+
+        if (existingWeek.owner !== profile.id) {
+          if (!isCancelled) {
+            setExistingWeekError("Du kan bara redigera veckor som du äger.");
+          }
+          return;
+        }
+
+        const { schedule, scheduledCount } = createScheduleFromWeek(existingWeek);
+
+        if (!isCancelled) {
+          setScheduleState(schedule, scheduledCount);
+
+          const matchingWeek = weekOptions.find((option) =>
+            option.label.startsWith(`Vecka ${existingWeek.week}`)
+          );
+
+          if (matchingWeek) {
+            setSelectedWeek(matchingWeek.value);
+          }
+
+          setScheduleTitle(`Vecka ${existingWeek.week}`);
+        }
+      } catch (supabaseError) {
+        if (!isCancelled) {
+          setExistingWeekError(
+            supabaseError instanceof Error
+              ? supabaseError.message
+              : String(supabaseError)
+          );
+        }
+      } finally {
+        if (!isCancelled) {
+          setIsLoadingExistingWeek(false);
+        }
+      }
+    };
+
+    void loadExistingWeek();
+
+    return () => {
+      isCancelled = true;
+    };
+  }, [
+    editingWeekId,
+    profile?.id,
+    profile?.isCoach,
+    setScheduleState,
+    weekOptions,
+  ]);
 
   useEffect(() => {
     const mediaQuery = window.matchMedia("(min-width: 1536px)");
@@ -291,7 +418,7 @@ export default function CoachDashboard() {
     }
   };
 
-  if (isLoading || isLoadingProfile || isLoadingData) {
+  if (isLoading || isLoadingProfile || isLoadingData || isLoadingExistingWeek) {
     return (
       <div className="flex min-h-screen items-center justify-center">
         <span className="loading loading-spinner" aria-label="Laddar schemabyggare" />
@@ -342,6 +469,9 @@ export default function CoachDashboard() {
           />
 
           {dataError && <div className="alert alert-error">{dataError}</div>}
+          {existingWeekError && (
+            <div className="alert alert-warning">{existingWeekError}</div>
+          )}
 
           <ScheduleSection
             days={days}

@@ -211,6 +211,27 @@ export const getScheduleWeeksWithModules = async (
   return weeksWithModules;
 };
 
+export const getScheduleWeekWithModulesById = async (
+  weekId: string,
+): Promise<ScheduleWeekWithModules | null> => {
+  const [week] = await supabaseRequest<ScheduleWeekRow[]>("scheduleWeek", {
+    searchParams: {
+      select: "id,week,owner,athlete",
+      id: `eq.${weekId}`,
+      limit: "1",
+    },
+  });
+
+  if (!week) return null;
+
+  const days = await getScheduleDaysWithModules(week.id);
+
+  return {
+    ...week,
+    days: fillMissingDays(week.id, days),
+  };
+};
+
 export const createModule = async (input: CreateModuleInput): Promise<ModuleRow> => {
   const payload = {
     owner: input.ownerId,
