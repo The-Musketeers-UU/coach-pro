@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import type { FormEvent } from "react";
 
@@ -57,9 +58,9 @@ export default function LoginPage() {
 
           <p className="text-center text-sm mt-4">
             Har du inget konto?{" "}
-            <a href="#" className="link link-primary">
+            <Link href="/register" className="link link-primary">
               Skapa ett konto
-            </a>
+            </Link>
           </p>
         </div>
       </div>
