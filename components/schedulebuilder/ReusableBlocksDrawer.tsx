@@ -151,10 +151,10 @@ export function ReusableBlocksDrawer({
                       event.stopPropagation();
                       handleRemoveLibraryModule(module.id);
                     }}
-                    className="btn btn-ghost btn-xs text-error"
+                    className="btn btn-ghost btn-circle btn-xs text-error"
                     aria-label={`Delete ${module.title}`}
                   >
-                    Radera
+                    <span aria-hidden="true">✕</span>
                   </button>
                 </div>
                 <p className="max-h-16 overflow-hidden text-xs text-base-content/70">

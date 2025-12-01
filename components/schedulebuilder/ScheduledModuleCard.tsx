@@ -75,10 +75,10 @@ export function ScheduledModuleCard({
                 event.stopPropagation();
                 handleRemoveModule(dayId, index);
               }}
-              className="btn btn-ghost btn-xs text-error"
+              className="btn btn-ghost btn-circle btn-xs text-error"
               aria-label={`Delete ${module.title}`}
             >
-              Radera
+              <span aria-hidden="true">✕</span>
             </button>
           </div>
           <p className="text-xs text-base-content/70">{module.description}</p>
