@@ -17,7 +17,7 @@ export type AthleteRow = {
   id: string;
   name: string;
   email: string;
-  isCoach: boolean;
+  isCoach: false;
 };
 
 
@@ -87,13 +87,14 @@ export async function addNewModule(data:ModuleInput) {
 
 }
 
-export async function getAthletes(data:AthleteRow) {
+export async function getAthletes() {
     console.log('🔵 getAthletes called');
 
     try{
       const { data:athlete, error } = await supabase
       .from('user')
       .select()
+      .eq("isCoach",false)
 
       if(error){
               console.error("❌ getAthletes error:", error);
@@ -103,6 +104,8 @@ export async function getAthletes(data:AthleteRow) {
         error,
       };
     }
+
+    console.log(athlete)
 
     console.log("✅ Module created successfully:", athlete);
       return {

@@ -5,6 +5,7 @@ import {addNewModule} from "@/lib/submission/training"
 import {type ModuleInput} from "@/lib/submission/training"
 import {
   addModuleToScheduleDay,
+  createModule,
   createScheduleWeek,
   type AddModuleToScheduleDayInput,
   type AthleteRow,
@@ -33,6 +34,13 @@ const createDefaultWeekForm = (): CreateScheduleWeekInput => ({
   week: 1,
 });
 
+const createDefaultAthlete = (): AthleteRow=>({
+    id: "",
+  name: "",
+  email: "",
+  isCoach: false,
+})
+
 const createDefaultScheduleDayForm = (): AddModuleToScheduleDayInput => ({
   moduleId: "",
   weekId: "",
@@ -47,7 +55,7 @@ export default function CoachDashboard() {
   const [scheduleDayForm, setScheduleDayForm] = useState<AddModuleToScheduleDayInput>(
     createDefaultScheduleDayForm,
   );
-  const [athletes, setAthletes] = useState<AthleteRow[]>([]);
+  const [athletes, setAthletes] = useState<AthleteRow[]>();
   const [isLoadingAthletes, setIsLoadingAthletes] = useState(false);
   const [selectedAthleteId, setSelectedAthleteId] = useState<string | null>(null);
   const [athleteSchedules, setAthleteSchedules] = useState<ScheduleWeekRow[]>([]);
@@ -64,26 +72,31 @@ export default function CoachDashboard() {
 
 
   
-  useEffect(() => {
-    const fetchAthletes = async () => {
-      setIsLoadingAthletes(true);
-      setListError(null);
-      try {
-        const athleteRows = await getAthletes();
-        setAthletes(athleteRows);
-      } catch (supabaseError) {
-        setListError(
-          supabaseError instanceof Error
-            ? supabaseError.message
-            : String(supabaseError),
-        );
-      } finally {
-        setIsLoadingAthletes(false);
-      }
-    };
+useEffect(() => {
+  const fetchAthletes = async () => {
+    setIsLoadingAthletes(true);
+    setListError(null);
+    try {
+      console.log('Fetching athletes...');
+      const athleteRows = await getAthletes();
+      console.log('Athletes fetched:', athleteRows);
+      setAthletes(athleteRows);
+    } catch (supabaseError) {
+      console.error('Error fetching athletes:', supabaseError);
+      setListError(
+        supabaseError instanceof Error
+          ? supabaseError.message
+          : String(supabaseError),
+      );
+    } finally {
+      setIsLoadingAthletes(false);
+    }
+  };
 
-    void fetchAthletes();
-  }, []);
+  void fetchAthletes();
+}, []);
+
+
 
   const handleSelectAthlete = async (athleteId: string) => {
     setSelectedAthleteId(athleteId);
@@ -212,7 +225,7 @@ export default function CoachDashboard() {
             <div className="flex flex-wrap gap-3">
               {isLoadingAthletes ? (
                 <span className="loading loading-spinner" aria-label="Loading athletes" />
-              ) : athletes.length ? (
+              ) : athletes ? (
                 athletes.map((athlete) => (
                   <button
                     key={athlete.id}

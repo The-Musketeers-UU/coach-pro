@@ -268,8 +268,8 @@ console.log("auth.getUser result:", user);
       .eq("email", user.email)
       .single();
   // logst TBD
-console.log("PROFILE FETCH ERROR:", profileError);
-console.log("PROFILE FETCH RESPONSE:", profileData);
+// console.log("PROFILE FETCH ERROR:", profileError);
+// console.log("PROFILE FETCH RESPONSE:", profileData);
 
     if (profileError) {
       return {
