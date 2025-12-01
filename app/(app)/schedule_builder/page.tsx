@@ -240,7 +240,7 @@ function ScheduleBuilderPage() {
 
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
-      if (event.key !== "Delete") return;
+      if (!["Delete", "Backspace"].includes(event.key)) return;
 
       const activeElement = document.activeElement as HTMLElement | null;
       if (
@@ -249,6 +249,10 @@ function ScheduleBuilderPage() {
         )
       ) {
         return;
+      }
+
+      if (event.key === "Backspace") {
+        event.preventDefault();
       }
 
       removeSelectedScheduleModules();
