@@ -149,6 +149,10 @@ export function ReusableBlocksDrawer({
                     type="button"
                     onClick={(event) => {
                       event.stopPropagation();
+                      const confirmed = window.confirm(
+                        `Är du säker på att du vill radera "${module.title}"?`
+                      );
+                      if (!confirmed) return;
                       handleRemoveLibraryModule(module.id);
                     }}
                     className="btn btn-ghost btn-circle btn-xs text-error"
