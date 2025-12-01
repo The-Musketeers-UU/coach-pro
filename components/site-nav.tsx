@@ -6,11 +6,11 @@ import { ThemeToggle } from "@/components/theme_toggle";
 
 const viewOptions = [
   { href: "/athlete", label: "Athlete view" },
-  { href: "/", label: "Coach view" },
+  { href: "/dashboard", label: "Coach view" },
 ];
 
 const coachLinks = [
-  { href: "/", label: "Schemabyggare" },
+  { href: "/schedule_builder", label: "Schemabyggare" },
   { href: "/dashboard", label: "Träningsöversikt" },
 ];
 
