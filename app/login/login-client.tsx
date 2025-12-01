@@ -83,51 +83,82 @@ export default function LoginClient() {
   };
 
   return (
-    <div className="min-h-screen bg-base-100">
-      <div className="mx-auto flex max-w-xl flex-col gap-6 px-4 py-10">
-        <header className="space-y-2">
-          <p className="text-xs font-semibold uppercase tracking-wide text-neutral">Welcome</p>
-          <h1 className="text-3xl font-semibold">Login or create an account</h1>
-          <p className="text-sm text-base-content/70">
-            Access Coach Pro with your Supabase credentials. You will be redirected after signing in.
-          </p>
-        </header>
+    <div className="min-h-screen bg-gradient-to-br from-base-200 via-base-100 to-base-200">
+      <div className="mx-auto grid max-w-6xl gap-10 px-4 py-12 lg:grid-cols-[1.1fr_1fr] lg:items-center">
+        <section className="space-y-6">
+          <div className="inline-flex items-center gap-2 rounded-full border border-base-300 bg-base-100 px-4 py-2 text-sm font-semibold uppercase tracking-wide text-neutral">
+            <span className="h-2 w-2 rounded-full bg-success" aria-hidden />
+            Supabase ready
+          </div>
 
-        <div className="tabs tabs-boxed w-fit">
-          <button
-            className={`tab ${mode === "signin" ? "tab-active" : ""}`}
-            onClick={() => setMode("signin")}
-            type="button"
-          >
-            Login
-          </button>
-          <button
-            className={`tab ${mode === "signup" ? "tab-active" : ""}`}
-            onClick={() => setMode("signup")}
-            type="button"
-          >
-            Sign up
-          </button>
-        </div>
+          <div className="space-y-3">
+            <h1 className="text-4xl font-bold leading-tight sm:text-5xl">
+              Sign in to keep your coaching momentum
+            </h1>
+            <p className="text-lg text-base-content/70">
+              Secure access to Coach Pro with the Supabase-powered auth flow. Switch between athlete and coach views without losing your session.
+            </p>
+          </div>
 
-        {error && <div className="alert alert-error">{error}</div>}
-        {message && <div className="alert alert-success">{message}</div>}
+          <div className="grid gap-4 sm:grid-cols-2">
+            <div className="card border border-base-300 bg-base-100 shadow-sm">
+              <div className="card-body space-y-2">
+                <p className="text-xs font-semibold uppercase tracking-wide text-neutral">Coach mode</p>
+                <p className="text-lg font-semibold">Plan reusable modules and schedules</p>
+                <p className="text-sm text-base-content/70">
+                  Save blocks, assemble weeks, and reuse them across athletes with guided forms.
+                </p>
+              </div>
+            </div>
+            <div className="card border border-base-300 bg-base-100 shadow-sm">
+              <div className="card-body space-y-2">
+                <p className="text-xs font-semibold uppercase tracking-wide text-neutral">Athlete mode</p>
+                <p className="text-lg font-semibold">Preview weekly work at a glance</p>
+                <p className="text-sm text-base-content/70">
+                  Toggle to the athlete view to see clean schedule summaries and day-by-day plans.
+                </p>
+              </div>
+            </div>
+          </div>
+        </section>
 
-        <section className="card border border-base-300 bg-base-200 shadow-sm">
-          <div className="card-body space-y-4">
-            <header className="space-y-1">
-              <p className="text-xs font-semibold uppercase tracking-wide text-neutral">
-                {mode === "signin" ? "Login" : "Create account"}
-              </p>
-              <h2 className="text-xl font-semibold">
-                {mode === "signin" ? "Enter your credentials" : "Start your account"}
-              </h2>
-              <p className="text-sm text-base-content/70">
-                Coach Pro uses Supabase authentication. Your session will be remembered across pages.
-              </p>
-            </header>
+        <section className="card border border-base-300 bg-base-100 shadow-xl">
+          <div className="card-body space-y-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-xs font-semibold uppercase tracking-wide text-neutral">
+                  {mode === "signin" ? "Login" : "Create account"}
+                </p>
+                <h2 className="text-2xl font-semibold">
+                  {mode === "signin" ? "Enter your credentials" : "Start your account"}
+                </h2>
+                <p className="text-sm text-base-content/70">
+                  Use your Supabase email + password. We&apos;ll keep you signed in across the app.
+                </p>
+              </div>
 
-            <form className="space-y-3" onSubmit={handleSubmit}>
+              <div className="tabs tabs-boxed">
+                <button
+                  className={`tab ${mode === "signin" ? "tab-active" : ""}`}
+                  onClick={() => setMode("signin")}
+                  type="button"
+                >
+                  Login
+                </button>
+                <button
+                  className={`tab ${mode === "signup" ? "tab-active" : ""}`}
+                  onClick={() => setMode("signup")}
+                  type="button"
+                >
+                  Sign up
+                </button>
+              </div>
+            </div>
+
+            {error && <div className="alert alert-error">{error}</div>}
+            {message && <div className="alert alert-success">{message}</div>}
+
+            <form className="space-y-4" onSubmit={handleSubmit}>
               <label className="form-control">
                 <span className="label-text">Email</span>
                 <input
@@ -186,9 +217,12 @@ export default function LoginClient() {
                 </label>
               )}
 
-              <button className="btn btn-primary" type="submit" disabled={isSubmitting}>
+              <button className="btn btn-primary w-full" type="submit" disabled={isSubmitting}>
                 {isSubmitting ? "Working..." : mode === "signin" ? "Login" : "Create account"}
               </button>
+              <p className="text-xs text-base-content/60">
+                By continuing, you agree to store your session in Supabase for a smoother builder experience.
+              </p>
             </form>
           </div>
         </section>
