@@ -101,6 +101,7 @@ export const useScheduleBuilderState = ({
       durationMinutes: module.durationMinutes,
       durationSeconds: module.durationSeconds,
       weightKg: module.weightKg,
+      sourceModuleId: module.sourceModuleId ?? module.id,
     };
   };
 
@@ -277,6 +278,7 @@ export const useScheduleBuilderState = ({
         durationMinutes: durationMinutesResult.value,
         durationSeconds: durationSecondsResult.value,
         weightKg: weightResult.value,
+        sourceModuleId: moduleId,
       },
     };
   };
@@ -387,7 +389,11 @@ export const useScheduleBuilderState = ({
         [editingContext.dayId]: prev[editingContext.dayId].map(
           (module, index) =>
             index === editingContext.moduleIndex
-              ? { ...result.module!, id: module.id }
+              ? {
+                  ...result.module!,
+                  id: module.id,
+                  sourceModuleId: module.sourceModuleId ?? result.module?.id,
+                }
               : module
         ),
       }));

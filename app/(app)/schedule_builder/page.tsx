@@ -21,6 +21,8 @@ import {
   type AthleteRow,
   type ModuleRow,
   createModule,
+  addModuleToScheduleDay,
+  createScheduleWeek,
   getAthletes,
   getModulesByOwner,
 } from "@/lib/supabase/training-modules";
@@ -86,6 +88,24 @@ const days: Day[] = [
   { id: "sun", label: "Söndag" },
 ];
 
+const dayIdToWeekdayNumber: Record<string, number> = {
+  mon: 1,
+  tue: 2,
+  wed: 3,
+  thu: 4,
+  fri: 5,
+  sat: 6,
+  sun: 7,
+};
+
+const parseWeekNumber = (value: string): number | null => {
+  const match = /^\d{4}-W(\d{1,2})$/.exec(value);
+  if (!match) return null;
+
+  const week = Number(match[1]);
+  return Number.isNaN(week) ? null : week;
+};
+
 const mapModuleRow = (row: ModuleRow): Module => ({
   id: row.id,
   title: row.name,
@@ -96,6 +116,7 @@ const mapModuleRow = (row: ModuleRow): Module => ({
   durationMinutes: row.durationMinutes ?? undefined,
   durationSeconds: row.durationSeconds ?? undefined,
   weightKg: row.weight ?? undefined,
+  sourceModuleId: row.id,
 });
 
 const mapAthleteRow = (row: AthleteRow): Athlete => ({
@@ -114,6 +135,9 @@ export default function CoachDashboard() {
   const [athletes, setAthletes] = useState<Athlete[]>([]);
   const [dataError, setDataError] = useState<string | null>(null);
   const [isLoadingData, setIsLoadingData] = useState(true);
+  const [assignError, setAssignError] = useState<string | null>(null);
+  const [assignSuccess, setAssignSuccess] = useState<string | null>(null);
+  const [isAssigning, setIsAssigning] = useState(false);
 
   const persistModule = async (module: Module): Promise<Module> => {
     if (!profile?.id) {
@@ -198,6 +222,68 @@ export default function CoachDashboard() {
     void loadData();
   }, [profile?.id]);
 
+  const handleAssignToAthletes = async () => {
+    if (!profile?.id) {
+      setAssignError("Inloggning krävs för att tilldela scheman.");
+      return;
+    }
+
+    const weekNumber = parseWeekNumber(selectedWeek);
+    if (!weekNumber) {
+      setAssignError("Välj en giltig vecka att tilldela.");
+      return;
+    }
+
+    if (assignControls.selectedAthletes.length === 0) {
+      setAssignError("Välj minst en aktiv att tilldela schemat till.");
+      return;
+    }
+
+    setAssignError(null);
+    setAssignSuccess(null);
+    setIsAssigning(true);
+
+    try {
+      for (const athleteId of assignControls.selectedAthletes) {
+        const weekRow = await createScheduleWeek({
+          ownerId: profile.id,
+          athleteId,
+          week: weekNumber,
+        });
+
+        const scheduleEntries = Object.entries(scheduleControls.schedule);
+        for (const [dayId, modulesForDay] of scheduleEntries) {
+          const dayNumber = dayIdToWeekdayNumber[dayId];
+          if (!dayNumber) continue;
+
+          for (const scheduledModule of modulesForDay) {
+            const moduleId = scheduledModule.sourceModuleId ?? scheduledModule.id;
+            if (!moduleId) {
+              throw new Error("Saknar block-id för att spara schemat.");
+            }
+
+            await addModuleToScheduleDay({
+              moduleId,
+              weekId: weekRow.id,
+              day: dayNumber,
+            });
+          }
+        }
+      }
+
+      assignControls.handleAssignToAthletes();
+      setAssignSuccess("Schemat har tilldelats!");
+    } catch (assignFailure) {
+      setAssignError(
+        assignFailure instanceof Error
+          ? assignFailure.message
+          : String(assignFailure),
+      );
+    } finally {
+      setIsAssigning(false);
+    }
+  };
+
   if (isLoading || isLoadingProfile || isLoadingData) {
     return (
       <div className="flex min-h-screen items-center justify-center">
@@ -207,6 +293,18 @@ export default function CoachDashboard() {
   }
 
   if (!user) return null;
+
+  const handleOpenAssignModal = () => {
+    setAssignError(null);
+    setAssignSuccess(null);
+    assignControls.openAssignModal();
+  };
+
+  const handleCloseAssignModal = () => {
+    setAssignError(null);
+    setAssignSuccess(null);
+    assignControls.closeAssignModal();
+  };
 
   return (
     <div className={`drawer ${isDrawerOpen ? "drawer-open" : ""} 2xl:drawer-open`}>
@@ -244,7 +342,7 @@ export default function CoachDashboard() {
             handleRemoveModule={scheduleControls.handleRemoveModule}
             registerScheduleCardRef={scheduleControls.registerScheduleCardRef}
             setDropPreview={dragState.setDropPreview}
-            onAssignClick={assignControls.openAssignModal}
+            onAssignClick={handleOpenAssignModal}
             weekOptions={weekOptions}
             selectedWeek={selectedWeek}
             onWeekChange={setSelectedWeek}
@@ -269,8 +367,11 @@ export default function CoachDashboard() {
           athletes={assignControls.athletes}
           selectedAthletes={assignControls.selectedAthletes}
           toggleAthleteSelection={assignControls.toggleAthleteSelection}
-          onClose={assignControls.closeAssignModal}
-          onAssign={assignControls.handleAssignToAthletes}
+          onClose={handleCloseAssignModal}
+          onAssign={handleAssignToAthletes}
+          isAssigning={isAssigning}
+          errorMessage={assignError}
+          successMessage={assignSuccess}
         />
 
         <EditModuleModal

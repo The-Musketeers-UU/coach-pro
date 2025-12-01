@@ -5,6 +5,9 @@ type AssignScheduleModalProps = {
   athletes: Athlete[];
   selectedAthletes: string[];
   toggleAthleteSelection: (athleteId: string) => void;
+  isAssigning?: boolean;
+  errorMessage?: string | null;
+  successMessage?: string | null;
   onClose: () => void;
   onAssign: () => void;
 };
@@ -14,6 +17,9 @@ export function AssignScheduleModal({
   athletes,
   selectedAthletes,
   toggleAthleteSelection,
+  isAssigning = false,
+  errorMessage,
+  successMessage,
   onClose,
   onAssign,
 }: AssignScheduleModalProps) {
@@ -33,6 +39,12 @@ export function AssignScheduleModal({
         </div>
 
         <div className="space-y-4">
+          {errorMessage && (
+            <div className="alert alert-error text-sm">{errorMessage}</div>
+          )}
+          {successMessage && (
+            <div className="alert alert-success text-sm">{successMessage}</div>
+          )}
           <section className="space-y-2">
             <p className="text-xs font-semibold uppercase tracking-wide text-neutral">Aktiva</p>
             <div className="grid gap-2">
@@ -59,8 +71,12 @@ export function AssignScheduleModal({
               <button className="btn" onClick={onClose}>
                 Avbryt
               </button>
-              <button className="btn btn-secondary" onClick={onAssign}>
-                Tilldela
+              <button
+                className={`btn btn-secondary ${isAssigning ? "loading" : ""}`}
+                onClick={onAssign}
+                disabled={isAssigning}
+              >
+                {isAssigning ? "Tilldelar..." : "Tilldela"}
               </button>
             </div>
           </section>
