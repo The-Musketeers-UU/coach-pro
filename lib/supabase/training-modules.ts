@@ -2,7 +2,7 @@ import type { User as SupabaseAuthUser } from "@supabase/supabase-js";
 
 import { supabaseRequest } from "./client";
 
-type ModuleRow = {
+export type ModuleRow = {
   id: string;
   owner: string;
   name: string;
@@ -73,6 +73,9 @@ export type AddModuleToScheduleDayInput = {
 const sanitizeNumber = (value: number | undefined) =>
   Number.isFinite(value) ? Number(value) : undefined;
 
+const buildInFilter = (values: string[]) =>
+  `in.(${values.map((value) => `"${value}"`).join(",")})`;
+
 export const getAthletes = async (): Promise<AthleteRow[]> =>
   supabaseRequest<AthleteRow[]>("user", {
     searchParams: {
@@ -101,6 +104,103 @@ export const getScheduleWeeksByAthlete = async (
       order: "week.asc",
     },
   });
+
+export type ScheduleDayWithModules = ScheduleDayRow & { modules: ModuleRow[] };
+
+export type ScheduleWeekWithModules = ScheduleWeekRow & {
+  days: ScheduleDayWithModules[];
+};
+
+const getScheduleDaysWithModules = async (
+  weekId: string,
+): Promise<ScheduleDayWithModules[]> => {
+  const scheduleDays = await supabaseRequest<ScheduleDayRow[]>("scheduleDay", {
+    searchParams: {
+      select: "id,day,weekId",
+      weekId: `eq.${weekId}`,
+      order: "day.asc",
+    },
+  });
+
+  if (scheduleDays.length === 0) return [];
+
+  const dayIds = scheduleDays.map((day) => day.id);
+
+  const moduleLinks = await supabaseRequest<ModuleScheduleDayRow[]>(
+    "_ModuleToScheduleDay",
+    {
+      searchParams: {
+        B: buildInFilter(dayIds),
+      },
+    },
+  );
+
+  if (moduleLinks.length === 0) {
+    return scheduleDays.map((day) => ({ ...day, modules: [] }));
+  }
+
+  const moduleIds = Array.from(new Set(moduleLinks.map((link) => link.A)));
+
+  const modules = await supabaseRequest<ModuleRow[]>("module", {
+    searchParams: {
+      id: buildInFilter(moduleIds),
+    },
+  });
+
+  const modulesById = new Map(modules.map((module) => [module.id, module]));
+
+  const modulesByDay = new Map<string, ModuleRow[]>();
+  dayIds.forEach((dayId) => modulesByDay.set(dayId, []));
+
+  moduleLinks.forEach((link) => {
+    const linkedModule = modulesById.get(link.A);
+    if (!linkedModule) return;
+
+    const current = modulesByDay.get(link.B);
+    if (current) {
+      current.push(linkedModule);
+    }
+  });
+
+  return scheduleDays.map((day) => ({
+    ...day,
+    modules: modulesByDay.get(day.id) ?? [],
+  }));
+};
+
+const fillMissingDays = (weekId: string, days: ScheduleDayWithModules[]) => {
+  const existing = new Map(days.map((day) => [day.day, day]));
+
+  return Array.from({ length: 7 }, (_, index) => {
+    const dayNumber = index + 1;
+    return (
+      existing.get(dayNumber) ?? {
+        id: `${weekId}-day-${dayNumber}`,
+        day: dayNumber,
+        weekId,
+        modules: [],
+      }
+    );
+  });
+};
+
+export const getScheduleWeeksWithModules = async (
+  athleteId: string,
+): Promise<ScheduleWeekWithModules[]> => {
+  const weeks = await getScheduleWeeksByAthlete(athleteId);
+
+  const weeksWithModules: ScheduleWeekWithModules[] = [];
+
+  for (const week of weeks) {
+    const days = await getScheduleDaysWithModules(week.id);
+    weeksWithModules.push({
+      ...week,
+      days: fillMissingDays(week.id, days),
+    });
+  }
+
+  return weeksWithModules;
+};
 
 export const createModule = async (input: CreateModuleInput): Promise<ModuleRow> => {
   const payload = {
