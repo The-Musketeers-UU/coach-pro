@@ -380,12 +380,39 @@ function ScheduleBuilderPage() {
     setIsAssigning(true);
 
     try {
-      for (const athleteId of assignControls.selectedAthletes) {
-        const existingWeek = await getScheduleWeekByAthleteAndWeek({
+      const existingWeeks = await Promise.all(
+        assignControls.selectedAthletes.map(async (athleteId) => ({
           athleteId,
-          week: weekNumber,
-        });
+          existingWeek: await getScheduleWeekByAthleteAndWeek({
+            athleteId,
+            week: weekNumber,
+          }),
+        })),
+      );
 
+      const conflictingWeeks = existingWeeks.filter(
+        ({ existingWeek }) => existingWeek !== null,
+      );
+
+      if (conflictingWeeks.length > 0) {
+        const athleteNames = conflictingWeeks.map(({ athleteId }) =>
+          assignControls.athletes.find((athlete) => athlete.id === athleteId)?.name ??
+          "Okänd aktiv",
+        );
+
+        const shouldReplace = window.confirm(
+          `Följande aktiva har redan ett schema för vecka ${weekNumber}: ${athleteNames.join(
+            ", ",
+          )}. Det befintliga schemat kommer att ersättas. Vill du fortsätta?`,
+        );
+
+        if (!shouldReplace) {
+          setIsAssigning(false);
+          return;
+        }
+      }
+
+      for (const { athleteId, existingWeek } of existingWeeks) {
         if (existingWeek && existingWeek.owner !== profile.id) {
           throw new Error(
             "Veckan ägs av en annan tränare och kan inte ersättas.",

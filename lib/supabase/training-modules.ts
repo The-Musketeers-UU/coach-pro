@@ -163,23 +163,37 @@ const getScheduleDaysWithModules = async (
 
   const modulesById = new Map(modules.map((module) => [module.id, module]));
 
-  const modulesByDay = new Map<string, ModuleRow[]>();
-  dayIds.forEach((dayId) => modulesByDay.set(dayId, []));
+  const modulesByDayId = new Map<string, ModuleRow[]>();
+  dayIds.forEach((dayId) => modulesByDayId.set(dayId, []));
 
   moduleLinks.forEach((link) => {
     const linkedModule = modulesById.get(link.A);
     if (!linkedModule) return;
 
-    const current = modulesByDay.get(link.B);
+    const current = modulesByDayId.get(link.B);
     if (current) {
       current.push(linkedModule);
     }
   });
 
-  return scheduleDays.map((day) => ({
-    ...day,
-    modules: modulesByDay.get(day.id) ?? [],
-  }));
+  const aggregatedByDay = new Map<number, ScheduleDayWithModules>();
+
+  scheduleDays.forEach((day) => {
+    const modulesForDay = modulesByDayId.get(day.id) ?? [];
+    const existing = aggregatedByDay.get(day.day);
+
+    if (existing) {
+      existing.modules.push(...modulesForDay);
+      return;
+    }
+
+    aggregatedByDay.set(day.day, {
+      ...day,
+      modules: [...modulesForDay],
+    });
+  });
+
+  return Array.from(aggregatedByDay.values()).sort((a, b) => a.day - b.day);
 };
 
 const fillMissingDays = (weekId: string, days: ScheduleDayWithModules[]) => {
@@ -355,21 +369,10 @@ export const createScheduleWeek = async (
   return data[0];
 };
 
-const findOrCreateScheduleDay = async (
+const createScheduleDay = async (
   weekId: string,
   day: number,
 ): Promise<ScheduleDayRow> => {
-  const [existingDay] = await supabaseRequest<ScheduleDayRow[]>("scheduleDay", {
-    method: "GET",
-    searchParams: {
-      weekId: `eq.${weekId}`,
-      day: `eq.${day}`,
-      limit: "1",
-    },
-  });
-
-  if (existingDay) return existingDay;
-
   const [createdDay] = await supabaseRequest<ScheduleDayRow[]>("scheduleDay", {
     method: "POST",
     body: {
@@ -385,7 +388,7 @@ const findOrCreateScheduleDay = async (
 export const addModuleToScheduleDay = async (
   input: AddModuleToScheduleDayInput,
 ): Promise<{ day: ScheduleDayRow; link: ModuleScheduleDayRow }> => {
-  const dayRow = await findOrCreateScheduleDay(input.weekId, input.day);
+  const dayRow = await createScheduleDay(input.weekId, input.day);
 
   const [linkRow] = await supabaseRequest<ModuleScheduleDayRow[]>("_ModuleToScheduleDay", {
     method: "POST",
