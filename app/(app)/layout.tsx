@@ -13,7 +13,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <div>
+    <div className="bg-base-100">
     <SiteNav></SiteNav>
     <>{children}</>
     </div>

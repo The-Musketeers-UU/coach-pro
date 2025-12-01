@@ -8,7 +8,7 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en" data-theme="light">
-      <body className="bg-base-100 text-base-content">
+      <body className="bg-base-200 text-base-content">
         <AuthProvider>
           <main>{children}</main>
         </AuthProvider>
