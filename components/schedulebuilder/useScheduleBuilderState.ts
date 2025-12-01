@@ -52,6 +52,12 @@ export const useScheduleBuilderState = ({
   const [schedule, setSchedule] = useState<DaySchedule>(() =>
     createEmptySchedule(days)
   );
+  const [selectedScheduleModuleIds, setSelectedScheduleModuleIds] = useState<
+    string[]
+  >([]);
+  const [expandedScheduleModuleIds, setExpandedScheduleModuleIds] = useState<
+    string[]
+  >([]);
   const [newModule, setNewModule] = useState<ModuleForm>(() =>
     createInitialFormState()
   );
@@ -217,10 +223,44 @@ export const useScheduleBuilderState = ({
     dropPreview?.dayId === dayId && dropPreview.index === index;
 
   const handleRemoveModule = (dayId: string, moduleIndex: number) => {
+    const moduleIdToRemove = schedule[dayId]?.[moduleIndex]?.id;
+
     setSchedule((prev) => ({
       ...prev,
       [dayId]: prev[dayId].filter((_, index) => index !== moduleIndex),
     }));
+
+    if (moduleIdToRemove) {
+      setSelectedScheduleModuleIds((prev) =>
+        prev.filter((moduleId) => moduleId !== moduleIdToRemove)
+      );
+      setExpandedScheduleModuleIds((prev) =>
+        prev.filter((moduleId) => moduleId !== moduleIdToRemove)
+      );
+    }
+  };
+
+  const handleSelectScheduledModule = (
+    moduleId: string,
+    isMultiSelect: boolean
+  ) => {
+    setSelectedScheduleModuleIds((prev) => {
+      if (isMultiSelect) {
+        return prev.includes(moduleId)
+          ? prev.filter((id) => id !== moduleId)
+          : [...prev, moduleId];
+      }
+
+      return [moduleId];
+    });
+  };
+
+  const toggleScheduledModuleExpansion = (moduleId: string) => {
+    setExpandedScheduleModuleIds((prev) =>
+      prev.includes(moduleId)
+        ? prev.filter((id) => id !== moduleId)
+        : [...prev, moduleId]
+    );
   };
 
   const resetModuleForm = () => {
@@ -460,6 +500,10 @@ export const useScheduleBuilderState = ({
       isPreviewLocation,
       handleRemoveModule,
       registerScheduleCardRef,
+      selectedScheduleModuleIds,
+      expandedScheduleModuleIds,
+      handleSelectScheduledModule,
+      toggleScheduledModuleExpansion,
     },
     editingControls: {
       editingContext,

@@ -9,13 +9,17 @@ type ScheduledModuleCardProps = DropPreviewLocation & {
   handleDrop: (dayId: string, targetIndex?: number) => void;
   dragPointerOffsetYRef: MutableRefObject<number | null>;
   setActiveDrag: Dispatch<SetStateAction<ActiveDrag | null>>;
-  startEditingModule: (module: Module, context: EditingContext) => void;
   handleRemoveModule: (dayId: string, moduleIndex: number) => void;
   registerScheduleCardRef: (
     dayId: string,
     index: number,
     el: HTMLDivElement | null
   ) => void;
+  startEditingModule: (module: Module, context: EditingContext) => void;
+  isSelected: boolean;
+  isExpanded: boolean;
+  onSelect: (isMultiSelect: boolean) => void;
+  onToggleExpand: () => void;
 };
 
 export function ScheduledModuleCard({
@@ -26,9 +30,13 @@ export function ScheduledModuleCard({
   handleDrop,
   dragPointerOffsetYRef,
   setActiveDrag,
-  startEditingModule,
   handleRemoveModule,
   registerScheduleCardRef,
+  startEditingModule,
+  isSelected,
+  isExpanded,
+  onSelect,
+  onToggleExpand,
 }: ScheduledModuleCardProps) {
   return (
     <div
@@ -54,16 +62,24 @@ export function ScheduledModuleCard({
       onDragEnd={() => {
         setActiveDrag(null);
       }}
-      onClick={() =>
+      onClick={(event) => {
+        onSelect(event.shiftKey);
+      }}
+      onDoubleClick={(event) => {
+        event.stopPropagation();
+        onToggleExpand();
         startEditingModule(module, {
           type: "schedule",
           moduleId: module.id,
           dayId,
           moduleIndex: index,
-        })
-      }
+        });
+      }}
       ref={(el) => registerScheduleCardRef(dayId, index, el)}
-      className="w-full cursor-grab rounded-xl border border-base-200 bg-base-100 p-3 transition hover:border-primary active:cursor-grabbing"
+      className={`w-full cursor-grab rounded-xl border bg-base-100 p-3 transition hover:border-primary active:cursor-grabbing ${
+        isSelected ? "border-primary ring-2 ring-primary/50" : "border-base-200"
+      } ${isExpanded ? "scale-[1.02] shadow-lg" : ""}`}
+      aria-pressed={isSelected}
     >
       <div className="flex items-start justify-between gap-2">
         <div className="space-y-1 text-xs text-base-content/60">

@@ -531,6 +531,12 @@ function ScheduleBuilderPage() {
             handleRemoveModule={scheduleControls.handleRemoveModule}
             registerScheduleCardRef={scheduleControls.registerScheduleCardRef}
             setDropPreview={dragState.setDropPreview}
+            selectedScheduleModuleIds={scheduleControls.selectedScheduleModuleIds}
+            expandedScheduleModuleIds={scheduleControls.expandedScheduleModuleIds}
+            onSelectScheduledModule={scheduleControls.handleSelectScheduledModule}
+            onToggleScheduledModuleExpansion={
+              scheduleControls.toggleScheduledModuleExpansion
+            }
             onAssignClick={handleOpenAssignModal}
             weekOptions={weekOptions}
             selectedWeek={selectedWeek}
