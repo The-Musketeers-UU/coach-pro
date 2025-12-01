@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { Suspense, useEffect, useMemo, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 
 import { useAuth } from "@/components/auth-provider";
@@ -177,7 +177,7 @@ const mapAthleteRow = (row: AthleteRow): Athlete => ({
   sport: row.email,
 });
 
-export default function CoachDashboard() {
+function ScheduleBuilderPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { user, profile, isLoading, isLoadingProfile } = useAuth();
@@ -549,5 +549,19 @@ export default function CoachDashboard() {
         onDragOutsideBounds={() => setIsDrawerOpen(false)}
       />
     </div>
+  );
+}
+
+export default function CoachDashboard() {
+  return (
+    <Suspense
+      fallback={
+        <div className="flex min-h-screen items-center justify-center">
+          <span className="loading loading-spinner" aria-label="Laddar schemabyggare" />
+        </div>
+      }
+    >
+      <ScheduleBuilderPage />
+    </Suspense>
   );
 }
