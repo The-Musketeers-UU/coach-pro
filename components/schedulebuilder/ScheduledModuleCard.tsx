@@ -41,6 +41,7 @@ export function ScheduledModuleCard({
   return (
     <div
       draggable
+      data-scheduled-module-card
       onDragOver={allowDrop}
       onDrop={(event) => {
         event.stopPropagation();

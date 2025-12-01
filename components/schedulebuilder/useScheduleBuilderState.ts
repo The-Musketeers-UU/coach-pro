@@ -183,6 +183,53 @@ export const useScheduleBuilderState = ({
 
     setDropPreview(null);
 
+    if (
+      activeDrag.source.type === "schedule" &&
+      selectedScheduleModuleIds.includes(activeDrag.module.id) &&
+      selectedScheduleModuleIds.length > 1
+    ) {
+      const movingModuleIds = new Set(selectedScheduleModuleIds);
+
+      setSchedule((prev) => {
+        const movingModules: Module[] = [];
+        const nextSchedule: DaySchedule = {};
+        const insertAt = targetIndex ?? (prev[dayId]?.length ?? 0);
+        let removedBeforeTarget = 0;
+
+        for (const day of days) {
+          const modulesForDay = prev[day.id] ?? [];
+          const remainingForDay: Module[] = [];
+
+          modulesForDay.forEach((scheduledModule, index) => {
+            if (movingModuleIds.has(scheduledModule.id)) {
+              movingModules.push(scheduledModule);
+              if (day.id === dayId && index < insertAt) {
+                removedBeforeTarget += 1;
+              }
+            } else {
+              remainingForDay.push(scheduledModule);
+            }
+          });
+
+          nextSchedule[day.id] = remainingForDay;
+        }
+
+        if (movingModules.length === 0) {
+          return prev;
+        }
+
+        const adjustedInsertAt = Math.max(0, insertAt - removedBeforeTarget);
+        const destinationModules = [...(nextSchedule[dayId] ?? [])];
+        destinationModules.splice(adjustedInsertAt, 0, ...movingModules);
+        nextSchedule[dayId] = destinationModules;
+
+        return nextSchedule;
+      });
+
+      setActiveDrag(null);
+      return;
+    }
+
     setSchedule((prev) => {
       const insertAt = targetIndex ?? prev[dayId].length;
 
@@ -254,6 +301,39 @@ export const useScheduleBuilderState = ({
       return [moduleId];
     });
   };
+
+  const clearSelectedScheduleModules = useCallback(() => {
+    setSelectedScheduleModuleIds([]);
+  }, []);
+
+  const removeSelectedScheduleModules = useCallback(() => {
+    if (selectedScheduleModuleIds.length === 0) return;
+
+    setSchedule((prev) => {
+      let hasChanges = false;
+      const nextSchedule: DaySchedule = {};
+
+      days.forEach((day) => {
+        const modulesForDay = prev[day.id] ?? [];
+        const filteredModules = modulesForDay.filter(
+          (module) => !selectedScheduleModuleIds.includes(module.id)
+        );
+
+        if (filteredModules.length !== modulesForDay.length) {
+          hasChanges = true;
+        }
+
+        nextSchedule[day.id] = filteredModules;
+      });
+
+      return hasChanges ? nextSchedule : prev;
+    });
+
+    setSelectedScheduleModuleIds([]);
+    setExpandedScheduleModuleIds((prev) =>
+      prev.filter((moduleId) => !selectedScheduleModuleIds.includes(moduleId))
+    );
+  }, [days, selectedScheduleModuleIds]);
 
   const toggleScheduledModuleExpansion = (moduleId: string) => {
     setExpandedScheduleModuleIds((prev) =>
@@ -503,6 +583,8 @@ export const useScheduleBuilderState = ({
       selectedScheduleModuleIds,
       expandedScheduleModuleIds,
       handleSelectScheduledModule,
+      clearSelectedScheduleModules,
+      removeSelectedScheduleModules,
       toggleScheduledModuleExpansion,
     },
     editingControls: {

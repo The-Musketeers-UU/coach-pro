@@ -230,9 +230,47 @@ function ScheduleBuilderPage() {
     persistModule,
   });
 
-  const { setScheduleState } = scheduleControls;
+  const {
+    setScheduleState,
+    removeSelectedScheduleModules,
+    clearSelectedScheduleModules,
+  } = scheduleControls;
 
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
+
+  useEffect(() => {
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key !== "Delete") return;
+
+      const activeElement = document.activeElement as HTMLElement | null;
+      if (
+        activeElement?.closest(
+          "input, textarea, select, [contenteditable='true']"
+        )
+      ) {
+        return;
+      }
+
+      removeSelectedScheduleModules();
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [removeSelectedScheduleModules]);
+
+  useEffect(() => {
+    const handlePointerDown = (event: PointerEvent) => {
+      const target = event.target as HTMLElement | null;
+      if (target?.closest("[data-scheduled-module-card]")) return;
+
+      clearSelectedScheduleModules();
+    };
+
+    window.addEventListener("pointerdown", handlePointerDown);
+
+    return () => window.removeEventListener("pointerdown", handlePointerDown);
+  }, [clearSelectedScheduleModules]);
 
   useEffect(() => {
     if (!editingWeekId || !profile?.id || !profile.isCoach) return;

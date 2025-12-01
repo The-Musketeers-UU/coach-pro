@@ -17,7 +17,10 @@ export type DaySchedule = Record<string, Module[]>;
 
 export type ActiveDrag =
   | { source: { type: "library" }; module: Module }
-  | { source: { type: "schedule"; dayId: string; moduleIndex: number }; module: Module };
+  | {
+      source: { type: "schedule"; dayId: string; moduleIndex: number };
+      module: Module;
+    };
 
 export type EditingContext =
   | { type: "library"; moduleId: string }
