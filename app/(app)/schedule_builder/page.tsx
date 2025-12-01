@@ -20,6 +20,7 @@ import {
 import {
   type AthleteRow,
   type ModuleRow,
+  createModule,
   getAthletes,
   getModulesByOwner,
 } from "@/lib/supabase/training-modules";
@@ -114,6 +115,26 @@ export default function CoachDashboard() {
   const [dataError, setDataError] = useState<string | null>(null);
   const [isLoadingData, setIsLoadingData] = useState(true);
 
+  const persistModule = async (module: Module): Promise<Module> => {
+    if (!profile?.id) {
+      throw new Error("Inloggning krävs för att spara block.");
+    }
+
+    const created = await createModule({
+      ownerId: profile.id,
+      name: module.title,
+      category: module.category,
+      subCategory: module.subcategory,
+      distance: module.distanceMeters,
+      durationMinutes: module.durationMinutes,
+      durationSeconds: module.durationSeconds,
+      weight: module.weightKg,
+      description: module.description,
+    });
+
+    return mapModuleRow(created);
+  };
+
   const {
     libraryControls,
     scheduleControls,
@@ -124,6 +145,7 @@ export default function CoachDashboard() {
     days,
     initialModules: modules,
     athletes,
+    persistModule,
   });
 
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
@@ -235,6 +257,7 @@ export default function CoachDashboard() {
           isOpen={libraryControls.isCreateModuleModalOpen}
           newModule={libraryControls.newModule}
           formError={libraryControls.formError}
+          isSubmitting={libraryControls.isSavingModule}
           onClose={libraryControls.closeCreateModal}
           onSubmit={libraryControls.handleAddModule}
           onReset={libraryControls.resetModuleForm}

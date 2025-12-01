@@ -7,6 +7,7 @@ type CreateModuleModalProps = {
   isOpen: boolean;
   newModule: ModuleForm;
   formError: string | null;
+  isSubmitting: boolean;
   onClose: () => void;
   onSubmit: (event: FormEvent<HTMLFormElement>) => void;
   onReset: () => void;
@@ -17,6 +18,7 @@ export function CreateModuleModal({
   isOpen,
   newModule,
   formError,
+  isSubmitting,
   onClose,
   onSubmit,
   onReset,
@@ -43,8 +45,14 @@ export function CreateModuleModal({
             <button type="button" className="btn flex-1" onClick={onReset}>
               Rensa formulär
             </button>
-            <button type="submit" className="btn btn-secondary flex-1">
-              Skapa block
+            <button
+              type="submit"
+              className={`btn btn-secondary flex-1 ${
+                isSubmitting ? "loading" : ""
+              }`}
+              disabled={isSubmitting}
+            >
+              {isSubmitting ? "Sparar..." : "Skapa block"}
             </button>
           </div>
         </form>

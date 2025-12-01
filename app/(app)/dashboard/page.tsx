@@ -10,6 +10,7 @@ import {
   getAthletes,
   getScheduleWeeksWithModules,
 } from "@/lib/supabase/training-modules";
+import { findClosestWeekIndex, getIsoWeekNumber } from "@/lib/week";
 
 const dayLabels = [
   "Måndag",
@@ -50,9 +51,11 @@ export default function AthleteSchedulePage() {
   const [isFetching, setIsFetching] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  const currentWeekNumber = getIsoWeekNumber(new Date());
+
   const viewWeeks = useMemo(() => rawWeeks.map(toProgramWeek), [rawWeeks]);
   const activeWeek = viewWeeks[weekIndex];
-  const weekNumber = rawWeeks[weekIndex]?.week ?? weekIndex + 1;
+  const weekNumber = rawWeeks[weekIndex]?.week ?? currentWeekNumber;
 
   const goToPreviousWeek = () => setWeekIndex((prev) => Math.max(0, prev - 1));
 
@@ -87,7 +90,7 @@ export default function AthleteSchedulePage() {
       try {
         const weeks = await getScheduleWeeksWithModules(selectedAthlete);
         setRawWeeks(weeks);
-        setWeekIndex(0);
+        setWeekIndex(findClosestWeekIndex(weeks, currentWeekNumber));
       } catch (supabaseError) {
         setError(
           supabaseError instanceof Error
@@ -100,7 +103,7 @@ export default function AthleteSchedulePage() {
     };
 
     void loadWeeks();
-  }, [selectedAthlete]);
+  }, [currentWeekNumber, selectedAthlete]);
 
   if (isLoading || isLoadingProfile || isFetching) {
     return (

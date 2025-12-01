@@ -36,12 +36,14 @@ type UseScheduleBuilderStateArgs = {
   days: Day[];
   initialModules: Module[];
   athletes: Athlete[];
+  persistModule: (module: Module) => Promise<Module>;
 };
 
 export const useScheduleBuilderState = ({
   days,
   initialModules,
   athletes,
+  persistModule,
 }: UseScheduleBuilderStateArgs) => {
   const [search, setSearch] = useState("");
   const [activeDrag, setActiveDrag] = useState<ActiveDrag | null>(null);
@@ -56,6 +58,7 @@ export const useScheduleBuilderState = ({
   const [isCreateModuleModalOpen, setIsCreateModuleModalOpen] = useState(false);
   const [isAssignModalOpen, setIsAssignModalOpen] = useState(false);
   const [selectedAthletes, setSelectedAthletes] = useState<string[]>([]);
+  const [isSavingModule, setIsSavingModule] = useState(false);
   const [editingContext, setEditingContext] = useState<EditingContext | null>(
     null
   );
@@ -75,7 +78,6 @@ export const useScheduleBuilderState = ({
 
   useEffect(() => {
     // Keep the builder library in sync when Supabase data refreshes.
-    // eslint-disable-next-line react-hooks/set-state-in-effect
     setModuleLibrary(initialModules);
     libraryModuleCounter.current = initialModules.length;
   }, [initialModules]);
@@ -279,8 +281,10 @@ export const useScheduleBuilderState = ({
     };
   };
 
-  const handleAddModule = (event: FormEvent<HTMLFormElement>) => {
+  const handleAddModule = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
+
+    if (isSavingModule) return;
 
     const result = prepareModuleToSave(newModule);
 
@@ -291,10 +295,24 @@ export const useScheduleBuilderState = ({
 
     if (!result.module) return;
 
-    setModuleLibrary((prev) => [result.module as Module, ...prev]);
+    setFormError(null);
+    setIsSavingModule(true);
 
-    resetModuleForm();
-    setIsCreateModuleModalOpen(false);
+    try {
+      const savedModule = await persistModule(result.module);
+      setModuleLibrary((prev) => [savedModule, ...prev]);
+
+      resetModuleForm();
+      setIsCreateModuleModalOpen(false);
+    } catch (persistError) {
+      setFormError(
+        persistError instanceof Error
+          ? persistError.message
+          : String(persistError)
+      );
+    } finally {
+      setIsSavingModule(false);
+    }
   };
 
   const closeCreateModuleModal = () => {
@@ -401,6 +419,7 @@ export const useScheduleBuilderState = ({
       setNewModule,
       handleAddModule,
       resetModuleForm,
+      isSavingModule,
       isCreateModuleModalOpen,
       openCreateModal: () => setIsCreateModuleModalOpen(true),
       closeCreateModal: closeCreateModuleModal,
