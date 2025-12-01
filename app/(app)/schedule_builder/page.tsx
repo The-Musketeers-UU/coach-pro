@@ -1,8 +1,9 @@
-
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import { useRouter } from "next/navigation";
 
+import { useAuth } from "@/components/auth-provider";
 import {
   type Athlete,
   type Day,
@@ -16,6 +17,12 @@ import {
   ScheduleSection,
   useScheduleBuilderState,
 } from "@/components/schedulebuilder";
+import {
+  type AthleteRow,
+  type ModuleRow,
+  getAthletes,
+  getModulesByOwner,
+} from "@/lib/supabase/training-modules";
 
 type WeekOption = { value: string; label: string };
 
@@ -68,58 +75,6 @@ const createRollingWeekOptions = (): WeekOption[] => {
   return options;
 };
 
-const initialModules: Module[] = [
-  {
-    id: "mod-1",
-    title: "Dynamisk uppvärmning",
-    description:
-      "Ledande mobility-sekvens med skips, höga knän och bandaktivering innan huvudpasset.",
-    category: "warmup",
-    subcategory: "Rörlighet",
-    durationMinutes: 12,
-  },
-  {
-    id: "mod-2",
-    title: "Tröskelintervaller",
-    description: "4x8 minuter i jämn tröskelfart med 2 minuter joggvila.",
-    category: "kondition",
-    subcategory: "Intervaller",
-    distanceMeters: 8000,
-    durationMinutes: 40,
-  },
-  {
-    id: "mod-3",
-    title: "Back to basics styrka",
-    description:
-      "Knäböj, bänkpress och rodd med fokus på kontrollerade 3-1-1-tempon.",
-    category: "styrka",
-    subcategory: "Baslyft",
-    weightKg: 60,
-    durationMinutes: 45,
-  },
-  {
-    id: "mod-4",
-    title: "Progressiv distans",
-    description: "Jämn distanslöpning med fartökning sista tredjedelen.",
-    category: "kondition",
-    subcategory: "Distans",
-    distanceMeters: 10000,
-    durationMinutes: 55,
-    durationSeconds: 0,
-  },
-  {
-    id: "mod-5",
-    title: "Explosiv kettlebell",
-    description:
-      "Svingar, clean & press och farmers walks för helkroppsathleticism.",
-    category: "styrka",
-    subcategory: "Explosivitet",
-    weightKg: 24,
-    durationMinutes: 30,
-    durationSeconds: 0,
-  },
-];
-
 const days: Day[] = [
   { id: "mon", label: "Måndag" },
   { id: "tue", label: "Tisdag" },
@@ -130,18 +85,34 @@ const days: Day[] = [
   { id: "sun", label: "Söndag" },
 ];
 
-const athletes: Athlete[] = [
-  {
-    id: "ath-1",
-    name: "Jordan Vega",
-    sport: "800m",
-  },
-];
+const mapModuleRow = (row: ModuleRow): Module => ({
+  id: row.id,
+  title: row.name,
+  description: row.description ?? "",
+  category: (row.category as Module["category"]) ?? "kondition",
+  subcategory: row.subCategory ?? undefined,
+  distanceMeters: row.distance ?? undefined,
+  durationMinutes: row.durationMinutes ?? undefined,
+  durationSeconds: row.durationSeconds ?? undefined,
+  weightKg: row.weight ?? undefined,
+});
+
+const mapAthleteRow = (row: AthleteRow): Athlete => ({
+  id: row.id,
+  name: row.name,
+  sport: row.email,
+});
 
 export default function CoachDashboard() {
+  const router = useRouter();
+  const { user, profile, isLoading, isLoadingProfile } = useAuth();
   const weekOptions = useMemo(() => createRollingWeekOptions(), []);
   const [selectedWeek, setSelectedWeek] = useState<string>(() => weekOptions[0]?.value ?? "");
   const [scheduleTitle, setScheduleTitle] = useState("Träningsläger");
+  const [modules, setModules] = useState<Module[]>([]);
+  const [athletes, setAthletes] = useState<Athlete[]>([]);
+  const [dataError, setDataError] = useState<string | null>(null);
+  const [isLoadingData, setIsLoadingData] = useState(true);
 
   const {
     libraryControls,
@@ -151,7 +122,7 @@ export default function CoachDashboard() {
     dragState,
   } = useScheduleBuilderState({
     days,
-    initialModules,
+    initialModules: modules,
     athletes,
   });
 
@@ -169,6 +140,51 @@ export default function CoachDashboard() {
 
     return () => mediaQuery.removeEventListener("change", syncDrawerWithScreenSize);
   }, []);
+
+  useEffect(() => {
+    if (!isLoading && !user) {
+      router.replace("/login?redirectTo=/schedule_builder");
+    }
+  }, [isLoading, user, router]);
+
+  useEffect(() => {
+    if (!profile?.id) return;
+
+    const loadData = async () => {
+      setIsLoadingData(true);
+      setDataError(null);
+
+      try {
+        const [moduleRows, athleteRows] = await Promise.all([
+          getModulesByOwner(profile.id),
+          getAthletes(),
+        ]);
+
+        setModules(moduleRows.map(mapModuleRow));
+        setAthletes(athleteRows.map(mapAthleteRow));
+      } catch (supabaseError) {
+        setDataError(
+          supabaseError instanceof Error
+            ? supabaseError.message
+            : String(supabaseError),
+        );
+      } finally {
+        setIsLoadingData(false);
+      }
+    };
+
+    void loadData();
+  }, [profile?.id]);
+
+  if (isLoading || isLoadingProfile || isLoadingData) {
+    return (
+      <div className="flex min-h-screen items-center justify-center">
+        <span className="loading loading-spinner" aria-label="Laddar schemabyggare" />
+      </div>
+    );
+  }
+
+  if (!user) return null;
 
   return (
     <div className={`drawer ${isDrawerOpen ? "drawer-open" : ""} 2xl:drawer-open`}>
@@ -189,6 +205,8 @@ export default function CoachDashboard() {
             targetId="reusable-blocks-drawer"
             onOpen={() => setIsDrawerOpen(true)}
           />
+
+          {dataError && <div className="alert alert-error">{dataError}</div>}
 
           <ScheduleSection
             days={days}

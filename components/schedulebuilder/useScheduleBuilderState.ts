@@ -1,4 +1,11 @@
-import { type DragEvent, type FormEvent, useMemo, useRef, useState } from "react";
+import {
+  type DragEvent,
+  type FormEvent,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 
 import {
   type ActiveDrag,
@@ -65,6 +72,13 @@ export const useScheduleBuilderState = ({
   const scheduledModuleCounter = useRef(0);
   const dragPointerOffsetYRef = useRef<number | null>(null);
   const scheduleCardRefs = useRef<Record<string, (HTMLDivElement | null)[]>>({});
+
+  useEffect(() => {
+    // Keep the builder library in sync when Supabase data refreshes.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setModuleLibrary(initialModules);
+    libraryModuleCounter.current = initialModules.length;
+  }, [initialModules]);
 
   const filteredModules = useMemo(() => {
     return moduleLibrary.filter((module) =>

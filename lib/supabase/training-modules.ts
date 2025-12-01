@@ -15,6 +15,15 @@ export type ModuleRow = {
   description: string | null;
 };
 
+export const getModulesByOwner = async (ownerId: string): Promise<ModuleRow[]> =>
+  supabaseRequest<ModuleRow[]>("module", {
+    searchParams: {
+      select: "id,owner,name,category,subCategory,distance,durationSeconds,durationMinutes,weight,description",
+      owner: `eq.${ownerId}`,
+      order: "name.asc",
+    },
+  });
+
 export type ScheduleWeekRow = {
   id: string;
   owner: string;
