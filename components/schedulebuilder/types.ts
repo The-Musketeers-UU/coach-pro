@@ -1,4 +1,4 @@
-export type Category = "warmup" | "kondition" | "styrka";
+export type Category = string;
 
 export type Module = {
   id: string;
@@ -10,6 +10,7 @@ export type Module = {
   durationMinutes?: number;
   durationSeconds?: number;
   weightKg?: number;
+  sourceModuleId?: string;
 };
 
 export type DaySchedule = Record<string, Module[]>;
@@ -25,7 +26,7 @@ export type EditingContext =
 export type ModuleForm = {
   title: string;
   description: string;
-  category: Category | "";
+  category: string;
   subcategory: string;
   distanceMeters: string;
   durationMinutes: string;
