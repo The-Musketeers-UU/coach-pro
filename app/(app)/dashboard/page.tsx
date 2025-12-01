@@ -58,11 +58,18 @@ export default function AthleteSchedulePage() {
   const viewWeeks = useMemo(() => rawWeeks.map(toProgramWeek), [rawWeeks]);
   const activeWeek = viewWeeks[weekIndex];
   const weekNumber = rawWeeks[weekIndex]?.week ?? currentWeekNumber;
+  const activeWeekId = rawWeeks[weekIndex]?.id;
 
   const goToPreviousWeek = () => setWeekIndex((prev) => Math.max(0, prev - 1));
 
   const goToNextWeek = () =>
     setWeekIndex((prev) => Math.min(viewWeeks.length - 1, prev + 1));
+
+  const handleModifyWeek = () => {
+    if (!activeWeekId) return;
+
+    router.push(`/schedule_builder?weekId=${activeWeekId}`);
+  };
 
   useEffect(() => {
     if (isLoading || isLoadingProfile) return;
@@ -168,6 +175,16 @@ export default function AthleteSchedulePage() {
                 &gt;
               </button>
             </div>
+          </div>
+
+          <div className="flex items-center justify-end">
+            <button
+              className="btn btn-primary btn-sm"
+              onClick={handleModifyWeek}
+              disabled={!activeWeekId}
+            >
+              Redigera vecka
+            </button>
           </div>
         </div>
 
