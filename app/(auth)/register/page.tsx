@@ -2,12 +2,20 @@
 
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
-import { FormEvent, useEffect, useState } from "react";
+import { FormEvent, Suspense, useEffect, useState } from "react";
 
 import { useAuth } from "@/components/auth-provider";
 import { getSupabaseBrowserClient } from "@/lib/supabase/browser-client";
 
 export default function RegisterPage() {
+  return (
+    <Suspense fallback={<LoadingFallback />}>
+      <RegisterContent />
+    </Suspense>
+  );
+}
+
+function RegisterContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const redirectTo = searchParams.get("redirectTo") ?? "/";
@@ -156,6 +164,14 @@ export default function RegisterPage() {
           </p>
         </div>
       </div>
+    </main>
+  );
+}
+
+function LoadingFallback() {
+  return (
+    <main className="min-h-screen flex items-center justify-center bg-base-200">
+      <span className="loading loading-spinner loading-lg text-primary" aria-label="Laddar" />
     </main>
   );
 }
