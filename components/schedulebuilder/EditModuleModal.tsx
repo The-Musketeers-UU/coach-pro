@@ -69,7 +69,7 @@ export function EditModuleModal({
               {editingModuleForm.category && (
                 <div>
                   <dt className="text-xs uppercase tracking-wide text-base-content/60">
-                    Category
+                    Kategori
                   </dt>
                   <dd className="font-medium text-base-content">
                     {editingModuleForm.category}
@@ -80,7 +80,7 @@ export function EditModuleModal({
               {editingModuleForm.subcategory && (
                 <div>
                   <dt className="text-xs uppercase tracking-wide text-base-content/60">
-                    Subcategory
+                    Underkategori
                   </dt>
                   <dd className="font-medium text-base-content">
                     {editingModuleForm.subcategory}
@@ -91,7 +91,7 @@ export function EditModuleModal({
               {editingModuleForm.distanceMeters && (
                 <div>
                   <dt className="text-xs uppercase tracking-wide text-base-content/60">
-                    Distance
+                    Distans 
                   </dt>
                   <dd className="font-medium text-base-content">
                     {editingModuleForm.distanceMeters} m
@@ -102,7 +102,7 @@ export function EditModuleModal({
               {formattedDuration && (
                 <div>
                   <dt className="text-xs uppercase tracking-wide text-base-content/60">
-                    Duration
+                    Längd
                   </dt>
                   <dd className="font-medium text-base-content">{formattedDuration}</dd>
                 </div>
@@ -111,7 +111,7 @@ export function EditModuleModal({
               {editingModuleForm.weightKg && (
                 <div>
                   <dt className="text-xs uppercase tracking-wide text-base-content/60">
-                    Load
+                    Vikt
                   </dt>
                   <dd className="font-medium text-base-content">
                     {editingModuleForm.weightKg} kg
