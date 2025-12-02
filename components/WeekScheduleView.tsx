@@ -24,7 +24,6 @@ export type ProgramDay = {
 export type ProgramWeek = {
   id: string;
   label: string;
-  focus: string;
   days: ProgramDay[];
 };
 
@@ -32,7 +31,6 @@ type WeekScheduleViewProps = {
   week?: ProgramWeek;
   weekNumber: number;
   title?: string;
-  focusLabel?: string;
   emptyWeekTitle?: string;
   emptyWeekDescription?: string;
 };
@@ -58,7 +56,6 @@ export function WeekScheduleView({
   week,
   weekNumber,
   title,
-  focusLabel = "Fokus",
   emptyWeekTitle = "Inget program",
   emptyWeekDescription = "Ingen data för veckan.",
 }: WeekScheduleViewProps) {
@@ -77,9 +74,6 @@ export function WeekScheduleView({
         <div className="grid grid-cols-3 items-center w-full">
           <div>
             <h2 className="text-xl font-semibold">{heading}</h2>
-            <p className="text-sm text-base-content/70">
-              {week ? `${focusLabel}: ${week.focus}` : emptyWeekDescription}
-            </p>
           </div>
         </div>
 

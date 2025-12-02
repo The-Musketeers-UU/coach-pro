@@ -154,13 +154,14 @@ export default function AthleteSchedulePage() {
     <div className="min-h-screen">
       <div className="mx-auto max-w-full space-y-5 px-5 py-5">
         <div className="grid grid-cols-3">
-          <div className="flex gap-10">
+          <div className="flex gap-12">
             <h1 className="text-xl font-semibold pl-5">Träningsöversikt</h1>
 
-            <label className="form-control max-w-sm">
-              <span className="label-text text-sm">Välj atlet</span>
+            <div className="flex w-full max-w-sm items-center gap-3">
+              <span className="text-sm whitespace-nowrap">Välj atlet</span>
+
               <select
-                className="select select-bordered select-sm"
+                className="select select-bordered select-sm flex-1"
                 value={selectedAthlete}
                 onChange={(event) => setSelectedAthlete(event.target.value)}
                 disabled={athletes.length === 0}
@@ -174,7 +175,7 @@ export default function AthleteSchedulePage() {
                   </option>
                 ))}
               </select>
-            </label>
+            </div>
           </div>
 
           <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between justify-self-center">
