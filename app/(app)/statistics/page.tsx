@@ -34,6 +34,7 @@ type AthleteSleepData = {
   name: string;
   color: string;
   sleepRatings: number[];
+  dayRatings: number[];
 };
 
 const novemberLabels = Array.from({ length: 30 }, (_, index) => {
@@ -51,6 +52,11 @@ const athleteSleepData: AthleteSleepData[] = [
       7.7, 7.9, 8.4, 8.1, 7.5, 7.8, 8.0, 8.3, 7.6, 7.4,
       7.9, 8.0, 8.2, 7.7, 7.5, 7.8, 8.1, 8.0, 7.6, 7.9,
     ],
+    dayRatings: [
+      7.2, 7.0, 7.4, 7.8, 7.5, 7.9, 7.1, 7.0, 7.6, 7.8,
+      7.4, 7.7, 8.0, 7.6, 7.2, 7.4, 7.8, 8.0, 7.3, 7.1,
+      7.5, 7.7, 7.9, 7.2, 7.3, 7.5, 7.8, 7.7, 7.4, 7.6,
+    ],
   },
   {
     id: "amir-sjostrom",
@@ -61,6 +67,11 @@ const athleteSleepData: AthleteSleepData[] = [
       6.9, 7.2, 7.4, 7.0, 6.8, 7.1, 7.3, 7.4, 7.0, 6.9,
       7.2, 7.3, 7.1, 6.8, 6.9, 7.2, 7.4, 7.1, 6.9, 7.0,
     ],
+    dayRatings: [
+      6.9, 7.1, 7.0, 7.3, 7.2, 7.5, 7.0, 6.8, 7.2, 7.0,
+      6.8, 7.1, 7.3, 6.9, 6.7, 7.0, 7.2, 7.3, 6.9, 6.8,
+      7.1, 7.2, 7.0, 6.7, 6.8, 7.0, 7.3, 7.0, 6.8, 7.0,
+    ],
   },
   {
     id: "hanna-lind",
@@ -70,6 +81,11 @@ const athleteSleepData: AthleteSleepData[] = [
       8.4, 8.2, 8.5, 8.6, 8.3, 8.7, 8.4, 8.2, 8.6, 8.5,
       8.3, 8.6, 8.8, 8.5, 8.2, 8.4, 8.7, 8.8, 8.5, 8.3,
       8.6, 8.7, 8.5, 8.2, 8.4, 8.6, 8.7, 8.5, 8.3, 8.6,
+    ],
+    dayRatings: [
+      8.1, 8.0, 8.3, 8.4, 8.1, 8.5, 8.2, 8.0, 8.4, 8.3,
+      8.0, 8.3, 8.5, 8.2, 7.9, 8.1, 8.4, 8.5, 8.2, 8.0,
+      8.3, 8.4, 8.2, 7.9, 8.0, 8.2, 8.4, 8.2, 8.0, 8.3,
     ],
   },
 ];
@@ -111,10 +127,20 @@ export default function StatisticsPage() {
               backgroundColor: `${selectedAthlete.color
                 .replace("rgb", "rgba")
                 .replace(")", ", 0.12)")}`,
-              tension: 0.3,
+              tension: 0,
               fill: true,
               pointRadius: 4,
               pointHoverRadius: 6,
+            },
+            {
+              label: `${selectedAthlete.name} · dagskattning`,
+              data: selectedAthlete.dayRatings,
+              borderColor: selectedAthlete.color,
+              backgroundColor: "transparent",
+              tension: 0,
+              pointRadius: 4,
+              pointHoverRadius: 6,
+              borderDash: [4, 4],
             },
           ]
         : [],
@@ -135,7 +161,7 @@ export default function StatisticsPage() {
         tooltip: {
           callbacks: {
             label: (context: TooltipItem<"line">) =>
-              `Sömnskattning: ${context.formattedValue}`,
+              `${context.dataset.label}: ${context.formattedValue}`,
           },
         },
       },
@@ -153,7 +179,7 @@ export default function StatisticsPage() {
           },
           title: {
             display: true,
-            text: "Sömnskattning",
+            text: "Skattning (sömn & dag)",
           },
         },
       },
