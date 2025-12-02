@@ -1,6 +1,6 @@
 type ModuleBadgeData = {
   category: string;
-  subcategory?: string[];
+  subcategory?: string | string[];
   distanceMeters?: number[];
   duration?: { minutes?: number; seconds?: number }[];
   weightKg?: number[];
@@ -29,6 +29,11 @@ export function ModuleBadges({
   module,
   showPlaceholders = false,
 }: ModuleBadgesProps) {
+  const subcategories = Array.isArray(module.subcategory)
+    ? module.subcategory
+    : module.subcategory
+      ? [module.subcategory]
+      : [];
   const hasDistance = module.distanceMeters && module.distanceMeters.length > 0;
   const hasWeight = module.weightKg && module.weightKg.length > 0;
   const hasDuration = module.duration && module.duration.length > 0;
@@ -36,9 +41,9 @@ export function ModuleBadges({
   return (
     <div className="flex flex-wrap gap-1">
       <span className="badge badge-xs capitalize badge-accent">{module.category}</span>
-      {(module.subcategory?.length || showPlaceholders) && (
+      {(subcategories.length || showPlaceholders) && (
         <span className="badge badge-outline badge-xs capitalize badge-accent badge-soft">
-          {module.subcategory?.join(", ") || "-"}
+          {subcategories.join(", ") || "-"}
         </span>
       )}
       {(hasDistance || showPlaceholders) && (
