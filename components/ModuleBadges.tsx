@@ -1,3 +1,5 @@
+import type { CSSProperties } from "react";
+
 type ModuleBadgeData = {
   category: string;
   subcategory?: string;
@@ -9,49 +11,82 @@ type ModuleBadgeData = {
 
 type BadgeSize = "xs" | "sm" | "md" | "lg";
 
-const categoryColors = [
-  "primary",
-  "secondary",
-  "accent",
-  "info",
-  "success",
-  "warning",
-  "error",
+type BadgeColors = {
+  background: string;
+  border: string;
+  text: string;
+};
+
+const categoryPalette: BadgeColors[] = [
+  { background: "#2563eb", border: "#1d4ed8", text: "#e0f2fe" }, // blue
+  { background: "#db2777", border: "#be185d", text: "#fdf2f8" }, // pink
+  { background: "#16a34a", border: "#15803d", text: "#ecfdf3" }, // green
+  { background: "#f97316", border: "#ea580c", text: "#fff7ed" }, // orange
+  { background: "#0ea5e9", border: "#0284c7", text: "#f0f9ff" }, // sky
+  { background: "#a855f7", border: "#9333ea", text: "#f5f3ff" }, // purple
+  { background: "#eab308", border: "#ca8a04", text: "#422006" }, // amber
 ];
 
-const getCategoryColor = (category?: string) => {
-  if (!category) return "neutral";
+const neutralBadge: BadgeColors = {
+  background: "#e5e7eb",
+  border: "#d1d5db",
+  text: "#111827",
+};
+
+const getCategoryColor = (category?: string): BadgeColors => {
+  if (!category) return neutralBadge;
 
   const normalized = category.trim().toLowerCase();
-  if (!normalized) return "neutral";
+  if (!normalized) return neutralBadge;
 
   const hash = normalized
     .split("")
     .reduce((sum, char) => sum + char.charCodeAt(0), 0);
 
-  return categoryColors[hash % categoryColors.length] ?? "neutral";
+  return categoryPalette[hash % categoryPalette.length] ?? neutralBadge;
 };
+
+type BadgeAppearance = {
+  className: string;
+  style: CSSProperties;
+};
+
+type BadgeOptions = { outline?: boolean; soft?: boolean; size?: BadgeSize };
 
 export const getCategoryBadgeClassName = (
   category?: string,
-  {
-    outline = false,
-    soft = false,
-    size = "xs",
-  }: { outline?: boolean; soft?: boolean; size?: BadgeSize } = {}
-) => {
+  { outline = false, soft = false, size = "xs" }: BadgeOptions = {},
+): BadgeAppearance => {
   const color = getCategoryColor(category);
 
-  return [
+  const className = [
     "badge",
     size && `badge-${size}`,
     "capitalize",
-    `badge-${color}`,
     outline && "badge-outline",
-    soft && "badge-soft",
   ]
     .filter(Boolean)
     .join(" ");
+
+  const baseStyle: CSSProperties = {
+    backgroundColor: color.background,
+    borderColor: color.border,
+    color: color.text,
+  };
+
+  if (outline) {
+    baseStyle.backgroundColor = soft ? `${color.background}1a` : "transparent";
+    baseStyle.color = color.border;
+  } else if (soft) {
+    baseStyle.backgroundColor = `${color.background}26`;
+    baseStyle.color = color.border;
+    baseStyle.borderColor = `${color.border}80`;
+  }
+
+  return {
+    className,
+    style: baseStyle,
+  };
 };
 
 const formatDuration = (minutes?: number, seconds?: number) => {
@@ -82,17 +117,19 @@ export function ModuleBadges({
   const hasDuration =
     module.durationMinutes !== undefined || module.durationSeconds !== undefined;
 
-  const categoryBadgeClassName = getCategoryBadgeClassName(module.category);
-  const subcategoryBadgeClassName = getCategoryBadgeClassName(module.category, {
+  const categoryBadge = getCategoryBadgeClassName(module.category);
+  const subcategoryBadge = getCategoryBadgeClassName(module.category, {
     outline: true,
     soft: true,
   });
 
   return (
     <div className="flex flex-wrap gap-1">
-      <span className={categoryBadgeClassName}>{module.category}</span>
+      <span className={categoryBadge.className} style={categoryBadge.style}>
+        {module.category}
+      </span>
       {(module.subcategory || showPlaceholders) && (
-        <span className={subcategoryBadgeClassName}>
+        <span className={subcategoryBadge.className} style={subcategoryBadge.style}>
           {module.subcategory || "-"}
         </span>
       )}
