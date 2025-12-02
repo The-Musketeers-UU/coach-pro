@@ -14,8 +14,8 @@ export type ProgramModule = {
   weightKg?: number[];
   duration?: { minutes?: number; seconds?: number }[];
   feedbackDescription?: string[];
-  feedbackNumericValue?: number[];
-  feedbackRating?: number[];
+  feedbackNumericValue?: (number | null)[];
+  feedbackRating?: (number | null)[];
   feedbackComment?: string[];
 };
 
@@ -87,13 +87,16 @@ export function WeekScheduleView({
     setFeedbackResponses((prev) => {
       if (prev[module.id]) return prev;
 
+      const numericCount = module.feedbackNumericValue?.length ?? 0;
+      const ratingCount = module.feedbackRating?.length ?? 0;
+      const commentCount = module.feedbackComment?.length ?? 0;
+
       return {
         ...prev,
         [module.id]: {
-          numericValues:
-            module.feedbackNumericValue?.map((value) => String(value)) ?? [],
-          ratings: module.feedbackRating?.map((value) => String(value)) ?? [],
-          comments: module.feedbackComment?.map((value) => String(value)) ?? [],
+          numericValues: Array.from({ length: numericCount }, () => ""),
+          ratings: Array.from({ length: ratingCount }, () => ""),
+          comments: Array.from({ length: commentCount }, () => ""),
         },
       };
     });
@@ -269,15 +272,20 @@ export function WeekScheduleView({
                     Feedback att fylla i
                   </p>
 
-                  {selectedModule.feedbackDescription?.length ? (
+                  {selectedModule.feedbackDescription?.some((entry) =>
+                    entry.trim()
+                  ) ? (
                     <div className="space-y-2">
                       <p className="text-xs uppercase tracking-wide text-neutral">
                         Instruktioner
                       </p>
                       <ul className="list-disc space-y-1 pl-4 text-sm text-base-content/80">
-                        {selectedModule.feedbackDescription.map((item, index) => (
-                          <li key={`desc-${index}`}>{item}</li>
-                        ))}
+                        {selectedModule.feedbackDescription.map((item, index) => {
+                          const value = item.trim();
+                          if (!value) return null;
+
+                          return <li key={`desc-${index}`}>{value}</li>;
+                        })}
                       </ul>
                     </div>
                   ) : null}

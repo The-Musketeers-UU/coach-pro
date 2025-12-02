@@ -271,30 +271,52 @@ export const useScheduleBuilderState = ({
       .map((value) => value.trim())
       .filter(Boolean);
 
-    const trimmedFeedbackDescription = formState.feedbackDescription
-      .map((value) => value.trim())
-      .filter(Boolean);
-
-    const feedbackNumericValueResult = parseNumberList(
-      formState.feedbackNumericValue,
-      "Numeriskt feedbackvärde"
+    const preparedFeedbackDescriptions = formState.feedbackDescription.map(
+      (value) => value.trim()
     );
-    if ("error" in feedbackNumericValueResult)
-      return { error: feedbackNumericValueResult.error };
 
-    const feedbackRatingResult = parseNumberList(
-      formState.feedbackRating,
-      "Feedbackbetyg"
+    const feedbackNumericValueResult = formState.feedbackNumericValue.map(
+      (value) => {
+        const trimmed = value.trim();
+        if (!trimmed) return null;
+
+        const parsed = Number(trimmed);
+        if (Number.isNaN(parsed) || parsed < 0) {
+          return { error: "Numeriskt feedbackvärde måste vara ett tal." } as const;
+        }
+
+        return parsed as number;
+      }
     );
-    if ("error" in feedbackRatingResult)
-      return { error: feedbackRatingResult.error };
 
-    if (
-      feedbackRatingResult.values?.some(
-        (rating) => rating < 1 || rating > 10
-      )
-    ) {
-      return { error: "Feedbackbetyg måste vara mellan 1 och 10." };
+    const numericError = feedbackNumericValueResult.find(
+      (entry) => typeof entry === "object" && entry !== null && "error" in entry
+    );
+    if (numericError && typeof numericError === "object" && "error" in numericError) {
+      return { error: numericError.error } as const;
+    }
+
+    const feedbackRatingResult = formState.feedbackRating.map((value) => {
+      const trimmed = value.trim();
+      if (!trimmed) return null;
+
+      const parsed = Number(trimmed);
+      if (Number.isNaN(parsed)) {
+        return { error: "Feedbackbetyg måste vara ett tal." } as const;
+      }
+
+      if (parsed < 1 || parsed > 10) {
+        return { error: "Feedbackbetyg måste vara mellan 1 och 10." } as const;
+      }
+
+      return parsed as number;
+    });
+
+    const ratingError = feedbackRatingResult.find(
+      (entry) => typeof entry === "object" && entry !== null && "error" in entry
+    );
+    if (ratingError && typeof ratingError === "object" && "error" in ratingError) {
+      return { error: ratingError.error } as const;
     }
 
     if (!trimmedTitle || !trimmedDescription || !selectedCategory) {
@@ -352,9 +374,9 @@ export const useScheduleBuilderState = ({
     const weightResult = parseNumberList(formState.weightKg, "Vikt");
     if ("error" in weightResult) return { error: weightResult.error };
 
-    const trimmedFeedbackComments = formState.feedbackComment
-      .map((value) => value.trim())
-      .filter(Boolean);
+    const preparedFeedbackComments = formState.feedbackComment.map((value) =>
+      value.trim()
+    );
 
     return {
       module: {
@@ -370,17 +392,17 @@ export const useScheduleBuilderState = ({
           : undefined,
         duration: durationValues.length ? durationValues : undefined,
         weightKg: weightResult.values?.length ? weightResult.values : undefined,
-        feedbackDescription: trimmedFeedbackDescription.length
-          ? trimmedFeedbackDescription
+        feedbackDescription: preparedFeedbackDescriptions.length
+          ? preparedFeedbackDescriptions
           : undefined,
-        feedbackNumericValue: feedbackNumericValueResult.values?.length
-          ? feedbackNumericValueResult.values
+        feedbackNumericValue: feedbackNumericValueResult.length
+          ? (feedbackNumericValueResult as (number | null)[])
           : undefined,
-        feedbackRating: feedbackRatingResult.values?.length
-          ? feedbackRatingResult.values
+        feedbackRating: feedbackRatingResult.length
+          ? (feedbackRatingResult as (number | null)[])
           : undefined,
-        feedbackComment: trimmedFeedbackComments.length
-          ? trimmedFeedbackComments
+        feedbackComment: preparedFeedbackComments.length
+          ? preparedFeedbackComments
           : undefined,
         sourceModuleId: moduleId,
       },
@@ -455,9 +477,13 @@ export const useScheduleBuilderState = ({
       weightKg: module.weightKg?.map((value) => String(value)) ?? [],
       feedbackDescription: module.feedbackDescription ?? [],
       feedbackNumericValue:
-        module.feedbackNumericValue?.map((value) => String(value)) ?? [],
+        module.feedbackNumericValue?.map((value) =>
+          value === null || value === undefined ? "" : String(value)
+        ) ?? [],
       feedbackRating:
-        module.feedbackRating?.map((value) => String(value)) ?? [],
+        module.feedbackRating?.map((value) =>
+          value === null || value === undefined ? "" : String(value)
+        ) ?? [],
       feedbackComment: module.feedbackComment ?? [],
     });
   };

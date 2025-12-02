@@ -12,8 +12,8 @@ export type Module = {
   duration?: DurationEntry[];
   weightKg?: number[];
   feedbackDescription?: string[];
-  feedbackNumericValue?: number[];
-  feedbackRating?: number[];
+  feedbackNumericValue?: (number | null)[];
+  feedbackRating?: (number | null)[];
   feedbackComment?: string[];
   sourceModuleId?: string;
 };

@@ -49,6 +49,34 @@ export function ModuleFormFields({ formState, onChange }: ModuleFormFieldsProps)
 
   const addOptionalField = (field: OptionalFieldKey) => {
     setVisibleOptionalFields((prev) => new Set(prev).add(field));
+
+    onChange((prev) => {
+      if (field === "feedbackDescription") {
+        return prev.feedbackDescription.length > 0
+          ? prev
+          : { ...prev, feedbackDescription: [""] };
+      }
+
+      if (field === "feedbackNumericValue") {
+        return prev.feedbackNumericValue.length > 0
+          ? prev
+          : { ...prev, feedbackNumericValue: [""] };
+      }
+
+      if (field === "feedbackRating") {
+        return prev.feedbackRating.length > 0
+          ? prev
+          : { ...prev, feedbackRating: [""] };
+      }
+
+      if (field === "feedbackComment") {
+        return prev.feedbackComment.length > 0
+          ? prev
+          : { ...prev, feedbackComment: [""] };
+      }
+
+      return prev;
+    });
   };
 
   const removeOptionalField = (field: OptionalFieldKey) => {
