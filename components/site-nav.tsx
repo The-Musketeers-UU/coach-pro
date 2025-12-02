@@ -8,6 +8,7 @@ import { useAuth } from "@/components/auth-provider";
 const coachLinks = [
   { href: "/schedule_builder", label: "Schemabyggare" },
   { href: "/dashboard", label: "Träningsöversikt" },
+  { href: "/statistik", label: "Statistik" },
 ];
 
 const athleteLinks = [{ href: "/athlete", label: "Mina scheman" }];
