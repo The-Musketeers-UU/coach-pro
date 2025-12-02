@@ -5,6 +5,7 @@ import { useState } from "react";
 import { ModuleBadges } from "@/components/ModuleBadges";
 
 export type ProgramModule = {
+  id?: string;
   title: string;
   description: string;
   category: string;
@@ -26,6 +27,17 @@ export type ProgramWeek = {
   label: string;
   focus?: string;
   days: ProgramDay[];
+};
+
+type LocalComment = {
+  id: string;
+  body: string;
+  createdAt: string;
+};
+
+type SelectedModuleState = {
+  module: ProgramModule;
+  key: string;
 };
 
 type WeekScheduleViewProps = {
@@ -58,16 +70,48 @@ export function WeekScheduleView({
   weekNumber,
   title,
   emptyWeekTitle = "Inget program",
-  emptyWeekDescription = "Ingen data för veckan.",
+  emptyWeekDescription = "Ingen data for veckan.",
 }: WeekScheduleViewProps) {
-  const [selectedModule, setSelectedModule] = useState<ProgramModule | null>(
-    null
+  const [selectedModule, setSelectedModule] = useState<SelectedModuleState | null>(
+    null,
   );
+  const [commentDraft, setCommentDraft] = useState("");
+  const [commentsByModule, setCommentsByModule] = useState<
+    Record<string, LocalComment[]>
+  >({});
+
   const heading =
     title ??
     (week
       ? week.label || `Vecka ${weekNumber}`
       : emptyWeekTitle || `Vecka ${weekNumber}`);
+
+  const selectedComments = selectedModule
+    ? commentsByModule[selectedModule.key] ?? []
+    : [];
+
+  const handleAddComment = () => {
+    if (!selectedModule) return;
+
+    const body = commentDraft.trim();
+    if (!body) return;
+
+    const newComment: LocalComment = {
+      id: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+      body,
+      createdAt: new Date().toISOString(),
+    };
+
+    setCommentsByModule((prev) => {
+      const existing = prev[selectedModule.key] ?? [];
+      return {
+        ...prev,
+        [selectedModule.key]: [...existing, newComment],
+      };
+    });
+
+    setCommentDraft("");
+  };
 
   return (
     <div className="card bg-base-200 border border-base-300 shadow-md">
@@ -101,7 +145,11 @@ export function WeekScheduleView({
                     <button
                       key={`${day.id}-${index}-${module.title}`}
                       type="button"
-                      onClick={() => setSelectedModule(module)}
+                      onClick={() => {
+                        const moduleKey = module.id ?? `${day.id}-${index}`;
+                        setSelectedModule({ module, key: moduleKey });
+                        setCommentDraft("");
+                      }}
                       className="group w-full text-left"
                     >
                       <div className="space-y-2 rounded-xl border border-base-200 bg-base-100 p-3 transition hover:border-primary focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary">
@@ -113,7 +161,7 @@ export function WeekScheduleView({
                         <p className="text-xs text-base-content/70">
                           {module.description}
                         </p>
-                        <ModuleBadges module={module}/>
+                        <ModuleBadges module={module} />
                       </div>
                     </button>
                   ))}
@@ -140,14 +188,14 @@ export function WeekScheduleView({
             <div className="flex items-start justify-between gap-4">
               <div>
                 <h3 className="text-xl font-semibold">
-                  {selectedModule.title}
+                  {selectedModule.module.title}
                 </h3>
               </div>
               <button
                 className="btn btn-circle btn-ghost btn-sm"
                 onClick={() => setSelectedModule(null)}
               >
-                ✕
+                x
               </button>
             </div>
 
@@ -157,7 +205,7 @@ export function WeekScheduleView({
                   Titel
                 </p>
                 <p className="text-base font-semibold text-base-content">
-                  {selectedModule.title}
+                  {selectedModule.module.title}
                 </p>
               </div>
 
@@ -166,7 +214,7 @@ export function WeekScheduleView({
                   Beskrivning
                 </p>
                 <p className="text-sm leading-relaxed text-base-content/80">
-                  {selectedModule.description}
+                  {selectedModule.module.description}
                 </p>
               </div>
 
@@ -176,7 +224,7 @@ export function WeekScheduleView({
                     Kategori
                   </p>
                   <p className="badge badge-outline capitalize">
-                    {selectedModule.category || "-"}
+                    {selectedModule.module.category || "-"}
                   </p>
                 </div>
 
@@ -185,7 +233,7 @@ export function WeekScheduleView({
                     Underkategori
                   </p>
                   <p className="text-sm text-base-content/80">
-                    {selectedModule.subcategory || "-"}
+                    {selectedModule.module.subcategory || "-"}
                   </p>
                 </div>
 
@@ -194,7 +242,7 @@ export function WeekScheduleView({
                     Distans
                   </p>
                   <p className="text-sm text-base-content/80">
-                    {formatDistance(selectedModule.distanceMeters)}
+                    {formatDistance(selectedModule.module.distanceMeters)}
                   </p>
                 </div>
 
@@ -203,7 +251,7 @@ export function WeekScheduleView({
                     Vikt
                   </p>
                   <p className="text-sm text-base-content/80">
-                    {formatWeight(selectedModule.weightKg)}
+                    {formatWeight(selectedModule.module.weightKg)}
                   </p>
                 </div>
 
@@ -213,11 +261,63 @@ export function WeekScheduleView({
                   </p>
                   <p className="text-sm text-base-content/80">
                     {formatDuration(
-                      selectedModule.durationMinutes,
-                      selectedModule.durationSeconds
+                      selectedModule.module.durationMinutes,
+                      selectedModule.module.durationSeconds,
                     ) || "-"}
                   </p>
                 </div>
+              </div>
+            </div>
+
+            <div className="space-y-3 rounded-2xl border border-base-300 bg-base-100 p-4">
+              <div className="flex items-center justify-between gap-2">
+                <div>
+                  <p className="text-xs uppercase tracking-wide text-neutral">
+                    Kommentarer
+                  </p>
+                  <p className="text-xs text-base-content/70">
+                    Testlage: sparas bara lokalt medan sidan ar oppen.
+                  </p>
+                </div>
+              </div>
+
+              <div className="space-y-2 max-h-48 overflow-y-auto">
+                {selectedComments.length === 0 ? (
+                  <p className="text-xs text-base-content/60">
+                    Inga kommentarer annu.
+                  </p>
+                ) : (
+                  selectedComments.map((comment) => (
+                    <div
+                      key={comment.id}
+                      className="rounded-lg border border-base-200 bg-base-100/80 p-2 text-sm"
+                    >
+                      <p className="text-xs text-base-content/60">
+                        {new Date(comment.createdAt).toLocaleString()}
+                      </p>
+                      <p className="text-sm text-base-content/90 whitespace-pre-wrap">
+                        {comment.body}
+                      </p>
+                    </div>
+                  ))
+                )}
+              </div>
+
+              <div className="form-control space-y-2">
+                <textarea
+                  className="textarea textarea-bordered"
+                  placeholder="Lamna en kommentar om passet"
+                  value={commentDraft}
+                  onChange={(event) => setCommentDraft(event.target.value)}
+                  rows={3}
+                />
+                <button
+                  className="btn btn-primary btn-sm self-end"
+                  onClick={handleAddComment}
+                  disabled={!commentDraft.trim()}
+                >
+                  Skicka kommentar
+                </button>
               </div>
             </div>
           </div>
