@@ -69,7 +69,7 @@ model ScheduleWeek {
 
 model ScheduleDay {
   id     BigInt @id @default(autoincrement()) @db.BigInt
-  day    Int    
+  day    Int
 
   // Foreign key to the week this day belongs to
   weekId BigInt?       @db.BigInt
@@ -78,5 +78,22 @@ model ScheduleDay {
   // Relation: a day has a list of modules (many-to-many)
   modules Module[]
 
+  // Relation: a day can request multiple feedback entries from athletes
+  feedback Feedback[]
+
   @@map("scheduleDay")
+}
+
+model Feedback {
+  id           BigInt @id @default(autoincrement()) @db.BigInt
+  description  String @db.Text
+  numericValue Int?
+  rating       Int?   // Expected scale of 1-10 when provided
+  comment      String? @db.Text
+
+  // Foreign key to the schedule day this feedback belongs to
+  scheduleDayId BigInt      @map("scheduleDay") @db.BigInt
+  scheduleDay   ScheduleDay @relation(fields: [scheduleDayId], references: [id])
+
+  @@map("feedback")
 }
