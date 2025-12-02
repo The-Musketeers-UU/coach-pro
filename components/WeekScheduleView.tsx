@@ -171,7 +171,7 @@ export function WeekScheduleView({
                             <div className="divider my-1"></div>
                             <div className="space-y-2">
                               <p className="text-[11px] font-semibold uppercase tracking-wide text-neutral">
-                                Feedback (sparas inte)
+                                Feedback
                               </p>
                               <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
                                 <label className="form-control gap-1">
@@ -179,7 +179,7 @@ export function WeekScheduleView({
                                     Sömnskattning
                                   </span>
                                   <select
-                                    className="select select-sm select-bordered"
+                                    className="select select-xs select-bordered"
                                     value={feedbackByModule[feedbackKey]?.sleepRating ?? ""}
                                     onChange={(event) =>
                                       handleFeedbackChange(
@@ -198,10 +198,10 @@ export function WeekScheduleView({
 
                                 <label className="form-control gap-1">
                                   <span className="text-xs font-medium text-base-content/80">
-                                    Skattning av dagen
+                                    Skattning dagen
                                   </span>
                                   <select
-                                    className="select select-sm select-bordered"
+                                    className="select select-xs select-bordered"
                                     value={feedbackByModule[feedbackKey]?.dayRating ?? ""}
                                     onChange={(event) =>
                                       handleFeedbackChange(
@@ -324,7 +324,7 @@ export function WeekScheduleView({
               {selectedModule.module.category === "feedback" && (
                 <div className="space-y-3 rounded-2xl border border-dashed border-base-200 bg-base-100 p-4">
                   <p className="text-xs font-semibold uppercase tracking-wide text-neutral">
-                    Feedback (sparas inte)
+                    Feedback
                   </p>
 
                   <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
@@ -355,7 +355,7 @@ export function WeekScheduleView({
 
                     <label className="form-control gap-1">
                       <span className="text-xs font-medium text-base-content/80">
-                        Skattning av dagen
+                        Skattning av dag
                       </span>
                       <select
                         className="select select-sm select-bordered"
