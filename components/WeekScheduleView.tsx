@@ -129,7 +129,14 @@ export function WeekScheduleView({
           </div>
         ) : (
           <div className="rounded-2xl border border-dashed border-base-300 bg-base-100/60 p-6 text-center text-sm text-base-content/70">
-            Tom vecka.
+            <p className="text-base font-semibold text-base-content">
+              {emptyWeekTitle}
+            </p>
+            {emptyWeekDescription && (
+              <p className="mt-2 text-sm text-base-content/70">
+                {emptyWeekDescription}
+              </p>
+            )}
           </div>
         )}
       </div>
