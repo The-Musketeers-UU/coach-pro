@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 
 import { ModuleBadges } from "@/components/ModuleBadges";
 
@@ -25,6 +25,11 @@ export type ProgramWeek = {
   id: string;
   label: string;
   days: ProgramDay[];
+};
+
+type ModuleFeedback = {
+  sleepRating?: string;
+  dayRating?: string;
 };
 
 type WeekScheduleViewProps = {
@@ -59,14 +64,44 @@ export function WeekScheduleView({
   emptyWeekTitle = "Inget program",
   emptyWeekDescription = "Ingen data för veckan.",
 }: WeekScheduleViewProps) {
-  const [selectedModule, setSelectedModule] = useState<ProgramModule | null>(
-    null
-  );
+  const [selectedModule, setSelectedModule] = useState<
+    { module: ProgramModule; feedbackKey: string } | null
+  >(null);
+  const [feedbackByModule, setFeedbackByModule] = useState<
+    Record<string, ModuleFeedback>
+  >({});
   const heading =
     title ??
     (week
       ? week.label || `Vecka ${weekNumber}`
       : emptyWeekTitle || `Vecka ${weekNumber}`);
+
+  const feedbackOptions = useMemo(
+    () =>
+      Array.from({ length: 10 }, (_, index) => {
+        const value = String(index + 1);
+        return (
+          <option key={value} value={value}>
+            {value}
+          </option>
+        );
+      }),
+    []
+  );
+
+  const handleFeedbackChange = (
+    feedbackKey: string,
+    field: keyof ModuleFeedback,
+    value: string
+  ) => {
+    setFeedbackByModule((previous) => ({
+      ...previous,
+      [feedbackKey]: {
+        ...previous[feedbackKey],
+        [field]: value,
+      },
+    }));
+  };
 
   return (
     <div className="card bg-base-200 border border-base-300 shadow-md">
@@ -97,7 +132,12 @@ export function WeekScheduleView({
                     <button
                       key={`${day.id}-${index}-${module.title}`}
                       type="button"
-                      onClick={() => setSelectedModule(module)}
+                      onClick={() =>
+                        setSelectedModule({
+                          module,
+                          feedbackKey: `${week?.id ?? weekNumber}-${day.id}-${index}`,
+                        })
+                      }
                       className="group w-full text-left"
                     >
                       <div className="space-y-2 rounded-xl border border-base-200 bg-base-100 p-3 transition hover:border-primary focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary">
@@ -109,7 +149,7 @@ export function WeekScheduleView({
                         <p className="text-xs text-base-content/70">
                           {module.description}
                         </p>
-                        <ModuleBadges module={module}/>
+                        <ModuleBadges module={module} />
                       </div>
                     </button>
                   ))}
@@ -125,7 +165,7 @@ export function WeekScheduleView({
           </div>
         ) : (
           <div className="rounded-2xl border border-dashed border-base-300 bg-base-100/60 p-6 text-center text-sm text-base-content/70">
-            Tom vecka.
+            {emptyWeekDescription}
           </div>
         )}
       </div>
@@ -136,7 +176,7 @@ export function WeekScheduleView({
             <div className="flex items-start justify-between gap-4">
               <div>
                 <h3 className="text-xl font-semibold">
-                  {selectedModule.title}
+                  {selectedModule.module.title}
                 </h3>
               </div>
               <button
@@ -153,7 +193,7 @@ export function WeekScheduleView({
                   Titel
                 </p>
                 <p className="text-base font-semibold text-base-content">
-                  {selectedModule.title}
+                  {selectedModule.module.title}
                 </p>
               </div>
 
@@ -162,7 +202,7 @@ export function WeekScheduleView({
                   Beskrivning
                 </p>
                 <p className="text-sm leading-relaxed text-base-content/80">
-                  {selectedModule.description}
+                  {selectedModule.module.description}
                 </p>
               </div>
 
@@ -172,7 +212,7 @@ export function WeekScheduleView({
                     Kategori
                   </p>
                   <p className="badge badge-outline capitalize">
-                    {selectedModule.category || "-"}
+                    {selectedModule.module.category || "-"}
                   </p>
                 </div>
 
@@ -181,7 +221,7 @@ export function WeekScheduleView({
                     Underkategori
                   </p>
                   <p className="text-sm text-base-content/80">
-                    {selectedModule.subcategory || "-"}
+                    {selectedModule.module.subcategory || "-"}
                   </p>
                 </div>
 
@@ -190,7 +230,7 @@ export function WeekScheduleView({
                     Distans
                   </p>
                   <p className="text-sm text-base-content/80">
-                    {formatDistance(selectedModule.distanceMeters)}
+                    {formatDistance(selectedModule.module.distanceMeters)}
                   </p>
                 </div>
 
@@ -199,7 +239,7 @@ export function WeekScheduleView({
                     Vikt
                   </p>
                   <p className="text-sm text-base-content/80">
-                    {formatWeight(selectedModule.weightKg)}
+                    {formatWeight(selectedModule.module.weightKg)}
                   </p>
                 </div>
 
@@ -209,10 +249,68 @@ export function WeekScheduleView({
                   </p>
                   <p className="text-sm text-base-content/80">
                     {formatDuration(
-                      selectedModule.durationMinutes,
-                      selectedModule.durationSeconds
+                      selectedModule.module.durationMinutes,
+                      selectedModule.module.durationSeconds
                     ) || "-"}
                   </p>
+                </div>
+              </div>
+
+              <div className="space-y-3 rounded-2xl border border-dashed border-base-200 bg-base-100 p-4">
+                <p className="text-xs font-semibold uppercase tracking-wide text-neutral">
+                  Feedback (sparas inte)
+                </p>
+
+                <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                  <label className="form-control gap-1">
+                    <span className="text-xs font-medium text-base-content/80">
+                      Sömnskattning
+                    </span>
+                    <select
+                      className="select select-sm select-bordered"
+                      value={
+                        feedbackByModule[selectedModule.feedbackKey]?.sleepRating ??
+                        ""
+                      }
+                      onChange={(event) =>
+                        handleFeedbackChange(
+                          selectedModule.feedbackKey,
+                          "sleepRating",
+                          event.target.value
+                        )
+                      }
+                    >
+                      <option value="" disabled>
+                        Välj mellan 1-10
+                      </option>
+                      {feedbackOptions}
+                    </select>
+                  </label>
+
+                  <label className="form-control gap-1">
+                    <span className="text-xs font-medium text-base-content/80">
+                      Skattning av dagen
+                    </span>
+                    <select
+                      className="select select-sm select-bordered"
+                      value={
+                        feedbackByModule[selectedModule.feedbackKey]?.dayRating ??
+                        ""
+                      }
+                      onChange={(event) =>
+                        handleFeedbackChange(
+                          selectedModule.feedbackKey,
+                          "dayRating",
+                          event.target.value
+                        )
+                      }
+                    >
+                      <option value="" disabled>
+                        Välj mellan 1-10
+                      </option>
+                      {feedbackOptions}
+                    </select>
+                  </label>
                 </div>
               </div>
             </div>
