@@ -28,7 +28,8 @@ const dayLabels = [
 
 const toProgramWeek = (week: ScheduleWeekWithModules): ProgramWeek => ({
   id: week.id,
-  label: `Vecka ${week.week}`,
+  label: week.title || `Vecka ${week.week}`,
+  focus: `Ägare: ${week.owner}`,
   days: week.days.map((day) => ({
     id: day.id,
     label: dayLabels[day.day - 1] ?? `Dag ${day.day}`,

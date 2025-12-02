@@ -29,6 +29,7 @@ export type ScheduleWeekRow = {
   owner: string;
   athlete: string;
   week: number;
+  title: string;
 };
 
 type ScheduleDayRow = {
@@ -71,6 +72,7 @@ export type CreateScheduleWeekInput = {
   ownerId: string;
   athleteId: string;
   week: number;
+  title: string;
 };
 
 export type AddModuleToScheduleDayInput = {
@@ -113,7 +115,7 @@ export const getScheduleWeeksByAthlete = async (
 ): Promise<ScheduleWeekRow[]> =>
   supabaseRequest<ScheduleWeekRow[]>("scheduleWeek", {
     searchParams: {
-      select: "id,week,owner,athlete",
+      select: "id,week,owner,athlete,title",
       athlete: `eq.${athleteId}`,
       order: "week.asc",
     },
@@ -243,7 +245,7 @@ export const getScheduleWeekByAthleteAndWeek = async (
     "scheduleWeek",
     {
       searchParams: {
-        select: "id,week,owner,athlete",
+        select: "id,week,owner,athlete,title",
         athlete: `eq.${input.athleteId}`,
         week: `eq.${input.week}`,
         order: "id.asc",
@@ -304,7 +306,7 @@ export const getScheduleWeekWithModulesById = async (
 ): Promise<ScheduleWeekWithModules | null> => {
   const [week] = await supabaseRequest<ScheduleWeekRow[]>("scheduleWeek", {
     searchParams: {
-      select: "id,week,owner,athlete",
+      select: "id,week,owner,athlete,title",
       id: `eq.${weekId}`,
       limit: "1",
     },
@@ -345,6 +347,8 @@ export const createModule = async (input: CreateModuleInput): Promise<ModuleRow>
 export const createScheduleWeek = async (
   input: CreateScheduleWeekInput,
 ): Promise<ScheduleWeekRow> => {
+  const title = input.title.trim() || `Vecka ${input.week}`;
+
   const existingWeek = await getScheduleWeekByAthleteAndWeek({
     athleteId: input.athleteId,
     week: input.week,
@@ -358,11 +362,32 @@ export const createScheduleWeek = async (
     owner: input.ownerId,
     athlete: input.athleteId,
     week: input.week,
+    title,
   } satisfies Omit<ScheduleWeekRow, "id">;
 
   const data = await supabaseRequest<ScheduleWeekRow[]>("scheduleWeek", {
     method: "POST",
     body: payload,
+    prefer: "return=representation",
+  });
+
+  return data[0];
+};
+
+export const updateScheduleWeek = async (
+  weekId: string,
+  updates: Partial<Pick<ScheduleWeekRow, "title">>,
+): Promise<ScheduleWeekRow> => {
+  const body = {
+    ...(updates.title !== undefined ? { title: updates.title.trim() } : {}),
+  } satisfies Partial<ScheduleWeekRow>;
+
+  const data = await supabaseRequest<ScheduleWeekRow[]>("scheduleWeek", {
+    method: "PATCH",
+    searchParams: {
+      id: `eq.${weekId}`,
+    },
+    body,
     prefer: "return=representation",
   });
 

@@ -59,7 +59,8 @@ model ScheduleWeek {
   athleteId BigInt @map("athlete") @db.BigInt
   athlete   User   @relation("AthleteWeeks", fields: [athleteId], references: [id])
 
-  week      Int    
+  week      Int
+  title     String @default("") @db.Text
 
   // Relation: one week has many days
   days      ScheduleDay[]
