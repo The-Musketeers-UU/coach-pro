@@ -132,7 +132,10 @@ export function WeekScheduleView({
                     const feedbackKey = `${week?.id ?? weekNumber}-${day.id}-${index}`;
 
                     return (
-                      <div key={`${day.id}-${index}-${module.title}`} className="space-y-2 rounded-xl border border-base-200 bg-base-100 p-3">
+                      <div
+                        key={`${day.id}-${index}-${module.title}`}
+                        className="space-y-3 rounded-xl border border-base-200 bg-base-100 p-3"
+                      >
                         <button
                           type="button"
                           onClick={() =>
@@ -156,8 +159,11 @@ export function WeekScheduleView({
                           </div>
                         </button>
 
-                        <div className="space-y-2 rounded-xl border border-dashed border-base-200 bg-base-50 p-3">
-                          <p className="text-[11px] font-semibold uppercase tracking-wide text-neutral">Feedback (sparas inte)</p>
+                        <div className="divider my-1"></div>
+                        <div className="space-y-2">
+                          <p className="text-[11px] font-semibold uppercase tracking-wide text-neutral">
+                            Feedback (sparas inte)
+                          </p>
                           <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
                             <label className="form-control gap-1">
                               <span className="text-xs font-medium text-base-content/80">
