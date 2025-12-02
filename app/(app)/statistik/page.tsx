@@ -3,6 +3,8 @@
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 
+import { AreaChart } from "@tremor/react";
+
 import { useAuth } from "@/components/auth-provider";
 
 type SleepEntry = {
@@ -79,208 +81,9 @@ const athleteSleepData: AthleteSleep[] = [
   },
 ];
 
-const chartWidth = 960;
-const chartHeight = 360;
-const paddingX = 56;
-const paddingY = 48;
-const gradientId = "sleep-area-gradient";
-
-type ChartPoint = {
-  x: number;
-  ySleep: number;
-  yDay: number;
-  sleepValue: number;
-  dayValue: number;
-  date: string;
-};
-
-type SleepAreaChartProps = { data: SleepEntry[] };
-
-const toTimestamp = (date: string) => new Date(date).getTime();
-
-function buildChartPoints(entries: SleepEntry[]): ChartPoint[] {
-  if (entries.length === 0) return [];
-
-  const sortedEntries = [...entries].sort(
-    (a, b) => toTimestamp(a.date) - toTimestamp(b.date),
-  );
-  const minDate = toTimestamp(sortedEntries[0]?.date ?? "");
-  const maxDate = toTimestamp(sortedEntries[sortedEntries.length - 1]?.date ?? "");
-  const dateRange = Math.max(maxDate - minDate, 1);
-  const maxValue = Math.max(
-    10,
-    Math.max(...sortedEntries.map((entry) => Math.max(entry.sleepScore, entry.dayRating))),
-  );
-
-  return sortedEntries.map((entry) => {
-    const dateValue = toTimestamp(entry.date);
-    const x =
-      paddingX + ((dateValue - minDate) / dateRange) * (chartWidth - paddingX * 2);
-    const ySleep =
-      chartHeight -
-      paddingY -
-      (entry.sleepScore / maxValue) * (chartHeight - paddingY * 2);
-    const yDay =
-      chartHeight -
-      paddingY -
-      (entry.dayRating / maxValue) * (chartHeight - paddingY * 2);
-
-    return {
-      x,
-      ySleep,
-      yDay,
-      sleepValue: entry.sleepScore,
-      dayValue: entry.dayRating,
-      date: entry.date,
-    } satisfies ChartPoint;
-  });
-}
-
 function formatDateLabel(date: string) {
   return new Intl.DateTimeFormat("sv-SE", { month: "short", day: "numeric" }).format(
     new Date(date),
-  );
-}
-
-function SleepAreaChart({ data }: SleepAreaChartProps) {
-  const points = useMemo(() => buildChartPoints(data), [data]);
-  const yMax = Math.max(
-    10,
-    Math.ceil(
-      Math.max(
-        ...data.map((entry) => Math.max(entry.sleepScore, entry.dayRating)),
-        0,
-      ),
-    ),
-  );
-  const yTicks = [0, 2, 4, 6, 8, 10];
-
-  if (points.length === 0) {
-    return (
-      <div className="flex h-64 items-center justify-center text-sm text-base-content/70">
-        Ingen data att visa än.
-      </div>
-    );
-  }
-
-  const sleepLinePath = points
-    .map(
-      (point, index) => `${index === 0 ? "M" : "L"}${point.x.toFixed(2)},${point.ySleep.toFixed(2)}`,
-    )
-    .join(" ");
-
-  const dayLinePath = points
-    .map(
-      (point, index) => `${index === 0 ? "M" : "L"}${point.x.toFixed(2)},${point.yDay.toFixed(2)}`,
-    )
-    .join(" ");
-
-  const areaPath = `${sleepLinePath} L${points[points.length - 1]?.x.toFixed(2)},${
-    chartHeight - paddingY
-  } L${points[0]?.x.toFixed(2)},${chartHeight - paddingY} Z`;
-
-  const visibleLabels = points.filter((_, index) => index % Math.ceil(points.length / 6 || 1) === 0);
-
-  return (
-    <svg
-      viewBox={`0 0 ${chartWidth} ${chartHeight}`}
-      role="img"
-      aria-label="Sömn- och dagskattning över tid"
-      className="h-[24rem] w-full"
-      preserveAspectRatio="none"
-    >
-      <defs>
-        <linearGradient id={gradientId} x1="0" x2="0" y1="0" y2="1">
-          <stop offset="0%" stopColor="hsl(var(--p))" stopOpacity="0.15" />
-          <stop offset="100%" stopColor="hsl(var(--p))" stopOpacity="0" />
-        </linearGradient>
-      </defs>
-
-      {yTicks.map((tick) => {
-        const y =
-          chartHeight - paddingY - (tick / yMax) * (chartHeight - paddingY * 2);
-        return (
-          <g key={tick}>
-            <line
-              x1={paddingX}
-              x2={chartWidth - paddingX}
-              y1={y}
-              y2={y}
-              stroke="hsl(var(--bc)/0.1)"
-              strokeWidth={1}
-            />
-            <text
-              x={paddingX - 12}
-              y={y + 4}
-              className="fill-base-content/60 text-xs"
-              textAnchor="end"
-            >
-              {tick}
-            </text>
-          </g>
-        );
-      })}
-
-      <path d={areaPath} fill={`url(#${gradientId})`} />
-      <path d={sleepLinePath} stroke="hsl(var(--p))" strokeWidth={3} fill="none" />
-      <path
-        d={dayLinePath}
-        stroke="hsl(var(--s))"
-        strokeWidth={2}
-        strokeDasharray="6 6"
-        fill="none"
-      />
-
-      {points.map((point) => (
-        <g key={point.date}>
-          <circle
-            cx={point.x}
-            cy={point.ySleep}
-            r={5}
-            fill="hsl(var(--p))"
-            stroke="white"
-            strokeWidth={2}
-          />
-          <circle
-            cx={point.x}
-            cy={point.yDay}
-            r={4}
-            fill="white"
-            stroke="hsl(var(--s))"
-            strokeWidth={2}
-          />
-        </g>
-      ))}
-
-      {visibleLabels.map((point) => (
-        <text
-          key={point.date}
-          x={point.x}
-          y={chartHeight - paddingY + 20}
-          className="fill-base-content/70 text-xs"
-          textAnchor="middle"
-        >
-          {formatDateLabel(point.date)}
-        </text>
-      ))}
-
-      <text
-        x={paddingX}
-        y={paddingY - 16}
-        className="fill-base-content text-sm font-semibold"
-        textAnchor="start"
-      >
-        Skattning (1-10)
-      </text>
-      <text
-        x={chartWidth - paddingX}
-        y={chartHeight - paddingY + 24}
-        className="fill-base-content text-sm font-semibold"
-        textAnchor="end"
-      >
-        Datum
-      </text>
-    </svg>
   );
 }
 
@@ -305,8 +108,16 @@ export default function StatistikPage() {
   }, [isLoading, isLoadingProfile, profile?.isCoach, router, user]);
 
   const athlete = athleteSleepData.find((item) => item.id === selectedAthleteId);
-  const chartData = athlete?.entries ?? [];
-  const latestEntry = chartData.at(-1);
+  const chartData = useMemo(
+    () =>
+      (athlete?.entries ?? []).map((entry) => ({
+        date: formatDateLabel(entry.date),
+        sleepScore: entry.sleepScore,
+        dayRating: entry.dayRating,
+      })),
+    [athlete],
+  );
+  const latestEntry = athlete?.entries.at(-1);
 
   if (isLoading || isLoadingProfile) {
     return (
@@ -374,11 +185,25 @@ export default function StatistikPage() {
                   <span>Sömn</span>
                 </div>
                 <div className="flex items-center gap-2">
-                  <span className="h-2 w-2 rounded-full border border-secondary" aria-hidden />
+                  <span className="h-2 w-2 rounded-full bg-secondary" aria-hidden />
                   <span>Skattning av dag</span>
                 </div>
               </div>
-              <SleepAreaChart data={chartData} />
+              <AreaChart
+                className="h-[24rem]"
+                data={chartData}
+                index="date"
+                categories={["sleepScore", "dayRating"]}
+                colors={["indigo", "cyan"]}
+                valueFormatter={(value) => value.toFixed(1)}
+                yAxisLabel="Skattning (1-10)"
+                xAxisLabel="Datum"
+                minValue={0}
+                maxValue={10}
+                showLegend={false}
+                curveType="natural"
+                connectNulls
+              />
             </div>
           </div>
         </div>
