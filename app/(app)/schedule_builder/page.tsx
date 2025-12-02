@@ -25,6 +25,7 @@ import {
   createModule,
   addModuleToScheduleDay,
   createScheduleWeek,
+  updateScheduleWeek,
   clearScheduleWeek,
   getAthletes,
   getModulesByOwner,
@@ -315,7 +316,7 @@ function ScheduleBuilderPage() {
             setSelectedWeek(matchingWeek.value);
           }
 
-          setScheduleTitle(`Vecka ${existingWeek.week}`);
+          setScheduleTitle(existingWeek.title || `Vecka ${existingWeek.week}`);
         }
       } catch (supabaseError) {
         if (!isCancelled) {
@@ -421,6 +422,8 @@ function ScheduleBuilderPage() {
     setAssignSuccess(null);
     setIsAssigning(true);
 
+    const trimmedTitle = scheduleTitle.trim() || `Vecka ${weekNumber}`;
+
     try {
       const existingWeeks = await Promise.all(
         assignControls.selectedAthletes.map(async (athleteId) => ({
@@ -461,13 +464,14 @@ function ScheduleBuilderPage() {
           );
         }
 
-        const weekRow =
-          existingWeek ??
-          (await createScheduleWeek({
-            ownerId: profile.id,
-            athleteId,
-            week: weekNumber,
-          }));
+        const weekRow = existingWeek
+          ? await updateScheduleWeek(existingWeek.id, { title: trimmedTitle })
+          : await createScheduleWeek({
+              ownerId: profile.id,
+              athleteId,
+              week: weekNumber,
+              title: trimmedTitle,
+            });
 
         await clearScheduleWeek(weekRow.id);
 
