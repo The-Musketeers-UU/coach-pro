@@ -77,7 +77,7 @@ export function ScheduledModuleCard({
         });
       }}
       ref={(el) => registerScheduleCardRef(dayId, index, el)}
-      className={`w-full cursor-grab rounded-xl border bg-base-100 p-3 transition hover:border-primary active:cursor-grabbing ${
+      className={`w-full cursor-grab rounded-lg border bg-base-100 p-3 transition hover:border-primary active:cursor-grabbing ${
         isSelected ? "border-primary ring-2 ring-primary/50" : "border-base-200"
       } ${isExpanded ? "scale-[1.02] shadow-lg" : ""}`}
       aria-pressed={isSelected}
