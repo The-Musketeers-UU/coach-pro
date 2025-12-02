@@ -106,14 +106,6 @@ export function WeekScheduleView({
     }));
   };
 
-  const selectedModuleCategoryBadge = selectedModule
-    ? getCategoryBadgeClassName(selectedModule.module.category, {
-        outline: true,
-        soft: true,
-        size: "sm",
-      })
-    : null;
-
   return (
     <div className="card bg-base-200 border border-base-300 shadow-md">
       <div className="card-body gap-6">
@@ -287,14 +279,18 @@ export function WeekScheduleView({
                   <p className="text-xs uppercase tracking-wide text-neutral">
                     Kategori
                   </p>
-                    {selectedModuleCategoryBadge && (
-                      <p
-                        className={selectedModuleCategoryBadge.className}
-                        style={selectedModuleCategoryBadge.style}
-                      >
-                        {selectedModule.module.category || "-"}
-                      </p>
+                  <p
+                    className={getCategoryBadgeClassName(
+                      selectedModule.module.category,
+                      {
+                        outline: true,
+                        soft: true,
+                        size: "sm",
+                      }
                     )}
+                  >
+                    {selectedModule.module.category || "-"}
+                  </p>
                 </div>
 
                 <div className="space-y-1">
