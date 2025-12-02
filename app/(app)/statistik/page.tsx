@@ -16,42 +16,40 @@ type AthleteSleep = {
   entries: SleepEntry[];
 };
 
+const novemberDates = Array.from({ length: 30 }, (_, index) =>
+  `2024-11-${String(index + 1).padStart(2, "0")}`,
+);
+
+const buildSleepEntries = (scores: number[]): SleepEntry[] =>
+  novemberDates.map((date, index) => ({ date, sleepScore: scores[index] ?? 0 }));
+
 const athleteSleepData: AthleteSleep[] = [
   {
     id: "sara-svensson",
     name: "Sara Svensson",
-    entries: [
-      { date: "2025-01-05", sleepScore: 8.2 },
-      { date: "2025-01-12", sleepScore: 7.6 },
-      { date: "2025-01-19", sleepScore: 8.9 },
-      { date: "2025-01-26", sleepScore: 8.4 },
-      { date: "2025-02-02", sleepScore: 9.1 },
-      { date: "2025-02-09", sleepScore: 8.7 },
-    ],
+    entries: buildSleepEntries([
+      8.4, 8.1, 8.3, 8.0, 8.2, 8.4, 8.1, 8.5, 8.7, 8.3,
+      8.4, 8.6, 8.9, 9.1, 8.8, 9.0, 8.7, 8.6, 8.4, 8.5,
+      8.3, 8.6, 8.8, 8.7, 8.9, 9.0, 9.1, 8.8, 8.6, 8.7,
+    ]),
   },
   {
     id: "leo-karlsson",
     name: "Leo Karlsson",
-    entries: [
-      { date: "2025-01-05", sleepScore: 7.4 },
-      { date: "2025-01-12", sleepScore: 7.8 },
-      { date: "2025-01-19", sleepScore: 7.1 },
-      { date: "2025-01-26", sleepScore: 7.9 },
-      { date: "2025-02-02", sleepScore: 8.2 },
-      { date: "2025-02-09", sleepScore: 8.0 },
-    ],
+    entries: buildSleepEntries([
+      7.2, 7.4, 7.5, 7.3, 7.1, 7.2, 7.0, 7.4, 7.6, 7.3,
+      7.1, 7.5, 7.6, 7.8, 7.4, 7.6, 7.2, 7.4, 7.5, 7.3,
+      7.6, 7.8, 7.9, 7.6, 7.5, 7.7, 7.8, 7.9, 7.5, 7.6,
+    ]),
   },
   {
     id: "elin-backstrom",
     name: "Elin Bäckström",
-    entries: [
-      { date: "2025-01-05", sleepScore: 8.5 },
-      { date: "2025-01-12", sleepScore: 8.1 },
-      { date: "2025-01-19", sleepScore: 8.3 },
-      { date: "2025-01-26", sleepScore: 8.0 },
-      { date: "2025-02-02", sleepScore: 8.6 },
-      { date: "2025-02-09", sleepScore: 8.9 },
-    ],
+    entries: buildSleepEntries([
+      8.8, 8.6, 8.7, 8.5, 8.6, 8.7, 8.8, 8.9, 9.0, 8.7,
+      8.9, 9.1, 9.2, 9.0, 8.8, 8.9, 9.1, 9.2, 9.0, 8.9,
+      8.8, 8.9, 9.1, 9.2, 9.0, 9.1, 9.2, 9.3, 9.0, 9.1,
+    ]),
   },
 ];
 
@@ -197,11 +195,19 @@ function SleepAreaChart({ data }: SleepAreaChartProps) {
       </text>
       <text
         x={chartWidth - paddingX}
-        y={chartHeight - paddingY + 36}
+        y={chartHeight - paddingY + 24}
         className="fill-base-content text-sm font-semibold"
         textAnchor="end"
       >
         Datum
+      </text>
+      <text
+        x={chartWidth - paddingX}
+        y={chartHeight - paddingY + 40}
+        className="fill-base-content/80 text-xs"
+        textAnchor="end"
+      >
+        Skattning av dag (1-10)
       </text>
     </svg>
   );
