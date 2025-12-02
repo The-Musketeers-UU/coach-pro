@@ -122,6 +122,17 @@ const createEmptySchedule = (days: Day[]): DaySchedule =>
     {} as DaySchedule
   );
 
+const parseSubcategories = (
+  value?: string | string[] | null
+): string[] | undefined => {
+  if (!value) return undefined;
+
+  const values = Array.isArray(value) ? value : value.split(",");
+  const normalized = values.map((entry) => entry.trim()).filter(Boolean);
+
+  return normalized.length ? normalized : undefined;
+};
+
 const createScheduleFromWeek = (
   week: ScheduleWeekWithModules,
 ): { schedule: DaySchedule; scheduledCount: number } => {
@@ -139,7 +150,7 @@ const createScheduleFromWeek = (
         title: moduleRow.name,
         description: moduleRow.description ?? "",
         category: (moduleRow.category as Module["category"]) ?? "kondition",
-        subcategory: moduleRow.subCategory ?? undefined,
+        subcategory: parseSubcategories(moduleRow.subCategory),
         distanceMeters: moduleRow.distance ?? undefined,
         durationMinutes: moduleRow.durationMinutes ?? undefined,
         durationSeconds: moduleRow.durationSeconds ?? undefined,
@@ -165,7 +176,7 @@ const mapModuleRow = (row: ModuleRow): Module => ({
   title: row.name,
   description: row.description ?? "",
   category: (row.category as Module["category"]) ?? "kondition",
-  subcategory: row.subCategory ?? undefined,
+  subcategory: parseSubcategories(row.subCategory),
   distanceMeters: row.distance ?? undefined,
   durationMinutes: row.durationMinutes ?? undefined,
   durationSeconds: row.durationSeconds ?? undefined,

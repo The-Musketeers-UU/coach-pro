@@ -23,6 +23,17 @@ const dayLabels = [
   "Söndag",
 ];
 
+const parseSubcategories = (
+  value?: string | string[] | null
+): string[] | undefined => {
+  if (!value) return undefined;
+
+  const values = Array.isArray(value) ? value : value.split(",");
+  const normalized = values.map((entry) => entry.trim()).filter(Boolean);
+
+  return normalized.length ? normalized : undefined;
+};
+
 const toProgramWeek = (week: ScheduleWeekWithModules): ProgramWeek => ({
   id: week.id,
   label: `Vecka ${week.week}`,
@@ -35,7 +46,7 @@ const toProgramWeek = (week: ScheduleWeekWithModules): ProgramWeek => ({
       title: module.name,
       description: module.description ?? "",
       category: module.category,
-      subcategory: module.subCategory ? [module.subCategory] : undefined,
+      subcategory: parseSubcategories(module.subCategory),
       distanceMeters: module.distance ? [module.distance] : undefined,
       weightKg: module.weight ? [module.weight] : undefined,
       duration:
