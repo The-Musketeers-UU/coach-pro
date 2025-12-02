@@ -128,8 +128,15 @@ export function WeekScheduleView({
                 </div>
 
                 <div className="mt-3 flex-1 space-y-1">
-                  {day.modules.map((module, index) => {
+                  {[...day.modules, {
+                    title: "Daglig feedback",
+                    description:
+                      "Lämna dagens skattningar för sömn och dagsform.",
+                    category: "feedback",
+                  }].map((module, index) => {
                     const feedbackKey = `${week?.id ?? weekNumber}-${day.id}-${index}`;
+
+                    const isDailyFeedback = module.category === "feedback";
 
                     return (
                       <div
@@ -159,58 +166,64 @@ export function WeekScheduleView({
                           </div>
                         </button>
 
-                        <div className="divider my-1"></div>
-                        <div className="space-y-2">
-                          <p className="text-[11px] font-semibold uppercase tracking-wide text-neutral">
-                            Feedback (sparas inte)
-                          </p>
-                          <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
-                            <label className="form-control gap-1">
-                              <span className="text-xs font-medium text-base-content/80">
-                                Sömnskattning
-                              </span>
-                              <select
-                                className="select select-sm select-bordered"
-                                value={feedbackByModule[feedbackKey]?.sleepRating ?? ""}
-                                onChange={(event) =>
-                                  handleFeedbackChange(feedbackKey, "sleepRating", event.target.value)
-                                }
-                              >
-                                <option value="" disabled>
-                                  Välj mellan 1-10
-                                </option>
-                                {feedbackOptions}
-                              </select>
-                            </label>
+                        {isDailyFeedback && (
+                          <>
+                            <div className="divider my-1"></div>
+                            <div className="space-y-2">
+                              <p className="text-[11px] font-semibold uppercase tracking-wide text-neutral">
+                                Feedback (sparas inte)
+                              </p>
+                              <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+                                <label className="form-control gap-1">
+                                  <span className="text-xs font-medium text-base-content/80">
+                                    Sömnskattning
+                                  </span>
+                                  <select
+                                    className="select select-sm select-bordered"
+                                    value={feedbackByModule[feedbackKey]?.sleepRating ?? ""}
+                                    onChange={(event) =>
+                                      handleFeedbackChange(
+                                        feedbackKey,
+                                        "sleepRating",
+                                        event.target.value
+                                      )
+                                    }
+                                  >
+                                    <option value="" disabled>
+                                      Välj mellan 1-10
+                                    </option>
+                                    {feedbackOptions}
+                                  </select>
+                                </label>
 
-                            <label className="form-control gap-1">
-                              <span className="text-xs font-medium text-base-content/80">
-                                Skattning av dagen
-                              </span>
-                              <select
-                                className="select select-sm select-bordered"
-                                value={feedbackByModule[feedbackKey]?.dayRating ?? ""}
-                                onChange={(event) =>
-                                  handleFeedbackChange(feedbackKey, "dayRating", event.target.value)
-                                }
-                              >
-                                <option value="" disabled>
-                                  Välj mellan 1-10
-                                </option>
-                                {feedbackOptions}
-                              </select>
-                            </label>
-                          </div>
-                        </div>
+                                <label className="form-control gap-1">
+                                  <span className="text-xs font-medium text-base-content/80">
+                                    Skattning av dagen
+                                  </span>
+                                  <select
+                                    className="select select-sm select-bordered"
+                                    value={feedbackByModule[feedbackKey]?.dayRating ?? ""}
+                                    onChange={(event) =>
+                                      handleFeedbackChange(
+                                        feedbackKey,
+                                        "dayRating",
+                                        event.target.value
+                                      )
+                                    }
+                                  >
+                                    <option value="" disabled>
+                                      Välj mellan 1-10
+                                    </option>
+                                    {feedbackOptions}
+                                  </select>
+                                </label>
+                              </div>
+                            </div>
+                          </>
+                        )}
                       </div>
                     );
                   })}
-
-                  {day.modules.length === 0 && (
-                    <p className="flex min-h-[120px] items-center justify-center rounded-xl border border-dashed border-base-200 bg-base-100/60 p-4 text-center text-xs text-base-content/60">
-                      Inga pass schemalagda.
-                    </p>
-                  )}
                 </div>
               </article>
             ))}
@@ -308,63 +321,65 @@ export function WeekScheduleView({
                 </div>
               </div>
 
-              <div className="space-y-3 rounded-2xl border border-dashed border-base-200 bg-base-100 p-4">
-                <p className="text-xs font-semibold uppercase tracking-wide text-neutral">
-                  Feedback (sparas inte)
-                </p>
+              {selectedModule.module.category === "feedback" && (
+                <div className="space-y-3 rounded-2xl border border-dashed border-base-200 bg-base-100 p-4">
+                  <p className="text-xs font-semibold uppercase tracking-wide text-neutral">
+                    Feedback (sparas inte)
+                  </p>
 
-                <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-                  <label className="form-control gap-1">
-                    <span className="text-xs font-medium text-base-content/80">
-                      Sömnskattning
-                    </span>
-                    <select
-                      className="select select-sm select-bordered"
-                      value={
-                        feedbackByModule[selectedModule.feedbackKey]?.sleepRating ??
-                        ""
-                      }
-                      onChange={(event) =>
-                        handleFeedbackChange(
-                          selectedModule.feedbackKey,
-                          "sleepRating",
-                          event.target.value
-                        )
-                      }
-                    >
-                      <option value="" disabled>
-                        Välj mellan 1-10
-                      </option>
-                      {feedbackOptions}
-                    </select>
-                  </label>
+                  <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                    <label className="form-control gap-1">
+                      <span className="text-xs font-medium text-base-content/80">
+                        Sömnskattning
+                      </span>
+                      <select
+                        className="select select-sm select-bordered"
+                        value={
+                          feedbackByModule[selectedModule.feedbackKey]?.sleepRating ??
+                          ""
+                        }
+                        onChange={(event) =>
+                          handleFeedbackChange(
+                            selectedModule.feedbackKey,
+                            "sleepRating",
+                            event.target.value
+                          )
+                        }
+                      >
+                        <option value="" disabled>
+                          Välj mellan 1-10
+                        </option>
+                        {feedbackOptions}
+                      </select>
+                    </label>
 
-                  <label className="form-control gap-1">
-                    <span className="text-xs font-medium text-base-content/80">
-                      Skattning av dagen
-                    </span>
-                    <select
-                      className="select select-sm select-bordered"
-                      value={
-                        feedbackByModule[selectedModule.feedbackKey]?.dayRating ??
-                        ""
-                      }
-                      onChange={(event) =>
-                        handleFeedbackChange(
-                          selectedModule.feedbackKey,
-                          "dayRating",
-                          event.target.value
-                        )
-                      }
-                    >
-                      <option value="" disabled>
-                        Välj mellan 1-10
-                      </option>
-                      {feedbackOptions}
-                    </select>
-                  </label>
+                    <label className="form-control gap-1">
+                      <span className="text-xs font-medium text-base-content/80">
+                        Skattning av dagen
+                      </span>
+                      <select
+                        className="select select-sm select-bordered"
+                        value={
+                          feedbackByModule[selectedModule.feedbackKey]?.dayRating ??
+                          ""
+                        }
+                        onChange={(event) =>
+                          handleFeedbackChange(
+                            selectedModule.feedbackKey,
+                            "dayRating",
+                            event.target.value
+                          )
+                        }
+                      >
+                        <option value="" disabled>
+                          Välj mellan 1-10
+                        </option>
+                        {feedbackOptions}
+                      </select>
+                    </label>
+                  </div>
                 </div>
-              </div>
+              )}
             </div>
           </div>
 
