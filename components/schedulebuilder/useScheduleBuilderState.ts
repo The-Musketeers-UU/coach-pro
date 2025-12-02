@@ -28,6 +28,10 @@ const createInitialFormState = (): ModuleForm => ({
   durationMinutes: "",
   durationSeconds: "",
   weightKg: "",
+  feedbackDescription: "",
+  feedbackNumericValue: "",
+  feedbackRating: "",
+  feedbackComment: "",
 });
 
 const createEmptySchedule = (days: Day[]): DaySchedule =>
@@ -121,6 +125,10 @@ export const useScheduleBuilderState = ({
       durationMinutes: module.durationMinutes,
       durationSeconds: module.durationSeconds,
       weightKg: module.weightKg,
+      feedbackDescription: module.feedbackDescription,
+      feedbackNumericValue: module.feedbackNumericValue,
+      feedbackRating: module.feedbackRating,
+      feedbackComment: module.feedbackComment,
       sourceModuleId: module.sourceModuleId ?? module.id,
     };
   };
@@ -250,6 +258,27 @@ export const useScheduleBuilderState = ({
     const trimmedDescription = formState.description.trim();
     const selectedCategory = formState.category;
     const trimmedSubcategory = formState.subcategory.trim();
+    const trimmedFeedbackDescription = formState.feedbackDescription.trim();
+    const feedbackNumericValueResult = parseOptionalNumber(
+      formState.feedbackNumericValue,
+      "Numeriskt feedbackvärde"
+    );
+    if ("error" in feedbackNumericValueResult)
+      return { error: feedbackNumericValueResult.error };
+
+    const feedbackRatingResult = parseOptionalNumber(
+      formState.feedbackRating,
+      "Feedbackbetyg"
+    );
+    if ("error" in feedbackRatingResult)
+      return { error: feedbackRatingResult.error };
+
+    if (
+      feedbackRatingResult.value !== undefined &&
+      (feedbackRatingResult.value < 1 || feedbackRatingResult.value > 10)
+    ) {
+      return { error: "Feedbackbetyg måste vara mellan 1 och 10." };
+    }
 
     if (!trimmedTitle || !trimmedDescription || !selectedCategory) {
       return {
@@ -298,6 +327,10 @@ export const useScheduleBuilderState = ({
         durationMinutes: durationMinutesResult.value,
         durationSeconds: durationSecondsResult.value,
         weightKg: weightResult.value,
+        feedbackDescription: trimmedFeedbackDescription || undefined,
+        feedbackNumericValue: feedbackNumericValueResult.value,
+        feedbackRating: feedbackRatingResult.value,
+        feedbackComment: formState.feedbackComment.trim() || undefined,
         sourceModuleId: moduleId,
       },
     };
@@ -322,7 +355,15 @@ export const useScheduleBuilderState = ({
 
     try {
       const savedModule = await persistModule(result.module);
-      setModuleLibrary((prev) => [savedModule, ...prev]);
+      const savedWithExtras: Module = {
+        ...savedModule,
+        feedbackDescription: result.module.feedbackDescription,
+        feedbackNumericValue: result.module.feedbackNumericValue,
+        feedbackRating: result.module.feedbackRating,
+        feedbackComment: result.module.feedbackComment,
+      };
+
+      setModuleLibrary((prev) => [savedWithExtras, ...prev]);
 
       resetModuleForm();
       setIsCreateModuleModalOpen(false);
@@ -358,6 +399,14 @@ export const useScheduleBuilderState = ({
       durationSeconds:
         module.durationSeconds !== undefined ? String(module.durationSeconds) : "",
       weightKg: module.weightKg !== undefined ? String(module.weightKg) : "",
+      feedbackDescription: module.feedbackDescription ?? "",
+      feedbackNumericValue:
+        module.feedbackNumericValue !== undefined
+          ? String(module.feedbackNumericValue)
+          : "",
+      feedbackRating:
+        module.feedbackRating !== undefined ? String(module.feedbackRating) : "",
+      feedbackComment: module.feedbackComment ?? "",
     });
   };
 

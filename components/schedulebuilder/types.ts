@@ -10,6 +10,10 @@ export type Module = {
   durationMinutes?: number;
   durationSeconds?: number;
   weightKg?: number;
+  feedbackDescription?: string;
+  feedbackNumericValue?: number;
+  feedbackRating?: number;
+  feedbackComment?: string;
   sourceModuleId?: string;
 };
 
@@ -32,6 +36,10 @@ export type ModuleForm = {
   durationMinutes: string;
   durationSeconds: string;
   weightKg: string;
+  feedbackDescription: string;
+  feedbackNumericValue: string;
+  feedbackRating: string;
+  feedbackComment: string;
 };
 
 export type Athlete = {
