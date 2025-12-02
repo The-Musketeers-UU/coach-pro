@@ -109,6 +109,9 @@ export default function StatisticsPage() {
     sleep: true,
     day: true,
   });
+  const [yAxisMetric, setYAxisMetric] = useState<"date" | "sleep" | "day">(
+    "sleep",
+  );
 
   useEffect(() => {
     if (isLoading || isLoadingProfile) return;
@@ -135,7 +138,20 @@ export default function StatisticsPage() {
 
     const datasets = [];
 
-    if (visibleMetrics.sleep) {
+    if (yAxisMetric === "date") {
+      datasets.push({
+        label: "Datum (dag i november)",
+        data: novemberLabels.map((label) => Number(label.split(" ")[0])),
+        borderColor: "rgb(107, 114, 128)",
+        backgroundColor: "rgba(107, 114, 128, 0.15)",
+        tension: 0,
+        fill: true,
+        pointRadius: 4,
+        pointHoverRadius: 6,
+      });
+    }
+
+    if (visibleMetrics.sleep && yAxisMetric !== "date") {
       datasets.push({
         label: `${selectedAthlete.name} · sömnskattning`,
         data: selectedAthlete.sleepRatings,
@@ -150,7 +166,7 @@ export default function StatisticsPage() {
       });
     }
 
-    if (visibleMetrics.day) {
+    if (visibleMetrics.day && yAxisMetric !== "date") {
       datasets.push({
         label: `${selectedAthlete.name} · dagskattning`,
         data: selectedAthlete.dayRatings,
@@ -164,14 +180,23 @@ export default function StatisticsPage() {
     }
 
     return { labels: novemberLabels, datasets };
-  }, [selectedAthlete, visibleMetrics.day, visibleMetrics.sleep]);
+  }, [selectedAthlete, visibleMetrics.day, visibleMetrics.sleep, yAxisMetric]);
 
   const yAxisTitle = useMemo(() => {
+    if (yAxisMetric === "date") return "Datum (dag i november)";
     if (visibleMetrics.sleep && visibleMetrics.day) return "Skattning (sömn & dag)";
     if (visibleMetrics.sleep) return "Sömnskattning (1-10)";
     if (visibleMetrics.day) return "Dagskattning (1-10)";
     return "Ingen skattning vald";
-  }, [visibleMetrics.day, visibleMetrics.sleep]);
+  }, [visibleMetrics.day, visibleMetrics.sleep, yAxisMetric]);
+
+  const { yMin, yMax } = useMemo(() => {
+    if (yAxisMetric === "date") {
+      return { yMin: 1, yMax: 30 };
+    }
+
+    return { yMin: 1, yMax: 10 };
+  }, [yAxisMetric]);
 
   const chartOptions = useMemo(() => {
     return {
@@ -198,19 +223,19 @@ export default function StatisticsPage() {
           },
         },
         y: {
-          min: 1,
-          max: 10,
+          min: yMin,
+          max: yMax,
           ticks: {
             stepSize: 1,
           },
           title: {
-            display: visibleMetrics.day || visibleMetrics.sleep,
+            display: yAxisMetric === "date" || visibleMetrics.day || visibleMetrics.sleep,
             text: yAxisTitle,
           },
         },
       },
     };
-  }, [visibleMetrics.day, visibleMetrics.sleep, yAxisTitle]);
+  }, [visibleMetrics.day, visibleMetrics.sleep, yAxisMetric, yAxisTitle, yMax, yMin]);
 
   const handleToggleMetric = (metric: keyof VisibleMetrics) => {
     setVisibleMetrics((prev) => ({ ...prev, [metric]: !prev[metric] }));
@@ -237,11 +262,11 @@ export default function StatisticsPage() {
   return (
     <div className="min-h-screen bg-base-100">
       <div className="mx-auto flex max-w-6xl flex-col gap-6 p-6">
-        <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-          <div>
-            <p className="text-sm uppercase tracking-wide text-base-content/70">
-              Statistik
-            </p>
+          <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+            <div>
+              <p className="text-sm uppercase tracking-wide text-base-content/70">
+                Statistik
+              </p>
             <h1 className="text-2xl font-semibold text-base-content">
               Sömnskattning november
             </h1>
@@ -270,6 +295,22 @@ export default function StatisticsPage() {
           </div>
 
           <div className="flex flex-wrap items-center gap-3">
+            <label className="text-sm text-base-content/70" htmlFor="y-axis-select">
+              Y-axel data
+            </label>
+            <select
+              id="y-axis-select"
+              className="select select-bordered select-sm"
+              value={yAxisMetric}
+              onChange={(event) => setYAxisMetric(event.target.value as "date" | "sleep" | "day")}
+            >
+              <option value="sleep">Sömnskattning</option>
+              <option value="day">Skattning av dag</option>
+              <option value="date">Datum</option>
+            </select>
+          </div>
+
+          <div className="flex flex-wrap items-center gap-3">
             <span className="text-sm text-base-content/70">Visa på y-axel:</span>
             <label className="label cursor-pointer gap-2">
               <span className="text-sm">Sömn</span>
@@ -277,6 +318,7 @@ export default function StatisticsPage() {
                 type="checkbox"
                 className="checkbox checkbox-sm"
                 checked={visibleMetrics.sleep}
+                disabled={yAxisMetric === "date"}
                 onChange={() => handleToggleMetric("sleep")}
               />
             </label>
@@ -286,6 +328,7 @@ export default function StatisticsPage() {
                 type="checkbox"
                 className="checkbox checkbox-sm"
                 checked={visibleMetrics.day}
+                disabled={yAxisMetric === "date"}
                 onChange={() => handleToggleMetric("day")}
               />
             </label>
