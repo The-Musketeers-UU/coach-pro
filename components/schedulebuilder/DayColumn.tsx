@@ -27,6 +27,10 @@ type DayColumnProps = {
     el: HTMLDivElement | null
   ) => void;
   setDropPreview: Dispatch<SetStateAction<DropPreviewLocation | null>>;
+  selectedScheduleModuleIds: string[];
+  expandedScheduleModuleIds: string[];
+  onSelectScheduledModule: (moduleId: string, isMultiSelect: boolean) => void;
+  onToggleScheduledModuleExpansion: (moduleId: string) => void;
 };
 
 export function DayColumn({
@@ -43,6 +47,10 @@ export function DayColumn({
   handleRemoveModule,
   registerScheduleCardRef,
   setDropPreview,
+  selectedScheduleModuleIds,
+  expandedScheduleModuleIds,
+  onSelectScheduledModule,
+  onToggleScheduledModuleExpansion,
 }: DayColumnProps) {
   return (
     <div
@@ -99,6 +107,14 @@ export function DayColumn({
               startEditingModule={startEditingModule}
               handleRemoveModule={handleRemoveModule}
               registerScheduleCardRef={registerScheduleCardRef}
+              isSelected={selectedScheduleModuleIds.includes(module.id)}
+              isExpanded={expandedScheduleModuleIds.includes(module.id)}
+              onSelect={(isMultiSelect) =>
+                onSelectScheduledModule(module.id, isMultiSelect)
+              }
+              onToggleExpand={() =>
+                onToggleScheduledModuleExpansion(module.id)
+              }
             />
           </div>
         ))}

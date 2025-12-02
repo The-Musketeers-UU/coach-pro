@@ -3,7 +3,10 @@
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 
-import { WeekScheduleView, type ProgramWeek } from "@/components/WeekScheduleView";
+import {
+  WeekScheduleView,
+  type ProgramWeek,
+} from "@/components/WeekScheduleView";
 import { useAuth } from "@/components/auth-provider";
 import {
   type AthleteRow,
@@ -23,6 +26,17 @@ const dayLabels = [
   "Söndag",
 ];
 
+const parseSubcategories = (
+  value?: string | string[] | null
+): string[] | undefined => {
+  if (!value) return undefined;
+
+  const values = Array.isArray(value) ? value : value.split(",");
+  const normalized = values.map((entry) => entry.trim()).filter(Boolean);
+
+  return normalized.length ? normalized : undefined;
+};
+
 const toProgramWeek = (week: ScheduleWeekWithModules): ProgramWeek => ({
   id: week.id,
   label: `Vecka ${week.week}`,
@@ -31,14 +45,22 @@ const toProgramWeek = (week: ScheduleWeekWithModules): ProgramWeek => ({
     id: day.id,
     label: dayLabels[day.day - 1] ?? `Dag ${day.day}`,
     modules: day.modules.map((module) => ({
+      id: module.id.toString(),
       title: module.name,
       description: module.description ?? "",
       category: module.category,
-      subcategory: module.subCategory ?? undefined,
-      distanceMeters: module.distance ?? undefined,
-      weightKg: module.weight ?? undefined,
-      durationMinutes: module.durationMinutes ?? undefined,
-      durationSeconds: module.durationSeconds ?? undefined,
+      subcategory: parseSubcategories(module.subCategory),
+      distanceMeters: module.distance ? [module.distance] : undefined,
+      weightKg: module.weight ? [module.weight] : undefined,
+      duration:
+        module.durationMinutes !== null || module.durationSeconds !== null
+          ? [
+              {
+                minutes: module.durationMinutes ?? undefined,
+                seconds: module.durationSeconds ?? undefined,
+              },
+            ]
+          : undefined,
     })),
   })),
 });
@@ -97,7 +119,7 @@ export default function AthleteSchedulePage() {
         setError(
           supabaseError instanceof Error
             ? supabaseError.message
-            : String(supabaseError),
+            : String(supabaseError)
         );
       }
     };
@@ -119,7 +141,7 @@ export default function AthleteSchedulePage() {
         setError(
           supabaseError instanceof Error
             ? supabaseError.message
-            : String(supabaseError),
+            : String(supabaseError)
         );
       } finally {
         setIsFetching(false);
@@ -127,7 +149,7 @@ export default function AthleteSchedulePage() {
     };
 
     void loadWeeks();
-    }, [currentWeekNumber, profile?.isCoach, selectedAthlete]);
+  }, [currentWeekNumber, profile?.isCoach, selectedAthlete]);
 
   if (isLoading || isLoadingProfile || isFetching) {
     return (
@@ -151,7 +173,28 @@ export default function AthleteSchedulePage() {
     <div className="min-h-screen">
       <div className="mx-auto max-w-full space-y-5 px-5 py-5">
         <div className="grid grid-cols-3">
-          <h1 className="text-xl font-semibold pl-5">Schemabyggare</h1>
+          <div className="flex gap-10">
+            <h1 className="text-xl font-semibold pl-5">Träningsöversikt</h1>
+
+            <label className="form-control max-w-sm">
+              <span className="label-text text-sm">Välj atlet</span>
+              <select
+                className="select select-bordered select-sm"
+                value={selectedAthlete}
+                onChange={(event) => setSelectedAthlete(event.target.value)}
+                disabled={athletes.length === 0}
+              >
+                <option value="" disabled>
+                  {athletes.length === 0 ? "Inga atleter" : "Välj en atlet"}
+                </option>
+                {athletes.map((athlete) => (
+                  <option key={athlete.id} value={athlete.id}>
+                    {athlete.name} ({athlete.email})
+                  </option>
+                ))}
+              </select>
+            </label>
+          </div>
 
           <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between justify-self-center">
             <div className="flex items-center gap-3">
@@ -170,7 +213,9 @@ export default function AthleteSchedulePage() {
                 className="btn btn-outline btn-xs btn-primary"
                 onClick={goToNextWeek}
                 aria-label="Next week"
-                disabled={weekIndex === viewWeeks.length - 1 || viewWeeks.length === 0}
+                disabled={
+                  weekIndex === viewWeeks.length - 1 || viewWeeks.length === 0
+                }
               >
                 &gt;
               </button>
@@ -186,33 +231,6 @@ export default function AthleteSchedulePage() {
               Redigera vecka
             </button>
           </div>
-        </div>
-
-        <div className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
-          <label className="form-control max-w-sm">
-            <span className="label-text">Välj atlet</span>
-            <select
-              className="select select-bordered"
-              value={selectedAthlete}
-              onChange={(event) => setSelectedAthlete(event.target.value)}
-              disabled={athletes.length === 0}
-            >
-              <option value="" disabled>
-                {athletes.length === 0 ? "Inga atleter" : "Välj en atlet"}
-              </option>
-              {athletes.map((athlete) => (
-                <option key={athlete.id} value={athlete.id}>
-                  {athlete.name} ({athlete.email})
-                </option>
-              ))}
-            </select>
-          </label>
-
-          {selectedAthlete && (
-            <p className="text-sm text-base-content/70">
-              Visar program från Supabase för den valda atleten.
-            </p>
-          )}
         </div>
 
         {error && <div className="alert alert-error">{error}</div>}

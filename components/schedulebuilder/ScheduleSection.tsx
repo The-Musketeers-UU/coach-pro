@@ -32,6 +32,10 @@ type ScheduleSectionProps = {
     el: HTMLDivElement | null
   ) => void;
   setDropPreview: Dispatch<SetStateAction<DropPreviewLocation | null>>;
+  selectedScheduleModuleIds: string[];
+  expandedScheduleModuleIds: string[];
+  onSelectScheduledModule: (moduleId: string, isMultiSelect: boolean) => void;
+  onToggleScheduledModuleExpansion: (moduleId: string) => void;
   onAssignClick: () => void;
   weekOptions: { value: string; label: string }[];
   selectedWeek: string;
@@ -54,6 +58,10 @@ export function ScheduleSection({
   handleRemoveModule,
   registerScheduleCardRef,
   setDropPreview,
+  selectedScheduleModuleIds,
+  expandedScheduleModuleIds,
+  onSelectScheduledModule,
+  onToggleScheduledModuleExpansion,
   onAssignClick,
   weekOptions,
   selectedWeek,
@@ -118,16 +126,20 @@ export function ScheduleSection({
                 allowDrop={allowDrop}
                 handleDayDragOver={handleDayDragOver}
                 handleDrop={handleDrop}
-                isPreviewLocation={isPreviewLocation}
-                updateDropPreviewFromDragTop={updateDropPreviewFromDragTop}
-                dragPointerOffsetYRef={dragPointerOffsetYRef}
-                setActiveDrag={setActiveDrag}
-                startEditingModule={startEditingModule}
-                handleRemoveModule={handleRemoveModule}
-                registerScheduleCardRef={registerScheduleCardRef}
-                setDropPreview={setDropPreview}
-              />
-            ))}
+              isPreviewLocation={isPreviewLocation}
+              updateDropPreviewFromDragTop={updateDropPreviewFromDragTop}
+              dragPointerOffsetYRef={dragPointerOffsetYRef}
+              setActiveDrag={setActiveDrag}
+              startEditingModule={startEditingModule}
+              handleRemoveModule={handleRemoveModule}
+              registerScheduleCardRef={registerScheduleCardRef}
+              setDropPreview={setDropPreview}
+              selectedScheduleModuleIds={selectedScheduleModuleIds}
+              expandedScheduleModuleIds={expandedScheduleModuleIds}
+              onSelectScheduledModule={onSelectScheduledModule}
+              onToggleScheduledModuleExpansion={onToggleScheduledModuleExpansion}
+            />
+          ))}
           </div>
         </div>
       </div>

@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import "./app.css";
+import { SiteNav } from "@/components/site-nav";
 
 export const metadata: Metadata = {
   title: "Coach Pro · Camp Momentum",
@@ -12,6 +13,9 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
+    <div className="bg-base-100">
+    <SiteNav></SiteNav>
     <>{children}</>
+    </div>
   );
 }

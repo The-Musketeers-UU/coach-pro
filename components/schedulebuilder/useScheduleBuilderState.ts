@@ -23,11 +23,14 @@ const createInitialFormState = (): ModuleForm => ({
   title: "",
   description: "",
   category: "",
-  subcategory: "",
-  distanceMeters: "",
-  durationMinutes: "",
-  durationSeconds: "",
-  weightKg: "",
+  subcategory: [],
+  distanceMeters: [],
+  duration: [],
+  weightKg: [],
+  feedbackDescription: [],
+  feedbackNumericValue: [],
+  feedbackRating: [],
+  feedbackComment: [],
 });
 
 const createEmptySchedule = (days: Day[]): DaySchedule =>
@@ -52,6 +55,12 @@ export const useScheduleBuilderState = ({
   const [schedule, setSchedule] = useState<DaySchedule>(() =>
     createEmptySchedule(days)
   );
+  const [selectedScheduleModuleIds, setSelectedScheduleModuleIds] = useState<
+    string[]
+  >([]);
+  const [expandedScheduleModuleIds, setExpandedScheduleModuleIds] = useState<
+    string[]
+  >([]);
   const [newModule, setNewModule] = useState<ModuleForm>(() =>
     createInitialFormState()
   );
@@ -118,9 +127,12 @@ export const useScheduleBuilderState = ({
       category: module.category,
       subcategory: module.subcategory,
       distanceMeters: module.distanceMeters,
-      durationMinutes: module.durationMinutes,
-      durationSeconds: module.durationSeconds,
+      duration: module.duration,
       weightKg: module.weightKg,
+      feedbackDescription: module.feedbackDescription,
+      feedbackNumericValue: module.feedbackNumericValue,
+      feedbackRating: module.feedbackRating,
+      feedbackComment: module.feedbackComment,
       sourceModuleId: module.sourceModuleId ?? module.id,
     };
   };
@@ -177,6 +189,53 @@ export const useScheduleBuilderState = ({
 
     setDropPreview(null);
 
+    if (
+      activeDrag.source.type === "schedule" &&
+      selectedScheduleModuleIds.includes(activeDrag.module.id) &&
+      selectedScheduleModuleIds.length > 1
+    ) {
+      const movingModuleIds = new Set(selectedScheduleModuleIds);
+
+      setSchedule((prev) => {
+        const movingModules: Module[] = [];
+        const nextSchedule: DaySchedule = {};
+        const insertAt = targetIndex ?? (prev[dayId]?.length ?? 0);
+        let removedBeforeTarget = 0;
+
+        for (const day of days) {
+          const modulesForDay = prev[day.id] ?? [];
+          const remainingForDay: Module[] = [];
+
+          modulesForDay.forEach((scheduledModule, index) => {
+            if (movingModuleIds.has(scheduledModule.id)) {
+              movingModules.push(scheduledModule);
+              if (day.id === dayId && index < insertAt) {
+                removedBeforeTarget += 1;
+              }
+            } else {
+              remainingForDay.push(scheduledModule);
+            }
+          });
+
+          nextSchedule[day.id] = remainingForDay;
+        }
+
+        if (movingModules.length === 0) {
+          return prev;
+        }
+
+        const adjustedInsertAt = Math.max(0, insertAt - removedBeforeTarget);
+        const destinationModules = [...(nextSchedule[dayId] ?? [])];
+        destinationModules.splice(adjustedInsertAt, 0, ...movingModules);
+        nextSchedule[dayId] = destinationModules;
+
+        return nextSchedule;
+      });
+
+      setActiveDrag(null);
+      return;
+    }
+
     setSchedule((prev) => {
       const insertAt = targetIndex ?? prev[dayId].length;
 
@@ -217,10 +276,77 @@ export const useScheduleBuilderState = ({
     dropPreview?.dayId === dayId && dropPreview.index === index;
 
   const handleRemoveModule = (dayId: string, moduleIndex: number) => {
+    const moduleIdToRemove = schedule[dayId]?.[moduleIndex]?.id;
+
     setSchedule((prev) => ({
       ...prev,
       [dayId]: prev[dayId].filter((_, index) => index !== moduleIndex),
     }));
+
+    if (moduleIdToRemove) {
+      setSelectedScheduleModuleIds((prev) =>
+        prev.filter((moduleId) => moduleId !== moduleIdToRemove)
+      );
+      setExpandedScheduleModuleIds((prev) =>
+        prev.filter((moduleId) => moduleId !== moduleIdToRemove)
+      );
+    }
+  };
+
+  const handleSelectScheduledModule = (
+    moduleId: string,
+    isMultiSelect: boolean
+  ) => {
+    setSelectedScheduleModuleIds((prev) => {
+      if (isMultiSelect) {
+        return prev.includes(moduleId)
+          ? prev.filter((id) => id !== moduleId)
+          : [...prev, moduleId];
+      }
+
+      return [moduleId];
+    });
+  };
+
+  const clearSelectedScheduleModules = useCallback(() => {
+    setSelectedScheduleModuleIds([]);
+  }, []);
+
+  const removeSelectedScheduleModules = useCallback(() => {
+    if (selectedScheduleModuleIds.length === 0) return;
+
+    setSchedule((prev) => {
+      let hasChanges = false;
+      const nextSchedule: DaySchedule = {};
+
+      days.forEach((day) => {
+        const modulesForDay = prev[day.id] ?? [];
+        const filteredModules = modulesForDay.filter(
+          (module) => !selectedScheduleModuleIds.includes(module.id)
+        );
+
+        if (filteredModules.length !== modulesForDay.length) {
+          hasChanges = true;
+        }
+
+        nextSchedule[day.id] = filteredModules;
+      });
+
+      return hasChanges ? nextSchedule : prev;
+    });
+
+    setSelectedScheduleModuleIds([]);
+    setExpandedScheduleModuleIds((prev) =>
+      prev.filter((moduleId) => !selectedScheduleModuleIds.includes(moduleId))
+    );
+  }, [days, selectedScheduleModuleIds]);
+
+  const toggleScheduledModuleExpansion = (moduleId: string) => {
+    setExpandedScheduleModuleIds((prev) =>
+      prev.includes(moduleId)
+        ? prev.filter((id) => id !== moduleId)
+        : [...prev, moduleId]
+    );
   };
 
   const resetModuleForm = () => {
@@ -242,6 +368,18 @@ export const useScheduleBuilderState = ({
     return { value: parsed } as const;
   };
 
+  const parseNumberList = (values: string[], label: string) => {
+    const parsedValues: number[] = [];
+
+    for (const value of values) {
+      const result = parseOptionalNumber(value, label);
+      if ("error" in result) return result;
+      if (result.value !== undefined) parsedValues.push(result.value);
+    }
+
+    return { values: parsedValues } as const;
+  };
+
   const prepareModuleToSave = (
     formState: ModuleForm,
     moduleId?: string
@@ -249,7 +387,57 @@ export const useScheduleBuilderState = ({
     const trimmedTitle = formState.title.trim();
     const trimmedDescription = formState.description.trim();
     const selectedCategory = formState.category;
-    const trimmedSubcategory = formState.subcategory.trim();
+    const trimmedSubcategories = formState.subcategory
+      .map((value) => value.trim())
+      .filter(Boolean);
+
+    const preparedFeedbackDescriptions = formState.feedbackDescription.map(
+      (value) => value.trim()
+    );
+
+    const feedbackNumericValueResult = formState.feedbackNumericValue.map(
+      (value) => {
+        const trimmed = value.trim();
+        if (!trimmed) return null;
+
+        const parsed = Number(trimmed);
+        if (Number.isNaN(parsed) || parsed < 0) {
+          return { error: "Numeriskt feedbackvärde måste vara ett tal." } as const;
+        }
+
+        return parsed as number;
+      }
+    );
+
+    const numericError = feedbackNumericValueResult.find(
+      (entry) => typeof entry === "object" && entry !== null && "error" in entry
+    );
+    if (numericError && typeof numericError === "object" && "error" in numericError) {
+      return { error: numericError.error } as const;
+    }
+
+    const feedbackRatingResult = formState.feedbackRating.map((value) => {
+      const trimmed = value.trim();
+      if (!trimmed) return null;
+
+      const parsed = Number(trimmed);
+      if (Number.isNaN(parsed)) {
+        return { error: "Feedbackbetyg måste vara ett tal." } as const;
+      }
+
+      if (parsed < 1 || parsed > 10) {
+        return { error: "Feedbackbetyg måste vara mellan 1 och 10." } as const;
+      }
+
+      return parsed as number;
+    });
+
+    const ratingError = feedbackRatingResult.find(
+      (entry) => typeof entry === "object" && entry !== null && "error" in entry
+    );
+    if (ratingError && typeof ratingError === "object" && "error" in ratingError) {
+      return { error: ratingError.error } as const;
+    }
 
     if (!trimmedTitle || !trimmedDescription || !selectedCategory) {
       return {
@@ -257,35 +445,58 @@ export const useScheduleBuilderState = ({
       };
     }
 
-    const distanceResult = parseOptionalNumber(
+    const distanceResult = parseNumberList(
       formState.distanceMeters,
       "Distans"
     );
     if ("error" in distanceResult) return { error: distanceResult.error };
 
-    const durationMinutesResult = parseOptionalNumber(
-      formState.durationMinutes,
-      "Minuter"
-    );
-    if ("error" in durationMinutesResult)
-      return { error: durationMinutesResult.error };
+    const durationResults = formState.duration.map((entry, index) => {
+      const minutesResult = parseOptionalNumber(
+        entry.minutes,
+        `Minuter #${index + 1}`
+      );
+      if ("error" in minutesResult) return minutesResult;
 
-    const durationSecondsResult = parseOptionalNumber(
-      formState.durationSeconds,
-      "Sekunder"
-    );
-    if ("error" in durationSecondsResult)
-      return { error: durationSecondsResult.error };
+      const secondsResult = parseOptionalNumber(
+        entry.seconds,
+        `Sekunder #${index + 1}`
+      );
+      if ("error" in secondsResult) return secondsResult;
 
-    if (
-      durationSecondsResult.value !== undefined &&
-      durationSecondsResult.value >= 60
-    ) {
-      return { error: "Sekunder måste vara under 60." };
-    }
+      if (secondsResult.value !== undefined && secondsResult.value >= 60) {
+        return { error: "Sekunder måste vara under 60." } as const;
+      }
 
-    const weightResult = parseOptionalNumber(formState.weightKg, "Vikt");
+      if (
+        minutesResult.value === undefined &&
+        secondsResult.value === undefined
+      ) {
+        return { value: undefined } as const;
+      }
+
+      return {
+        value: {
+          minutes: minutesResult.value,
+          seconds: secondsResult.value,
+        },
+      } as const;
+    });
+
+    const durationErrors = durationResults.find((result) => "error" in result);
+    if (durationErrors && "error" in durationErrors)
+      return { error: durationErrors.error };
+
+    const durationValues = durationResults
+      .map((result) => ("value" in result ? result.value : undefined))
+      .filter(Boolean);
+
+    const weightResult = parseNumberList(formState.weightKg, "Vikt");
     if ("error" in weightResult) return { error: weightResult.error };
+
+    const preparedFeedbackComments = formState.feedbackComment.map((value) =>
+      value.trim()
+    );
 
     return {
       module: {
@@ -293,11 +504,26 @@ export const useScheduleBuilderState = ({
         title: trimmedTitle,
         description: trimmedDescription,
         category: selectedCategory,
-        subcategory: trimmedSubcategory || undefined,
-        distanceMeters: distanceResult.value,
-        durationMinutes: durationMinutesResult.value,
-        durationSeconds: durationSecondsResult.value,
-        weightKg: weightResult.value,
+        subcategory: trimmedSubcategories.length
+          ? trimmedSubcategories
+          : undefined,
+        distanceMeters: distanceResult.values?.length
+          ? distanceResult.values
+          : undefined,
+        duration: durationValues.length ? durationValues : undefined,
+        weightKg: weightResult.values?.length ? weightResult.values : undefined,
+        feedbackDescription: preparedFeedbackDescriptions.length
+          ? preparedFeedbackDescriptions
+          : undefined,
+        feedbackNumericValue: feedbackNumericValueResult.length
+          ? (feedbackNumericValueResult as (number | null)[])
+          : undefined,
+        feedbackRating: feedbackRatingResult.length
+          ? (feedbackRatingResult as (number | null)[])
+          : undefined,
+        feedbackComment: preparedFeedbackComments.length
+          ? preparedFeedbackComments
+          : undefined,
         sourceModuleId: moduleId,
       },
     };
@@ -322,7 +548,15 @@ export const useScheduleBuilderState = ({
 
     try {
       const savedModule = await persistModule(result.module);
-      setModuleLibrary((prev) => [savedModule, ...prev]);
+      const savedWithExtras: Module = {
+        ...savedModule,
+        feedbackDescription: result.module.feedbackDescription,
+        feedbackNumericValue: result.module.feedbackNumericValue,
+        feedbackRating: result.module.feedbackRating,
+        feedbackComment: result.module.feedbackComment,
+      };
+
+      setModuleLibrary((prev) => [savedWithExtras, ...prev]);
 
       resetModuleForm();
       setIsCreateModuleModalOpen(false);
@@ -350,14 +584,27 @@ export const useScheduleBuilderState = ({
       title: module.title,
       description: module.description,
       category: module.category,
-      subcategory: module.subcategory ?? "",
+      subcategory: module.subcategory ?? [],
       distanceMeters:
-        module.distanceMeters !== undefined ? String(module.distanceMeters) : "",
-      durationMinutes:
-        module.durationMinutes !== undefined ? String(module.durationMinutes) : "",
-      durationSeconds:
-        module.durationSeconds !== undefined ? String(module.durationSeconds) : "",
-      weightKg: module.weightKg !== undefined ? String(module.weightKg) : "",
+        module.distanceMeters?.map((value) => String(value)) ?? [],
+      duration:
+        module.duration?.map((value) => ({
+          minutes:
+            value.minutes !== undefined ? String(value.minutes) : "",
+          seconds:
+            value.seconds !== undefined ? String(value.seconds) : "",
+        })) ?? [],
+      weightKg: module.weightKg?.map((value) => String(value)) ?? [],
+      feedbackDescription: module.feedbackDescription ?? [],
+      feedbackNumericValue:
+        module.feedbackNumericValue?.map((value) =>
+          value === null || value === undefined ? "" : String(value)
+        ) ?? [],
+      feedbackRating:
+        module.feedbackRating?.map((value) =>
+          value === null || value === undefined ? "" : String(value)
+        ) ?? [],
+      feedbackComment: module.feedbackComment ?? [],
     });
   };
 
@@ -460,6 +707,12 @@ export const useScheduleBuilderState = ({
       isPreviewLocation,
       handleRemoveModule,
       registerScheduleCardRef,
+      selectedScheduleModuleIds,
+      expandedScheduleModuleIds,
+      handleSelectScheduledModule,
+      clearSelectedScheduleModules,
+      removeSelectedScheduleModules,
+      toggleScheduledModuleExpansion,
     },
     editingControls: {
       editingContext,

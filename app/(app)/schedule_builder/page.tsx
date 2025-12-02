@@ -122,6 +122,17 @@ const createEmptySchedule = (days: Day[]): DaySchedule =>
     {} as DaySchedule
   );
 
+const parseSubcategories = (
+  value?: string | string[] | null
+): string[] | undefined => {
+  if (!value) return undefined;
+
+  const values = Array.isArray(value) ? value : value.split(",");
+  const normalized = values.map((entry) => entry.trim()).filter(Boolean);
+
+  return normalized.length ? normalized : undefined;
+};
+
 const createScheduleFromWeek = (
   week: ScheduleWeekWithModules,
 ): { schedule: DaySchedule; scheduledCount: number } => {
@@ -139,7 +150,7 @@ const createScheduleFromWeek = (
         title: moduleRow.name,
         description: moduleRow.description ?? "",
         category: (moduleRow.category as Module["category"]) ?? "kondition",
-        subcategory: moduleRow.subCategory ?? undefined,
+        subcategory: parseSubcategories(moduleRow.subCategory),
         distanceMeters: moduleRow.distance ?? undefined,
         durationMinutes: moduleRow.durationMinutes ?? undefined,
         durationSeconds: moduleRow.durationSeconds ?? undefined,
@@ -165,7 +176,7 @@ const mapModuleRow = (row: ModuleRow): Module => ({
   title: row.name,
   description: row.description ?? "",
   category: (row.category as Module["category"]) ?? "kondition",
-  subcategory: row.subCategory ?? undefined,
+  subcategory: parseSubcategories(row.subCategory),
   distanceMeters: row.distance ?? undefined,
   durationMinutes: row.durationMinutes ?? undefined,
   durationSeconds: row.durationSeconds ?? undefined,
@@ -230,9 +241,51 @@ function ScheduleBuilderPage() {
     persistModule,
   });
 
-  const { setScheduleState } = scheduleControls;
+  const {
+    setScheduleState,
+    removeSelectedScheduleModules,
+    clearSelectedScheduleModules,
+  } = scheduleControls;
 
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
+
+  useEffect(() => {
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (!["Delete", "Backspace"].includes(event.key)) return;
+
+      const activeElement = document.activeElement as HTMLElement | null;
+      if (
+        activeElement?.closest(
+          "input, textarea, select, [contenteditable='true']"
+        )
+      ) {
+        return;
+      }
+
+      if (event.key === "Backspace") {
+        event.preventDefault();
+      }
+
+      removeSelectedScheduleModules();
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [removeSelectedScheduleModules]);
+
+  useEffect(() => {
+    const handlePointerDown = (event: PointerEvent) => {
+      const target = event.target as HTMLElement | null;
+      if (target?.closest("[data-scheduled-module-card]")) return;
+
+      clearSelectedScheduleModules();
+    };
+
+    window.addEventListener("pointerdown", handlePointerDown);
+
+    return () => window.removeEventListener("pointerdown", handlePointerDown);
+  }, [clearSelectedScheduleModules]);
 
   useEffect(() => {
     if (!editingWeekId || !profile?.id || !profile.isCoach) return;
@@ -531,6 +584,12 @@ function ScheduleBuilderPage() {
             handleRemoveModule={scheduleControls.handleRemoveModule}
             registerScheduleCardRef={scheduleControls.registerScheduleCardRef}
             setDropPreview={dragState.setDropPreview}
+            selectedScheduleModuleIds={scheduleControls.selectedScheduleModuleIds}
+            expandedScheduleModuleIds={scheduleControls.expandedScheduleModuleIds}
+            onSelectScheduledModule={scheduleControls.handleSelectScheduledModule}
+            onToggleScheduledModuleExpansion={
+              scheduleControls.toggleScheduledModuleExpansion
+            }
             onAssignClick={handleOpenAssignModal}
             weekOptions={weekOptions}
             selectedWeek={selectedWeek}

@@ -1,15 +1,20 @@
 export type Category = string;
 
+export type DurationEntry = { minutes?: number; seconds?: number };
+
 export type Module = {
   id: string;
   title: string;
   description: string;
   category: Category;
-  subcategory?: string;
-  distanceMeters?: number;
-  durationMinutes?: number;
-  durationSeconds?: number;
-  weightKg?: number;
+  subcategory?: string[];
+  distanceMeters?: number[];
+  duration?: DurationEntry[];
+  weightKg?: number[];
+  feedbackDescription?: string[];
+  feedbackNumericValue?: (number | null)[];
+  feedbackRating?: (number | null)[];
+  feedbackComment?: string[];
   sourceModuleId?: string;
 };
 
@@ -17,7 +22,10 @@ export type DaySchedule = Record<string, Module[]>;
 
 export type ActiveDrag =
   | { source: { type: "library" }; module: Module }
-  | { source: { type: "schedule"; dayId: string; moduleIndex: number }; module: Module };
+  | {
+      source: { type: "schedule"; dayId: string; moduleIndex: number };
+      module: Module;
+    };
 
 export type EditingContext =
   | { type: "library"; moduleId: string }
@@ -27,11 +35,14 @@ export type ModuleForm = {
   title: string;
   description: string;
   category: string;
-  subcategory: string;
-  distanceMeters: string;
-  durationMinutes: string;
-  durationSeconds: string;
-  weightKg: string;
+  subcategory: string[];
+  distanceMeters: string[];
+  duration: { minutes: string; seconds: string }[];
+  weightKg: string[];
+  feedbackDescription: string[];
+  feedbackNumericValue: string[];
+  feedbackRating: string[];
+  feedbackComment: string[];
 };
 
 export type Athlete = {

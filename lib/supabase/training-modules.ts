@@ -59,7 +59,7 @@ export type CreateModuleInput = {
   ownerId: string;
   name: string;
   category: string;
-  subCategory?: string;
+  subCategory?: string | string[];
   distance?: number;
   durationSeconds?: number;
   durationMinutes?: number;
@@ -321,11 +321,22 @@ export const getScheduleWeekWithModulesById = async (
 };
 
 export const createModule = async (input: CreateModuleInput): Promise<ModuleRow> => {
+  const normalizeSubCategory = (
+    subCategory?: string | string[]
+  ): string | null => {
+    if (!subCategory) return null;
+
+    const values = Array.isArray(subCategory) ? subCategory : [subCategory];
+    const trimmed = values.map((value) => value.trim()).filter(Boolean);
+
+    return trimmed.length ? trimmed.join(", ") : null;
+  };
+
   const payload = {
     owner: input.ownerId,
     name: input.name,
     category: input.category,
-    subCategory: input.subCategory?.trim() || null,
+    subCategory: normalizeSubCategory(input.subCategory),
     distance: sanitizeNumber(input.distance) ?? null,
     durationSeconds: sanitizeNumber(input.durationSeconds) ?? null,
     durationMinutes: sanitizeNumber(input.durationMinutes) ?? null,

@@ -140,21 +140,25 @@ export function ReusableBlocksDrawer({
                   moduleId: module.id,
                 })
               }
-              className="card cursor-grab overflow-hidden border border-base-200 bg-base-100 transition hover:border-primary rounded-2xl"
+              className="card cursor-grab overflow-hidden border border-base-200 bg-base-100 transition hover:border-primary rounded-lg"
             >
-              <div className="card-body flex flex-col gap-2 p-4">
+              <div className="card-body flex flex-col gap-2 p-3">
                 <div className="flex items-start justify-between gap-3">
                   <p className="text-xs font-semibold">{module.title}</p>
                   <button
                     type="button"
                     onClick={(event) => {
                       event.stopPropagation();
+                      const confirmed = window.confirm(
+                        `Är du säker på att du vill radera "${module.title}"?`
+                      );
+                      if (!confirmed) return;
                       handleRemoveLibraryModule(module.id);
                     }}
-                    className="btn btn-ghost btn-xs text-error"
+                    className="btn btn-ghost btn-circle btn-xs text-error"
                     aria-label={`Delete ${module.title}`}
                   >
-                    Radera
+                    <span aria-hidden="true">✕</span>
                   </button>
                 </div>
                 <p className="max-h-16 overflow-hidden text-xs text-base-content/70">

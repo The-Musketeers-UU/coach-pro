@@ -2,3 +2,14 @@
 @plugin "daisyui" {
   themes: all;
 }
+
+/* Hide the caret globally except for input areas */
+* {
+  caret-color: transparent;
+}
+
+input,
+textarea,
+[contenteditable="true"] {
+  caret-color: auto;
+}
