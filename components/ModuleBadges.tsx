@@ -7,53 +7,6 @@ type ModuleBadgeData = {
   weightKg?: number;
 };
 
-type BadgeSize = "xs" | "sm" | "md" | "lg";
-
-const categoryColors = [
-  "primary",
-  "secondary",
-  "accent",
-  "info",
-  "success",
-  "warning",
-  "error",
-];
-
-const getCategoryColor = (category?: string) => {
-  if (!category) return "neutral";
-
-  const normalized = category.trim().toLowerCase();
-  if (!normalized) return "neutral";
-
-  const hash = normalized
-    .split("")
-    .reduce((sum, char) => sum + char.charCodeAt(0), 0);
-
-  return categoryColors[hash % categoryColors.length] ?? "neutral";
-};
-
-export const getCategoryBadgeClassName = (
-  category?: string,
-  {
-    outline = false,
-    soft = false,
-    size = "xs",
-  }: { outline?: boolean; soft?: boolean; size?: BadgeSize } = {}
-) => {
-  const color = getCategoryColor(category);
-
-  return [
-    "badge",
-    size && `badge-${size}`,
-    "capitalize",
-    `badge-${color}`,
-    outline && "badge-outline",
-    soft && "badge-soft",
-  ]
-    .filter(Boolean)
-    .join(" ");
-};
-
 const formatDuration = (minutes?: number, seconds?: number) => {
   const parts: string[] = [];
 
@@ -82,17 +35,11 @@ export function ModuleBadges({
   const hasDuration =
     module.durationMinutes !== undefined || module.durationSeconds !== undefined;
 
-  const categoryBadgeClassName = getCategoryBadgeClassName(module.category);
-  const subcategoryBadgeClassName = getCategoryBadgeClassName(module.category, {
-    outline: true,
-    soft: true,
-  });
-
   return (
     <div className="flex flex-wrap gap-1">
-      <span className={categoryBadgeClassName}>{module.category}</span>
+      <span className="badge badge-xs capitalize badge-accent">{module.category}</span>
       {(module.subcategory || showPlaceholders) && (
-        <span className={subcategoryBadgeClassName}>
+        <span className="badge badge-outline badge-xs capitalize badge-accent badge-soft">
           {module.subcategory || "-"}
         </span>
       )}
