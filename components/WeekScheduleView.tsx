@@ -24,6 +24,7 @@ export type ProgramDay = {
 export type ProgramWeek = {
   id: string;
   label: string;
+  focus?: string;
   days: ProgramDay[];
 };
 
@@ -74,6 +75,9 @@ export function WeekScheduleView({
         <div className="grid grid-cols-3 items-center w-full">
           <div>
             <h2 className="text-xl font-semibold">{heading}</h2>
+            {week?.focus && (
+              <p className="text-sm text-base-content/70">{week.focus}</p>
+            )}
           </div>
         </div>
 
