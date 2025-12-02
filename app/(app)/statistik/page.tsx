@@ -8,6 +8,7 @@ import { useAuth } from "@/components/auth-provider";
 type SleepEntry = {
   date: string;
   sleepScore: number;
+  dayRating: number;
 };
 
 type AthleteSleep = {
@@ -20,36 +21,61 @@ const novemberDates = Array.from({ length: 30 }, (_, index) =>
   `2024-11-${String(index + 1).padStart(2, "0")}`,
 );
 
-const buildSleepEntries = (scores: number[]): SleepEntry[] =>
-  novemberDates.map((date, index) => ({ date, sleepScore: scores[index] ?? 0 }));
+const buildSleepEntries = (sleepScores: number[], dayRatings: number[]): SleepEntry[] =>
+  novemberDates.map((date, index) => ({
+    date,
+    sleepScore: sleepScores[index] ?? 0,
+    dayRating: dayRatings[index] ?? 0,
+  }));
 
 const athleteSleepData: AthleteSleep[] = [
   {
     id: "sara-svensson",
     name: "Sara Svensson",
-    entries: buildSleepEntries([
-      8.4, 8.1, 8.3, 8.0, 8.2, 8.4, 8.1, 8.5, 8.7, 8.3,
-      8.4, 8.6, 8.9, 9.1, 8.8, 9.0, 8.7, 8.6, 8.4, 8.5,
-      8.3, 8.6, 8.8, 8.7, 8.9, 9.0, 9.1, 8.8, 8.6, 8.7,
-    ]),
+    entries: buildSleepEntries(
+      [
+        8.4, 8.1, 8.3, 8.0, 8.2, 8.4, 8.1, 8.5, 8.7, 8.3,
+        8.4, 8.6, 8.9, 9.1, 8.8, 9.0, 8.7, 8.6, 8.4, 8.5,
+        8.3, 8.6, 8.8, 8.7, 8.9, 9.0, 9.1, 8.8, 8.6, 8.7,
+      ],
+      [
+        7.8, 7.6, 7.4, 7.2, 7.5, 7.7, 7.9, 8.0, 7.8, 7.6,
+        7.4, 7.8, 8.1, 8.3, 8.0, 8.2, 8.4, 8.1, 7.9, 7.8,
+        8.0, 8.2, 8.4, 8.1, 8.0, 8.2, 8.4, 8.3, 8.1, 8.0,
+      ],
+    ),
   },
   {
     id: "leo-karlsson",
     name: "Leo Karlsson",
-    entries: buildSleepEntries([
-      7.2, 7.4, 7.5, 7.3, 7.1, 7.2, 7.0, 7.4, 7.6, 7.3,
-      7.1, 7.5, 7.6, 7.8, 7.4, 7.6, 7.2, 7.4, 7.5, 7.3,
-      7.6, 7.8, 7.9, 7.6, 7.5, 7.7, 7.8, 7.9, 7.5, 7.6,
-    ]),
+    entries: buildSleepEntries(
+      [
+        7.2, 7.4, 7.5, 7.3, 7.1, 7.2, 7.0, 7.4, 7.6, 7.3,
+        7.1, 7.5, 7.6, 7.8, 7.4, 7.6, 7.2, 7.4, 7.5, 7.3,
+        7.6, 7.8, 7.9, 7.6, 7.5, 7.7, 7.8, 7.9, 7.5, 7.6,
+      ],
+      [
+        6.9, 6.8, 6.7, 6.5, 6.6, 6.8, 6.7, 6.9, 7.0, 6.8,
+        6.6, 6.9, 7.1, 7.2, 7.0, 7.1, 6.9, 7.0, 7.1, 6.9,
+        7.0, 7.2, 7.3, 7.1, 7.0, 7.1, 7.2, 7.3, 7.0, 7.1,
+      ],
+    ),
   },
   {
     id: "elin-backstrom",
     name: "Elin Bäckström",
-    entries: buildSleepEntries([
-      8.8, 8.6, 8.7, 8.5, 8.6, 8.7, 8.8, 8.9, 9.0, 8.7,
-      8.9, 9.1, 9.2, 9.0, 8.8, 8.9, 9.1, 9.2, 9.0, 8.9,
-      8.8, 8.9, 9.1, 9.2, 9.0, 9.1, 9.2, 9.3, 9.0, 9.1,
-    ]),
+    entries: buildSleepEntries(
+      [
+        8.8, 8.6, 8.7, 8.5, 8.6, 8.7, 8.8, 8.9, 9.0, 8.7,
+        8.9, 9.1, 9.2, 9.0, 8.8, 8.9, 9.1, 9.2, 9.0, 8.9,
+        8.8, 8.9, 9.1, 9.2, 9.0, 9.1, 9.2, 9.3, 9.0, 9.1,
+      ],
+      [
+        8.1, 8.0, 8.2, 8.1, 8.3, 8.4, 8.5, 8.6, 8.5, 8.3,
+        8.2, 8.5, 8.7, 8.8, 8.6, 8.7, 8.8, 8.9, 8.7, 8.6,
+        8.5, 8.6, 8.8, 8.9, 8.7, 8.8, 9.0, 9.1, 8.9, 8.8,
+      ],
+    ),
   },
 ];
 
@@ -59,7 +85,14 @@ const paddingX = 56;
 const paddingY = 48;
 const gradientId = "sleep-area-gradient";
 
-type ChartPoint = { x: number; y: number; value: number; date: string };
+type ChartPoint = {
+  x: number;
+  ySleep: number;
+  yDay: number;
+  sleepValue: number;
+  dayValue: number;
+  date: string;
+};
 
 type SleepAreaChartProps = { data: SleepEntry[] };
 
@@ -74,18 +107,32 @@ function buildChartPoints(entries: SleepEntry[]): ChartPoint[] {
   const minDate = toTimestamp(sortedEntries[0]?.date ?? "");
   const maxDate = toTimestamp(sortedEntries[sortedEntries.length - 1]?.date ?? "");
   const dateRange = Math.max(maxDate - minDate, 1);
-  const maxValue = Math.max(10, Math.max(...sortedEntries.map((entry) => entry.sleepScore)));
+  const maxValue = Math.max(
+    10,
+    Math.max(...sortedEntries.map((entry) => Math.max(entry.sleepScore, entry.dayRating))),
+  );
 
   return sortedEntries.map((entry) => {
     const dateValue = toTimestamp(entry.date);
     const x =
       paddingX + ((dateValue - minDate) / dateRange) * (chartWidth - paddingX * 2);
-    const y =
+    const ySleep =
       chartHeight -
       paddingY -
       (entry.sleepScore / maxValue) * (chartHeight - paddingY * 2);
+    const yDay =
+      chartHeight -
+      paddingY -
+      (entry.dayRating / maxValue) * (chartHeight - paddingY * 2);
 
-    return { x, y, value: entry.sleepScore, date: entry.date } satisfies ChartPoint;
+    return {
+      x,
+      ySleep,
+      yDay,
+      sleepValue: entry.sleepScore,
+      dayValue: entry.dayRating,
+      date: entry.date,
+    } satisfies ChartPoint;
   });
 }
 
@@ -97,7 +144,15 @@ function formatDateLabel(date: string) {
 
 function SleepAreaChart({ data }: SleepAreaChartProps) {
   const points = useMemo(() => buildChartPoints(data), [data]);
-  const yMax = Math.max(10, Math.ceil(Math.max(...data.map((entry) => entry.sleepScore), 0)));
+  const yMax = Math.max(
+    10,
+    Math.ceil(
+      Math.max(
+        ...data.map((entry) => Math.max(entry.sleepScore, entry.dayRating)),
+        0,
+      ),
+    ),
+  );
   const yTicks = [0, 2, 4, 6, 8, 10];
 
   if (points.length === 0) {
@@ -108,11 +163,19 @@ function SleepAreaChart({ data }: SleepAreaChartProps) {
     );
   }
 
-  const linePath = points
-    .map((point, index) => `${index === 0 ? "M" : "L"}${point.x.toFixed(2)},${point.y.toFixed(2)}`)
+  const sleepLinePath = points
+    .map(
+      (point, index) => `${index === 0 ? "M" : "L"}${point.x.toFixed(2)},${point.ySleep.toFixed(2)}`,
+    )
     .join(" ");
 
-  const areaPath = `${linePath} L${points[points.length - 1]?.x.toFixed(2)},${
+  const dayLinePath = points
+    .map(
+      (point, index) => `${index === 0 ? "M" : "L"}${point.x.toFixed(2)},${point.yDay.toFixed(2)}`,
+    )
+    .join(" ");
+
+  const areaPath = `${sleepLinePath} L${points[points.length - 1]?.x.toFixed(2)},${
     chartHeight - paddingY
   } L${points[0]?.x.toFixed(2)},${chartHeight - paddingY} Z`;
 
@@ -122,7 +185,7 @@ function SleepAreaChart({ data }: SleepAreaChartProps) {
     <svg
       viewBox={`0 0 ${chartWidth} ${chartHeight}`}
       role="img"
-      aria-label="Sömnskattning över tid"
+      aria-label="Sömn- och dagskattning över tid"
       className="h-[24rem] w-full"
       preserveAspectRatio="none"
     >
@@ -159,18 +222,34 @@ function SleepAreaChart({ data }: SleepAreaChartProps) {
       })}
 
       <path d={areaPath} fill={`url(#${gradientId})`} />
-      <path d={linePath} stroke="hsl(var(--p))" strokeWidth={3} fill="none" />
+      <path d={sleepLinePath} stroke="hsl(var(--p))" strokeWidth={3} fill="none" />
+      <path
+        d={dayLinePath}
+        stroke="hsl(var(--s))"
+        strokeWidth={2}
+        strokeDasharray="6 6"
+        fill="none"
+      />
 
       {points.map((point) => (
-        <circle
-          key={point.date}
-          cx={point.x}
-          cy={point.y}
-          r={5}
-          fill="hsl(var(--p))"
-          stroke="white"
-          strokeWidth={2}
-        />
+        <g key={point.date}>
+          <circle
+            cx={point.x}
+            cy={point.ySleep}
+            r={5}
+            fill="hsl(var(--p))"
+            stroke="white"
+            strokeWidth={2}
+          />
+          <circle
+            cx={point.x}
+            cy={point.yDay}
+            r={4}
+            fill="white"
+            stroke="hsl(var(--s))"
+            strokeWidth={2}
+          />
+        </g>
       ))}
 
       {visibleLabels.map((point) => (
@@ -191,7 +270,7 @@ function SleepAreaChart({ data }: SleepAreaChartProps) {
         className="fill-base-content text-sm font-semibold"
         textAnchor="start"
       >
-        Sömnskattning
+        Skattning (1-10)
       </text>
       <text
         x={chartWidth - paddingX}
@@ -200,14 +279,6 @@ function SleepAreaChart({ data }: SleepAreaChartProps) {
         textAnchor="end"
       >
         Datum
-      </text>
-      <text
-        x={chartWidth - paddingX}
-        y={chartHeight - paddingY + 40}
-        className="fill-base-content/80 text-xs"
-        textAnchor="end"
-      >
-        Skattning av dag (1-10)
       </text>
     </svg>
   );
@@ -282,7 +353,7 @@ export default function StatistikPage() {
             <div className="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
               <div>
                 <p className="text-sm text-base-content/70">
-                  Sömnskattning (1-10) visualiserad med Tremor area chart
+                  Sömn- och dagskattning (1-10) visualiserade med Tremor area chart
                 </p>
                 <h2 className="text-xl font-semibold">{athlete?.name ?? "Ingen atlet"}</h2>
               </div>
@@ -290,13 +361,25 @@ export default function StatistikPage() {
                 <div className="rounded-box border border-base-300 bg-base-200 px-4 py-2 text-sm">
                   <p className="text-base-content/70">Senaste registrering</p>
                   <p className="font-semibold">
-                    {formatDateLabel(latestEntry.date)} · {latestEntry.sleepScore.toFixed(1)}
+                    {formatDateLabel(latestEntry.date)} · Sömn {latestEntry.sleepScore.toFixed(1)} · Dag {latestEntry.dayRating.toFixed(1)}
                   </p>
                 </div>
               ) : null}
             </div>
 
-            <SleepAreaChart data={chartData} />
+            <div className="flex flex-col gap-3">
+              <div className="flex gap-4 text-sm text-base-content/70">
+                <div className="flex items-center gap-2">
+                  <span className="h-2 w-2 rounded-full bg-primary" aria-hidden />
+                  <span>Sömn</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className="h-2 w-2 rounded-full border border-secondary" aria-hidden />
+                  <span>Skattning av dag</span>
+                </div>
+              </div>
+              <SleepAreaChart data={chartData} />
+            </div>
           </div>
         </div>
       </div>
