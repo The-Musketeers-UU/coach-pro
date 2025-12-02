@@ -2,10 +2,7 @@
 
 import { useMemo, useState } from "react";
 
-import {
-  ModuleBadges,
-  getCategoryBadgeClassName,
-} from "@/components/ModuleBadges";
+import { ModuleBadges } from "@/components/ModuleBadges";
 
 export type ProgramModule = {
   title: string;
@@ -279,16 +276,7 @@ export function WeekScheduleView({
                   <p className="text-xs uppercase tracking-wide text-neutral">
                     Kategori
                   </p>
-                  <p
-                    className={getCategoryBadgeClassName(
-                      selectedModule.module.category,
-                      {
-                        outline: true,
-                        soft: true,
-                        size: "sm",
-                      }
-                    )}
-                  >
+                  <p className="badge badge-outline capitalize">
                     {selectedModule.module.category || "-"}
                   </p>
                 </div>
