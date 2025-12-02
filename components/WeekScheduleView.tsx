@@ -128,31 +128,77 @@ export function WeekScheduleView({
                 </div>
 
                 <div className="mt-3 flex-1 space-y-1">
-                  {day.modules.map((module, index) => (
-                    <button
-                      key={`${day.id}-${index}-${module.title}`}
-                      type="button"
-                      onClick={() =>
-                        setSelectedModule({
-                          module,
-                          feedbackKey: `${week?.id ?? weekNumber}-${day.id}-${index}`,
-                        })
-                      }
-                      className="group w-full text-left"
-                    >
-                      <div className="space-y-2 rounded-xl border border-base-200 bg-base-100 p-3 transition hover:border-primary focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary">
-                        <div className="flex items-start justify-between gap-2">
-                          <p className="text-sm font-semibold text-base-content">
-                            {module.title}
-                          </p>
+                  {day.modules.map((module, index) => {
+                    const feedbackKey = `${week?.id ?? weekNumber}-${day.id}-${index}`;
+
+                    return (
+                      <div key={`${day.id}-${index}-${module.title}`} className="space-y-2 rounded-xl border border-base-200 bg-base-100 p-3">
+                        <button
+                          type="button"
+                          onClick={() =>
+                            setSelectedModule({
+                              module,
+                              feedbackKey,
+                            })
+                          }
+                          className="group w-full text-left"
+                        >
+                          <div className="space-y-2 transition hover:opacity-90 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary">
+                            <div className="flex items-start justify-between gap-2">
+                              <p className="text-sm font-semibold text-base-content">
+                                {module.title}
+                              </p>
+                            </div>
+                            <p className="text-xs text-base-content/70">
+                              {module.description}
+                            </p>
+                            <ModuleBadges module={module} />
+                          </div>
+                        </button>
+
+                        <div className="space-y-2 rounded-xl border border-dashed border-base-200 bg-base-50 p-3">
+                          <p className="text-[11px] font-semibold uppercase tracking-wide text-neutral">Feedback (sparas inte)</p>
+                          <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+                            <label className="form-control gap-1">
+                              <span className="text-xs font-medium text-base-content/80">
+                                Sömnskattning
+                              </span>
+                              <select
+                                className="select select-sm select-bordered"
+                                value={feedbackByModule[feedbackKey]?.sleepRating ?? ""}
+                                onChange={(event) =>
+                                  handleFeedbackChange(feedbackKey, "sleepRating", event.target.value)
+                                }
+                              >
+                                <option value="" disabled>
+                                  Välj mellan 1-10
+                                </option>
+                                {feedbackOptions}
+                              </select>
+                            </label>
+
+                            <label className="form-control gap-1">
+                              <span className="text-xs font-medium text-base-content/80">
+                                Skattning av dagen
+                              </span>
+                              <select
+                                className="select select-sm select-bordered"
+                                value={feedbackByModule[feedbackKey]?.dayRating ?? ""}
+                                onChange={(event) =>
+                                  handleFeedbackChange(feedbackKey, "dayRating", event.target.value)
+                                }
+                              >
+                                <option value="" disabled>
+                                  Välj mellan 1-10
+                                </option>
+                                {feedbackOptions}
+                              </select>
+                            </label>
+                          </div>
                         </div>
-                        <p className="text-xs text-base-content/70">
-                          {module.description}
-                        </p>
-                        <ModuleBadges module={module} />
                       </div>
-                    </button>
-                  ))}
+                    );
+                  })}
 
                   {day.modules.length === 0 && (
                     <p className="flex min-h-[120px] items-center justify-center rounded-xl border border-dashed border-base-200 bg-base-100/60 p-4 text-center text-xs text-base-content/60">
