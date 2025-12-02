@@ -13,7 +13,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <div className="bg-base-100">
+    <div className="bg-base-100 className={`antialiased dark:bg-gray-950`}">
     <SiteNav></SiteNav>
     <>{children}</>
     </div>
