@@ -28,14 +28,22 @@ const toProgramWeek = (week: ScheduleWeekWithModules): ProgramWeek => ({
     id: day.id,
     label: dayLabels[day.day - 1] ?? `Dag ${day.day}`,
     modules: day.modules.map((module) => ({
+      id: module.id.toString(),
       title: module.name,
       description: module.description ?? "",
       category: module.category,
-      subcategory: module.subCategory ?? undefined,
-      distanceMeters: module.distance ?? undefined,
-      weightKg: module.weight ?? undefined,
-      durationMinutes: module.durationMinutes ?? undefined,
-      durationSeconds: module.durationSeconds ?? undefined,
+      subcategory: module.subCategory ? [module.subCategory] : undefined,
+      distanceMeters: module.distance ? [module.distance] : undefined,
+      weightKg: module.weight ? [module.weight] : undefined,
+      duration:
+        module.durationMinutes !== null || module.durationSeconds !== null
+          ? [
+              {
+                minutes: module.durationMinutes ?? undefined,
+                seconds: module.durationSeconds ?? undefined,
+              },
+            ]
+          : undefined,
     })),
   })),
 });

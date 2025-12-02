@@ -29,11 +29,14 @@ export function EditModuleModal({
   const formattedDuration = (() => {
     if (!editingModuleForm) return "";
 
-    const parts = [] as string[];
-    if (editingModuleForm.durationMinutes)
-      parts.push(`${editingModuleForm.durationMinutes} min`);
-    if (editingModuleForm.durationSeconds)
-      parts.push(`${editingModuleForm.durationSeconds} s`);
+    const parts = editingModuleForm.duration
+      .map((entry) => {
+        const entryParts = [] as string[];
+        if (entry.minutes) entryParts.push(`${entry.minutes} min`);
+        if (entry.seconds) entryParts.push(`${entry.seconds} s`);
+        return entryParts.join(" ");
+      })
+      .filter(Boolean);
 
     return parts.join(" ");
   })();
@@ -77,24 +80,24 @@ export function EditModuleModal({
                 </div>
               )}
 
-              {editingModuleForm.subcategory && (
+              {editingModuleForm.subcategory.length > 0 && (
                 <div>
                   <dt className="text-xs uppercase tracking-wide text-base-content/60">
                     Subcategory
                   </dt>
                   <dd className="font-medium text-base-content">
-                    {editingModuleForm.subcategory}
+                    {editingModuleForm.subcategory.join(", ")}
                   </dd>
                 </div>
               )}
 
-              {editingModuleForm.distanceMeters && (
+              {editingModuleForm.distanceMeters.length > 0 && (
                 <div>
                   <dt className="text-xs uppercase tracking-wide text-base-content/60">
                     Distance
                   </dt>
                   <dd className="font-medium text-base-content">
-                    {editingModuleForm.distanceMeters} m
+                    {editingModuleForm.distanceMeters.join(", ")} m
                   </dd>
                 </div>
               )}
@@ -108,13 +111,13 @@ export function EditModuleModal({
                 </div>
               )}
 
-              {editingModuleForm.weightKg && (
+              {editingModuleForm.weightKg.length > 0 && (
                 <div>
                   <dt className="text-xs uppercase tracking-wide text-base-content/60">
                     Load
                   </dt>
                   <dd className="font-medium text-base-content">
-                    {editingModuleForm.weightKg} kg
+                    {editingModuleForm.weightKg.join(", ")} kg
                   </dd>
                 </div>
               )}

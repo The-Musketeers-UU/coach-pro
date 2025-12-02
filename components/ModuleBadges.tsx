@@ -1,10 +1,9 @@
 type ModuleBadgeData = {
   category: string;
-  subcategory?: string;
-  distanceMeters?: number;
-  durationMinutes?: number;
-  durationSeconds?: number;
-  weightKg?: number;
+  subcategory?: string[];
+  distanceMeters?: number[];
+  duration?: { minutes?: number; seconds?: number }[];
+  weightKg?: number[];
 };
 
 const formatDuration = (minutes?: number, seconds?: number) => {
@@ -30,31 +29,37 @@ export function ModuleBadges({
   module,
   showPlaceholders = false,
 }: ModuleBadgesProps) {
-  const hasDistance = module.distanceMeters !== undefined;
-  const hasWeight = module.weightKg !== undefined;
-  const hasDuration =
-    module.durationMinutes !== undefined || module.durationSeconds !== undefined;
+  const hasDistance = module.distanceMeters && module.distanceMeters.length > 0;
+  const hasWeight = module.weightKg && module.weightKg.length > 0;
+  const hasDuration = module.duration && module.duration.length > 0;
 
   return (
     <div className="flex flex-wrap gap-1">
       <span className="badge badge-xs capitalize badge-accent">{module.category}</span>
-      {(module.subcategory || showPlaceholders) && (
+      {(module.subcategory?.length || showPlaceholders) && (
         <span className="badge badge-outline badge-xs capitalize badge-accent badge-soft">
-          {module.subcategory || "-"}
+          {module.subcategory?.join(", ") || "-"}
         </span>
       )}
       {(hasDistance || showPlaceholders) && (
         <span className="badge badge-xs">
-          Distans: {hasDistance ? module.distanceMeters : "-"} m
+          Distans: {hasDistance ? module.distanceMeters?.join(", ") : "-"} m
         </span>
       )}
       {(hasDuration || showPlaceholders) && (
         <span className="badge badge-xs">
-          Tid: {formatDuration(module.durationMinutes, module.durationSeconds) || "-"}
+          Tid:
+          {hasDuration
+            ? module.duration
+                ?.map((entry) => formatDuration(entry.minutes, entry.seconds))
+                .join(", ")
+            : "-"}
         </span>
       )}
       {(hasWeight || showPlaceholders) && (
-        <span className="badge badge-xs">Vikt: {hasWeight ? module.weightKg : "-"} kg</span>
+        <span className="badge badge-xs">
+          Vikt: {hasWeight ? module.weightKg?.join(", ") : "-"} kg
+        </span>
       )}
     </div>
   );

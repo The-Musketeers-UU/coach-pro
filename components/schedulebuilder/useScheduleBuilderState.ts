@@ -23,15 +23,14 @@ const createInitialFormState = (): ModuleForm => ({
   title: "",
   description: "",
   category: "",
-  subcategory: "",
-  distanceMeters: "",
-  durationMinutes: "",
-  durationSeconds: "",
-  weightKg: "",
-  feedbackDescription: "",
-  feedbackNumericValue: "",
-  feedbackRating: "",
-  feedbackComment: "",
+  subcategory: [],
+  distanceMeters: [],
+  duration: [],
+  weightKg: [],
+  feedbackDescription: [],
+  feedbackNumericValue: [],
+  feedbackRating: [],
+  feedbackComment: [],
 });
 
 const createEmptySchedule = (days: Day[]): DaySchedule =>
@@ -122,8 +121,7 @@ export const useScheduleBuilderState = ({
       category: module.category,
       subcategory: module.subcategory,
       distanceMeters: module.distanceMeters,
-      durationMinutes: module.durationMinutes,
-      durationSeconds: module.durationSeconds,
+      duration: module.duration,
       weightKg: module.weightKg,
       feedbackDescription: module.feedbackDescription,
       feedbackNumericValue: module.feedbackNumericValue,
@@ -250,6 +248,18 @@ export const useScheduleBuilderState = ({
     return { value: parsed } as const;
   };
 
+  const parseNumberList = (values: string[], label: string) => {
+    const parsedValues: number[] = [];
+
+    for (const value of values) {
+      const result = parseOptionalNumber(value, label);
+      if ("error" in result) return result;
+      if (result.value !== undefined) parsedValues.push(result.value);
+    }
+
+    return { values: parsedValues } as const;
+  };
+
   const prepareModuleToSave = (
     formState: ModuleForm,
     moduleId?: string
@@ -257,16 +267,22 @@ export const useScheduleBuilderState = ({
     const trimmedTitle = formState.title.trim();
     const trimmedDescription = formState.description.trim();
     const selectedCategory = formState.category;
-    const trimmedSubcategory = formState.subcategory.trim();
-    const trimmedFeedbackDescription = formState.feedbackDescription.trim();
-    const feedbackNumericValueResult = parseOptionalNumber(
+    const trimmedSubcategories = formState.subcategory
+      .map((value) => value.trim())
+      .filter(Boolean);
+
+    const trimmedFeedbackDescription = formState.feedbackDescription
+      .map((value) => value.trim())
+      .filter(Boolean);
+
+    const feedbackNumericValueResult = parseNumberList(
       formState.feedbackNumericValue,
       "Numeriskt feedbackvärde"
     );
     if ("error" in feedbackNumericValueResult)
       return { error: feedbackNumericValueResult.error };
 
-    const feedbackRatingResult = parseOptionalNumber(
+    const feedbackRatingResult = parseNumberList(
       formState.feedbackRating,
       "Feedbackbetyg"
     );
@@ -274,8 +290,9 @@ export const useScheduleBuilderState = ({
       return { error: feedbackRatingResult.error };
 
     if (
-      feedbackRatingResult.value !== undefined &&
-      (feedbackRatingResult.value < 1 || feedbackRatingResult.value > 10)
+      feedbackRatingResult.values?.some(
+        (rating) => rating < 1 || rating > 10
+      )
     ) {
       return { error: "Feedbackbetyg måste vara mellan 1 och 10." };
     }
@@ -286,35 +303,58 @@ export const useScheduleBuilderState = ({
       };
     }
 
-    const distanceResult = parseOptionalNumber(
+    const distanceResult = parseNumberList(
       formState.distanceMeters,
       "Distans"
     );
     if ("error" in distanceResult) return { error: distanceResult.error };
 
-    const durationMinutesResult = parseOptionalNumber(
-      formState.durationMinutes,
-      "Minuter"
-    );
-    if ("error" in durationMinutesResult)
-      return { error: durationMinutesResult.error };
+    const durationResults = formState.duration.map((entry, index) => {
+      const minutesResult = parseOptionalNumber(
+        entry.minutes,
+        `Minuter #${index + 1}`
+      );
+      if ("error" in minutesResult) return minutesResult;
 
-    const durationSecondsResult = parseOptionalNumber(
-      formState.durationSeconds,
-      "Sekunder"
-    );
-    if ("error" in durationSecondsResult)
-      return { error: durationSecondsResult.error };
+      const secondsResult = parseOptionalNumber(
+        entry.seconds,
+        `Sekunder #${index + 1}`
+      );
+      if ("error" in secondsResult) return secondsResult;
 
-    if (
-      durationSecondsResult.value !== undefined &&
-      durationSecondsResult.value >= 60
-    ) {
-      return { error: "Sekunder måste vara under 60." };
-    }
+      if (secondsResult.value !== undefined && secondsResult.value >= 60) {
+        return { error: "Sekunder måste vara under 60." } as const;
+      }
 
-    const weightResult = parseOptionalNumber(formState.weightKg, "Vikt");
+      if (
+        minutesResult.value === undefined &&
+        secondsResult.value === undefined
+      ) {
+        return { value: undefined } as const;
+      }
+
+      return {
+        value: {
+          minutes: minutesResult.value,
+          seconds: secondsResult.value,
+        },
+      } as const;
+    });
+
+    const durationErrors = durationResults.find((result) => "error" in result);
+    if (durationErrors && "error" in durationErrors)
+      return { error: durationErrors.error };
+
+    const durationValues = durationResults
+      .map((result) => ("value" in result ? result.value : undefined))
+      .filter(Boolean);
+
+    const weightResult = parseNumberList(formState.weightKg, "Vikt");
     if ("error" in weightResult) return { error: weightResult.error };
+
+    const trimmedFeedbackComments = formState.feedbackComment
+      .map((value) => value.trim())
+      .filter(Boolean);
 
     return {
       module: {
@@ -322,15 +362,26 @@ export const useScheduleBuilderState = ({
         title: trimmedTitle,
         description: trimmedDescription,
         category: selectedCategory,
-        subcategory: trimmedSubcategory || undefined,
-        distanceMeters: distanceResult.value,
-        durationMinutes: durationMinutesResult.value,
-        durationSeconds: durationSecondsResult.value,
-        weightKg: weightResult.value,
-        feedbackDescription: trimmedFeedbackDescription || undefined,
-        feedbackNumericValue: feedbackNumericValueResult.value,
-        feedbackRating: feedbackRatingResult.value,
-        feedbackComment: formState.feedbackComment.trim() || undefined,
+        subcategory: trimmedSubcategories.length
+          ? trimmedSubcategories
+          : undefined,
+        distanceMeters: distanceResult.values?.length
+          ? distanceResult.values
+          : undefined,
+        duration: durationValues.length ? durationValues : undefined,
+        weightKg: weightResult.values?.length ? weightResult.values : undefined,
+        feedbackDescription: trimmedFeedbackDescription.length
+          ? trimmedFeedbackDescription
+          : undefined,
+        feedbackNumericValue: feedbackNumericValueResult.values?.length
+          ? feedbackNumericValueResult.values
+          : undefined,
+        feedbackRating: feedbackRatingResult.values?.length
+          ? feedbackRatingResult.values
+          : undefined,
+        feedbackComment: trimmedFeedbackComments.length
+          ? trimmedFeedbackComments
+          : undefined,
         sourceModuleId: moduleId,
       },
     };
@@ -391,22 +442,23 @@ export const useScheduleBuilderState = ({
       title: module.title,
       description: module.description,
       category: module.category,
-      subcategory: module.subcategory ?? "",
+      subcategory: module.subcategory ?? [],
       distanceMeters:
-        module.distanceMeters !== undefined ? String(module.distanceMeters) : "",
-      durationMinutes:
-        module.durationMinutes !== undefined ? String(module.durationMinutes) : "",
-      durationSeconds:
-        module.durationSeconds !== undefined ? String(module.durationSeconds) : "",
-      weightKg: module.weightKg !== undefined ? String(module.weightKg) : "",
-      feedbackDescription: module.feedbackDescription ?? "",
+        module.distanceMeters?.map((value) => String(value)) ?? [],
+      duration:
+        module.duration?.map((value) => ({
+          minutes:
+            value.minutes !== undefined ? String(value.minutes) : "",
+          seconds:
+            value.seconds !== undefined ? String(value.seconds) : "",
+        })) ?? [],
+      weightKg: module.weightKg?.map((value) => String(value)) ?? [],
+      feedbackDescription: module.feedbackDescription ?? [],
       feedbackNumericValue:
-        module.feedbackNumericValue !== undefined
-          ? String(module.feedbackNumericValue)
-          : "",
+        module.feedbackNumericValue?.map((value) => String(value)) ?? [],
       feedbackRating:
-        module.feedbackRating !== undefined ? String(module.feedbackRating) : "",
-      feedbackComment: module.feedbackComment ?? "",
+        module.feedbackRating?.map((value) => String(value)) ?? [],
+      feedbackComment: module.feedbackComment ?? [],
     });
   };
 

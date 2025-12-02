@@ -1,19 +1,20 @@
 export type Category = string;
 
+export type DurationEntry = { minutes?: number; seconds?: number };
+
 export type Module = {
   id: string;
   title: string;
   description: string;
   category: Category;
-  subcategory?: string;
-  distanceMeters?: number;
-  durationMinutes?: number;
-  durationSeconds?: number;
-  weightKg?: number;
-  feedbackDescription?: string;
-  feedbackNumericValue?: number;
-  feedbackRating?: number;
-  feedbackComment?: string;
+  subcategory?: string[];
+  distanceMeters?: number[];
+  duration?: DurationEntry[];
+  weightKg?: number[];
+  feedbackDescription?: string[];
+  feedbackNumericValue?: number[];
+  feedbackRating?: number[];
+  feedbackComment?: string[];
   sourceModuleId?: string;
 };
 
@@ -31,15 +32,14 @@ export type ModuleForm = {
   title: string;
   description: string;
   category: string;
-  subcategory: string;
-  distanceMeters: string;
-  durationMinutes: string;
-  durationSeconds: string;
-  weightKg: string;
-  feedbackDescription: string;
-  feedbackNumericValue: string;
-  feedbackRating: string;
-  feedbackComment: string;
+  subcategory: string[];
+  distanceMeters: string[];
+  duration: { minutes: string; seconds: string }[];
+  weightKg: string[];
+  feedbackDescription: string[];
+  feedbackNumericValue: string[];
+  feedbackRating: string[];
+  feedbackComment: string[];
 };
 
 export type Athlete = {

@@ -5,14 +5,18 @@ import { useState } from "react";
 import { ModuleBadges } from "@/components/ModuleBadges";
 
 export type ProgramModule = {
+  id: string;
   title: string;
   description: string;
   category: string;
-  subcategory?: string;
-  distanceMeters?: number;
-  weightKg?: number;
-  durationMinutes?: number;
-  durationSeconds?: number;
+  subcategory?: string[];
+  distanceMeters?: number[];
+  weightKg?: number[];
+  duration?: { minutes?: number; seconds?: number }[];
+  feedbackDescription?: string[];
+  feedbackNumericValue?: number[];
+  feedbackRating?: number[];
+  feedbackComment?: string[];
 };
 
 export type ProgramDay = {
@@ -48,11 +52,13 @@ const formatDuration = (minutes?: number, seconds?: number) => {
   return `${minValue} min ${secValue} sek`;
 };
 
-const formatDistance = (distanceMeters?: number) =>
-  distanceMeters !== undefined ? `${distanceMeters} m` : "-";
+const formatDistance = (distanceMeters?: number[]) =>
+  distanceMeters && distanceMeters.length > 0
+    ? `${distanceMeters.join(", ")} m`
+    : "-";
 
-const formatWeight = (weightKg?: number) =>
-  weightKg !== undefined ? `${weightKg} kg` : "-";
+const formatWeight = (weightKg?: number[]) =>
+  weightKg && weightKg.length > 0 ? `${weightKg.join(", ")} kg` : "-";
 
 export function WeekScheduleView({
   week,
@@ -65,11 +71,33 @@ export function WeekScheduleView({
   const [selectedModule, setSelectedModule] = useState<ProgramModule | null>(
     null
   );
+  const [feedbackResponses, setFeedbackResponses] = useState<
+    Record<
+      string,
+      { numericValues: string[]; ratings: string[]; comments: string[] }
+    >
+  >({});
   const heading =
     title ??
     (week
       ? week.label || `Vecka ${weekNumber}`
       : emptyWeekTitle || `Vecka ${weekNumber}`);
+
+  const ensureFeedbackResponse = (module: ProgramModule) => {
+    setFeedbackResponses((prev) => {
+      if (prev[module.id]) return prev;
+
+      return {
+        ...prev,
+        [module.id]: {
+          numericValues:
+            module.feedbackNumericValue?.map((value) => String(value)) ?? [],
+          ratings: module.feedbackRating?.map((value) => String(value)) ?? [],
+          comments: module.feedbackComment?.map((value) => String(value)) ?? [],
+        },
+      };
+    });
+  };
 
   return (
     <div className="card bg-base-200 border border-base-300 shadow-md">
@@ -103,7 +131,10 @@ export function WeekScheduleView({
                     <button
                       key={`${day.id}-${index}-${module.title}`}
                       type="button"
-                      onClick={() => setSelectedModule(module)}
+                      onClick={() => {
+                        ensureFeedbackResponse(module);
+                        setSelectedModule(module);
+                      }}
                       className="group w-full text-left"
                     >
                       <div className="space-y-2 rounded-xl border border-base-200 bg-base-100 p-3 transition hover:border-primary focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary">
@@ -182,45 +213,211 @@ export function WeekScheduleView({
                   </p>
                 </div>
 
-                <div className="space-y-1">
-                  <p className="text-xs uppercase tracking-wide text-neutral">
-                    Underkategori
-                  </p>
-                  <p className="text-sm text-base-content/80">
-                    {selectedModule.subcategory || "-"}
-                  </p>
-                </div>
+                {selectedModule.subcategory?.length ? (
+                  <div className="space-y-1">
+                    <p className="text-xs uppercase tracking-wide text-neutral">
+                      Underkategori
+                    </p>
+                    <p className="text-sm text-base-content/80">
+                      {selectedModule.subcategory.join(", ")}
+                    </p>
+                  </div>
+                ) : null}
 
-                <div className="space-y-1">
-                  <p className="text-xs uppercase tracking-wide text-neutral">
-                    Distans
-                  </p>
-                  <p className="text-sm text-base-content/80">
-                    {formatDistance(selectedModule.distanceMeters)}
-                  </p>
-                </div>
+                {selectedModule.distanceMeters?.length ? (
+                  <div className="space-y-1">
+                    <p className="text-xs uppercase tracking-wide text-neutral">
+                      Distans
+                    </p>
+                    <p className="text-sm text-base-content/80">
+                      {formatDistance(selectedModule.distanceMeters)}
+                    </p>
+                  </div>
+                ) : null}
 
-                <div className="space-y-1">
-                  <p className="text-xs uppercase tracking-wide text-neutral">
-                    Vikt
-                  </p>
-                  <p className="text-sm text-base-content/80">
-                    {formatWeight(selectedModule.weightKg)}
-                  </p>
-                </div>
+                {selectedModule.weightKg?.length ? (
+                  <div className="space-y-1">
+                    <p className="text-xs uppercase tracking-wide text-neutral">
+                      Vikt
+                    </p>
+                    <p className="text-sm text-base-content/80">
+                      {formatWeight(selectedModule.weightKg)}
+                    </p>
+                  </div>
+                ) : null}
 
-                <div className="space-y-1 sm:col-span-2">
-                  <p className="text-xs uppercase tracking-wide text-neutral">
-                    Tid
-                  </p>
-                  <p className="text-sm text-base-content/80">
-                    {formatDuration(
-                      selectedModule.durationMinutes,
-                      selectedModule.durationSeconds
-                    ) || "-"}
-                  </p>
-                </div>
+                {selectedModule.duration?.length ? (
+                  <div className="space-y-1 sm:col-span-2">
+                    <p className="text-xs uppercase tracking-wide text-neutral">
+                      Tid
+                    </p>
+                    <p className="text-sm text-base-content/80">
+                      {selectedModule.duration
+                        .map((entry) => formatDuration(entry.minutes, entry.seconds))
+                        .join(", ")}
+                    </p>
+                  </div>
+                ) : null}
               </div>
+
+              {(selectedModule.feedbackDescription?.length ||
+                selectedModule.feedbackNumericValue?.length ||
+                selectedModule.feedbackRating?.length ||
+                selectedModule.feedbackComment?.length) && (
+                <div className="space-y-3 border-t border-base-200 pt-3">
+                  <p className="text-sm font-semibold text-base-content">
+                    Feedback att fylla i
+                  </p>
+
+                  {selectedModule.feedbackDescription?.length ? (
+                    <div className="space-y-2">
+                      <p className="text-xs uppercase tracking-wide text-neutral">
+                        Instruktioner
+                      </p>
+                      <ul className="list-disc space-y-1 pl-4 text-sm text-base-content/80">
+                        {selectedModule.feedbackDescription.map((item, index) => (
+                          <li key={`desc-${index}`}>{item}</li>
+                        ))}
+                      </ul>
+                    </div>
+                  ) : null}
+
+                  {selectedModule.feedbackNumericValue?.length ? (
+                    <div className="space-y-2">
+                      <p className="text-xs uppercase tracking-wide text-neutral">
+                        Numeriska värden
+                      </p>
+                      {selectedModule.feedbackNumericValue.map((_, index) => (
+                        <label
+                          key={`numeric-${index}`}
+                          className="form-control flex flex-col gap-1"
+                        >
+                          <span className="label-text text-xs text-base-content/70">
+                            Värde #{index + 1}
+                          </span>
+                          <input
+                            type="number"
+                            className="input input-sm input-bordered"
+                            value={
+                              feedbackResponses[selectedModule.id]?.numericValues[
+                                index
+                              ] ?? ""
+                            }
+                            onChange={(event) =>
+                              setFeedbackResponses((prev) => {
+                                const current = prev[selectedModule.id] ?? {
+                                  numericValues: [],
+                                  ratings: [],
+                                  comments: [],
+                                };
+
+                                const numericValues = [...current.numericValues];
+                                numericValues[index] = event.target.value;
+
+                                return {
+                                  ...prev,
+                                  [selectedModule.id]: {
+                                    ...current,
+                                    numericValues,
+                                  },
+                                };
+                              })
+                            }
+                          />
+                        </label>
+                      ))}
+                    </div>
+                  ) : null}
+
+                  {selectedModule.feedbackRating?.length ? (
+                    <div className="space-y-2">
+                      <p className="text-xs uppercase tracking-wide text-neutral">
+                        Betygsskala (1-10)
+                      </p>
+                      {selectedModule.feedbackRating.map((_, index) => (
+                        <label
+                          key={`rating-${index}`}
+                          className="form-control flex flex-col gap-1"
+                        >
+                          <span className="label-text text-xs text-base-content/70">
+                            Betyg #{index + 1}
+                          </span>
+                          <input
+                            type="number"
+                            min={1}
+                            max={10}
+                            className="input input-sm input-bordered"
+                            value={
+                              feedbackResponses[selectedModule.id]?.ratings[index] ??
+                              ""
+                            }
+                            onChange={(event) =>
+                              setFeedbackResponses((prev) => {
+                                const current = prev[selectedModule.id] ?? {
+                                  numericValues: [],
+                                  ratings: [],
+                                  comments: [],
+                                };
+
+                                const ratings = [...current.ratings];
+                                ratings[index] = event.target.value;
+
+                                return {
+                                  ...prev,
+                                  [selectedModule.id]: { ...current, ratings },
+                                };
+                              })
+                            }
+                          />
+                        </label>
+                      ))}
+                    </div>
+                  ) : null}
+
+                  {selectedModule.feedbackComment?.length ? (
+                    <div className="space-y-2">
+                      <p className="text-xs uppercase tracking-wide text-neutral">
+                        Kommentarer
+                      </p>
+                      {selectedModule.feedbackComment.map((_, index) => (
+                        <label
+                          key={`comment-${index}`}
+                          className="form-control flex flex-col gap-1"
+                        >
+                          <span className="label-text text-xs text-base-content/70">
+                            Kommentar #{index + 1}
+                          </span>
+                          <textarea
+                            className="textarea textarea-bordered"
+                            rows={2}
+                            value={
+                              feedbackResponses[selectedModule.id]?.comments[index] ??
+                              ""
+                            }
+                            onChange={(event) =>
+                              setFeedbackResponses((prev) => {
+                                const current = prev[selectedModule.id] ?? {
+                                  numericValues: [],
+                                  ratings: [],
+                                  comments: [],
+                                };
+
+                                const comments = [...current.comments];
+                                comments[index] = event.target.value;
+
+                                return {
+                                  ...prev,
+                                  [selectedModule.id]: { ...current, comments },
+                                };
+                              })
+                            }
+                          />
+                        </label>
+                      ))}
+                    </div>
+                  ) : null}
+                </div>
+              )}
             </div>
           </div>
 
