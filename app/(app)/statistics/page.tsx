@@ -38,11 +38,6 @@ type AthleteSleepData = {
   dayRatings: number[];
 };
 
-const novemberLabels = Array.from({ length: 30 }, (_, index) => {
-  const day = index + 1;
-  return `${day} nov`;
-});
-
 const athleteSleepData: AthleteSleepData[] = [
   {
     id: "elin-berg",
@@ -109,8 +104,8 @@ export default function StatisticsPage() {
     sleep: true,
     day: true,
   });
-  const [yAxisMetric, setYAxisMetric] = useState<"date" | "sleep" | "day">(
-    "sleep",
+  const [xAxisMetric, setXAxisMetric] = useState<"date" | "sleep" | "day">(
+    "date",
   );
 
   useEffect(() => {
@@ -133,28 +128,34 @@ export default function StatisticsPage() {
 
   const chartData = useMemo(() => {
     if (!selectedAthlete) {
-      return { labels: novemberLabels, datasets: [] };
+      return { datasets: [] };
     }
 
-    const datasets = [];
+    const getXAxisValue = (index: number) => {
+      if (xAxisMetric === "date") return index + 1;
+      if (xAxisMetric === "sleep") return selectedAthlete.sleepRatings[index];
+      return selectedAthlete.dayRatings[index];
+    };
 
-    if (yAxisMetric === "date") {
-      datasets.push({
-        label: "Datum (dag i november)",
-        data: novemberLabels.map((label) => Number(label.split(" ")[0])),
-        borderColor: "rgb(107, 114, 128)",
-        backgroundColor: "rgba(107, 114, 128, 0.15)",
-        tension: 0,
-        fill: true,
-        pointRadius: 4,
-        pointHoverRadius: 6,
-      });
-    }
+    const datasets = [] as {
+      label: string;
+      data: { x: number; y: number }[];
+      borderColor: string;
+      backgroundColor: string;
+      tension: number;
+      fill?: boolean;
+      pointRadius?: number;
+      pointHoverRadius?: number;
+      borderDash?: number[];
+    }[];
 
-    if (visibleMetrics.sleep && yAxisMetric !== "date") {
+    if (visibleMetrics.sleep) {
       datasets.push({
         label: `${selectedAthlete.name} · sömnskattning`,
-        data: selectedAthlete.sleepRatings,
+        data: selectedAthlete.sleepRatings.map((sleepRating, index) => ({
+          x: getXAxisValue(index),
+          y: sleepRating,
+        })),
         borderColor: selectedAthlete.sleepColor,
         backgroundColor: `${selectedAthlete.sleepColor
           .replace("rgb", "rgba")
@@ -166,10 +167,13 @@ export default function StatisticsPage() {
       });
     }
 
-    if (visibleMetrics.day && yAxisMetric !== "date") {
+    if (visibleMetrics.day) {
       datasets.push({
         label: `${selectedAthlete.name} · dagskattning`,
-        data: selectedAthlete.dayRatings,
+        data: selectedAthlete.dayRatings.map((dayRating, index) => ({
+          x: getXAxisValue(index),
+          y: dayRating,
+        })),
         borderColor: selectedAthlete.dayColor,
         backgroundColor: "transparent",
         tension: 0,
@@ -179,24 +183,31 @@ export default function StatisticsPage() {
       });
     }
 
-    return { labels: novemberLabels, datasets };
-  }, [selectedAthlete, visibleMetrics.day, visibleMetrics.sleep, yAxisMetric]);
+    return { datasets };
+  }, [selectedAthlete, visibleMetrics.day, visibleMetrics.sleep, xAxisMetric]);
+
+  const xAxisTitle = useMemo(() => {
+    if (xAxisMetric === "date") return "Datum (dag i november)";
+    if (xAxisMetric === "sleep") return "Sömnskattning (1-10)";
+    return "Dagskattning (1-10)";
+  }, [xAxisMetric]);
+
+  const { xMin, xMax } = useMemo(() => {
+    if (xAxisMetric === "date") {
+      return { xMin: 1, xMax: 30 };
+    }
+
+    return { xMin: 1, xMax: 10 };
+  }, [xAxisMetric]);
 
   const yAxisTitle = useMemo(() => {
-    if (yAxisMetric === "date") return "Datum (dag i november)";
     if (visibleMetrics.sleep && visibleMetrics.day) return "Skattning (sömn & dag)";
     if (visibleMetrics.sleep) return "Sömnskattning (1-10)";
     if (visibleMetrics.day) return "Dagskattning (1-10)";
     return "Ingen skattning vald";
-  }, [visibleMetrics.day, visibleMetrics.sleep, yAxisMetric]);
+  }, [visibleMetrics.day, visibleMetrics.sleep]);
 
-  const { yMin, yMax } = useMemo(() => {
-    if (yAxisMetric === "date") {
-      return { yMin: 1, yMax: 30 };
-    }
-
-    return { yMin: 1, yMax: 10 };
-  }, [yAxisMetric]);
+  const { yMin, yMax } = useMemo(() => ({ yMin: 1, yMax: 10 }), []);
 
   const chartOptions = useMemo(() => {
     return {
@@ -212,12 +223,22 @@ export default function StatisticsPage() {
         tooltip: {
           callbacks: {
             label: (context: TooltipItem<"line">) =>
-              `${context.dataset.label}: ${context.formattedValue}`,
+              `${context.dataset.label}: (x: ${context.parsed.x}, y: ${context.formattedValue})`,
           },
         },
       },
       scales: {
         x: {
+          type: "linear" as const,
+          min: xMin,
+          max: xMax,
+          title: {
+            display: true,
+            text: `X-axel: ${xAxisTitle}`,
+          },
+          ticks: {
+            stepSize: 1,
+          },
           grid: {
             display: false,
           },
@@ -229,13 +250,13 @@ export default function StatisticsPage() {
             stepSize: 1,
           },
           title: {
-            display: yAxisMetric === "date" || visibleMetrics.day || visibleMetrics.sleep,
+            display: visibleMetrics.day || visibleMetrics.sleep,
             text: yAxisTitle,
           },
         },
       },
     };
-  }, [visibleMetrics.day, visibleMetrics.sleep, yAxisMetric, yAxisTitle, yMax, yMin]);
+  }, [visibleMetrics.day, visibleMetrics.sleep, xAxisTitle, xMax, xMin, yAxisTitle, yMax, yMin]);
 
   const handleToggleMetric = (metric: keyof VisibleMetrics) => {
     setVisibleMetrics((prev) => ({ ...prev, [metric]: !prev[metric] }));
@@ -295,18 +316,18 @@ export default function StatisticsPage() {
           </div>
 
           <div className="flex flex-wrap items-center gap-3">
-            <label className="text-sm text-base-content/70" htmlFor="y-axis-select">
-              Y-axel data
+            <label className="text-sm text-base-content/70" htmlFor="x-axis-select">
+              X-axel data
             </label>
             <select
-              id="y-axis-select"
+              id="x-axis-select"
               className="select select-bordered select-sm"
-              value={yAxisMetric}
-              onChange={(event) => setYAxisMetric(event.target.value as "date" | "sleep" | "day")}
+              value={xAxisMetric}
+              onChange={(event) => setXAxisMetric(event.target.value as "date" | "sleep" | "day")}
             >
+              <option value="date">Datum</option>
               <option value="sleep">Sömnskattning</option>
               <option value="day">Skattning av dag</option>
-              <option value="date">Datum</option>
             </select>
           </div>
 
@@ -318,7 +339,6 @@ export default function StatisticsPage() {
                 type="checkbox"
                 className="checkbox checkbox-sm"
                 checked={visibleMetrics.sleep}
-                disabled={yAxisMetric === "date"}
                 onChange={() => handleToggleMetric("sleep")}
               />
             </label>
@@ -328,7 +348,6 @@ export default function StatisticsPage() {
                 type="checkbox"
                 className="checkbox checkbox-sm"
                 checked={visibleMetrics.day}
-                disabled={yAxisMetric === "date"}
                 onChange={() => handleToggleMetric("day")}
               />
             </label>
