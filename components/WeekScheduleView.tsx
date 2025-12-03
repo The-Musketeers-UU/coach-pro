@@ -35,6 +35,13 @@ type LocalComment = {
   createdAt: string;
 };
 
+type PerformanceEntry = {
+  id: string;
+  time: string;
+  performance: string;
+  recordedAt: string;
+};
+
 type SelectedModuleState = {
   module: ProgramModule;
   key: string;
@@ -46,6 +53,7 @@ type WeekScheduleViewProps = {
   title?: string;
   emptyWeekTitle?: string;
   emptyWeekDescription?: string;
+  viewerRole?: "coach" | "athlete";
 };
 
 const formatDuration = (minutes?: number, seconds?: number) => {
@@ -71,6 +79,7 @@ export function WeekScheduleView({
   title,
   emptyWeekTitle = "Inget program",
   emptyWeekDescription = "Ingen data for veckan.",
+  viewerRole = "coach",
 }: WeekScheduleViewProps) {
   const [selectedModule, setSelectedModule] = useState<SelectedModuleState | null>(
     null,
@@ -79,6 +88,15 @@ export function WeekScheduleView({
   const [commentsByModule, setCommentsByModule] = useState<
     Record<string, LocalComment[]>
   >({});
+  const [performanceEntriesByModule, setPerformanceEntriesByModule] = useState<
+    Record<string, PerformanceEntry[]>
+  >({});
+  const [performanceDraft, setPerformanceDraft] = useState({
+    time: "",
+    performance: "",
+  });
+
+  const isCoach = viewerRole === "coach";
 
   const heading =
     title ??
@@ -88,6 +106,9 @@ export function WeekScheduleView({
 
   const selectedComments = selectedModule
     ? commentsByModule[selectedModule.key] ?? []
+    : [];
+  const selectedPerformanceEntries = selectedModule
+    ? performanceEntriesByModule[selectedModule.key] ?? []
     : [];
 
   const handleAddComment = () => {
@@ -111,6 +132,31 @@ export function WeekScheduleView({
     });
 
     setCommentDraft("");
+  };
+
+  const handleAddPerformanceEntry = () => {
+    if (!selectedModule) return;
+
+    const timeValue = performanceDraft.time.trim();
+    const performanceValue = performanceDraft.performance.trim();
+    if (!timeValue || !performanceValue) return;
+
+    const newEntry: PerformanceEntry = {
+      id: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+      time: timeValue,
+      performance: performanceValue,
+      recordedAt: new Date().toISOString(),
+    };
+
+    setPerformanceEntriesByModule((prev) => {
+      const existing = prev[selectedModule.key] ?? [];
+      return {
+        ...prev,
+        [selectedModule.key]: [...existing, newEntry],
+      };
+    });
+
+    setPerformanceDraft({ time: "", performance: "" });
   };
 
   return (
@@ -149,6 +195,7 @@ export function WeekScheduleView({
                         const moduleKey = module.id ?? `${day.id}-${index}`;
                         setSelectedModule({ module, key: moduleKey });
                         setCommentDraft("");
+                        setPerformanceDraft({ time: "", performance: "" });
                       }}
                       className="group w-full text-left"
                     >
@@ -267,6 +314,94 @@ export function WeekScheduleView({
                   </p>
                 </div>
               </div>
+            </div>
+
+            <div className="space-y-3 rounded-2xl border border-base-300 bg-base-100 p-4">
+              <div className="flex items-center justify-between gap-2">
+                <div>
+                  <p className="text-xs uppercase tracking-wide text-neutral">
+                    Prestationslogg
+                  </p>
+                  <p className="text-xs text-base-content/70">
+                    {isCoach
+                      ? "Lägg till tider och prestationer for detta pass."
+                      : "Visar registrerade prestationer från coacher."}
+                  </p>
+                </div>
+              </div>
+
+              <div className="space-y-2 max-h-44 overflow-y-auto">
+                {selectedPerformanceEntries.length === 0 ? (
+                  <p className="text-xs text-base-content/60">
+                    Inga prestationer registrerade än.
+                  </p>
+                ) : (
+                  selectedPerformanceEntries.map((entry) => (
+                    <div
+                      key={entry.id}
+                      className="rounded-lg border border-base-200 bg-base-100/80 p-2 text-sm"
+                    >
+                      <p className="text-xs text-base-content/60">
+                        {new Date(entry.recordedAt).toLocaleString()}
+                      </p>
+                      <div className="flex items-center justify-between text-sm font-semibold text-base-content">
+                        <span>Tid: {entry.time}</span>
+                        <span>Prestation: {entry.performance}</span>
+                      </div>
+                    </div>
+                  ))
+                )}
+              </div>
+
+              {isCoach && (
+                <div className="space-y-2 rounded-lg border border-dashed border-base-200 bg-base-100/60 p-3">
+                  <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+                    <label className="form-control">
+                      <span className="label-text text-xs">Tid</span>
+                      <input
+                        type="text"
+                        className="input input-bordered input-sm"
+                        placeholder="00:00"
+                        value={performanceDraft.time}
+                        onChange={(event) =>
+                          setPerformanceDraft((prev) => ({
+                            ...prev,
+                            time: event.target.value,
+                          }))
+                        }
+                      />
+                    </label>
+                    <label className="form-control">
+                      <span className="label-text text-xs">Prestation</span>
+                      <input
+                        type="text"
+                        className="input input-bordered input-sm"
+                        placeholder="Notering om hur det gick"
+                        value={performanceDraft.performance}
+                        onChange={(event) =>
+                          setPerformanceDraft((prev) => ({
+                            ...prev,
+                            performance: event.target.value,
+                          }))
+                        }
+                      />
+                    </label>
+                  </div>
+                  <div className="flex justify-end">
+                    <button
+                      className="btn btn-primary btn-sm"
+                      onClick={handleAddPerformanceEntry}
+                      disabled={
+                        !performanceDraft.time.trim() ||
+                        !performanceDraft.performance.trim()
+                      }
+                      type="button"
+                    >
+                      Lägg till registrering
+                    </button>
+                  </div>
+                </div>
+              )}
             </div>
 
             <div className="space-y-3 rounded-2xl border border-base-300 bg-base-100 p-4">
