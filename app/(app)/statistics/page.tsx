@@ -34,8 +34,10 @@ type AthleteSleepData = {
   name: string;
   sleepColor: string;
   dayColor: string;
+  runColor: string;
   sleepRatings: number[];
   dayRatings: number[];
+  runningTimes: number[];
 };
 
 const athleteSleepData: AthleteSleepData[] = [
@@ -44,6 +46,7 @@ const athleteSleepData: AthleteSleepData[] = [
     name: "Elin Berg",
     sleepColor: "rgb(79, 70, 229)",
     dayColor: "rgb(249, 115, 22)",
+    runColor: "rgb(34, 197, 94)",
     sleepRatings: [
       8, 7, 9, 6, 8, 7, 10, 9, 5, 6,
       8, 7, 9, 8, 6, 7, 9, 10, 8, 6,
@@ -54,12 +57,18 @@ const athleteSleepData: AthleteSleepData[] = [
       7, 6, 5, 7, 8, 9, 6, 5, 7, 8,
       6, 7, 5, 6, 8, 9, 7, 6, 5, 7,
     ],
+    runningTimes: [
+      42, 45, 39, 50, 47, 44, 41, 53, 48, 46,
+      43, 49, 37, 52, 45, 47, 40, 55, 44, 46,
+      42, 51, 43, 49, 38, 54, 46, 48, 41, 50,
+    ],
   },
   {
     id: "amir-sjostrom",
     name: "Amir Sjöström",
     sleepColor: "rgb(14, 165, 233)",
     dayColor: "rgb(16, 185, 129)",
+    runColor: "rgb(220, 38, 38)",
     sleepRatings: [
       5, 6, 7, 8, 7, 6, 5, 9, 8, 7,
       6, 5, 7, 8, 9, 6, 5, 7, 8, 9,
@@ -70,12 +79,18 @@ const athleteSleepData: AthleteSleepData[] = [
       9, 7, 6, 5, 7, 8, 9, 7, 6, 5,
       7, 8, 6, 5, 7, 8, 9, 7, 6, 5,
     ],
+    runningTimes: [
+      55, 52, 58, 50, 57, 54, 60, 53, 49, 56,
+      59, 51, 57, 54, 61, 52, 58, 50, 55, 57,
+      53, 59, 52, 56, 60, 54, 58, 51, 57, 55,
+    ],
   },
   {
     id: "hanna-lind",
     name: "Hanna Lind",
     sleepColor: "rgb(52, 211, 153)",
     dayColor: "rgb(239, 68, 68)",
+    runColor: "rgb(2, 132, 199)",
     sleepRatings: [
       10, 9, 8, 7, 6, 8, 9, 10, 7, 6,
       8, 9, 10, 7, 6, 5, 9, 8, 7, 6,
@@ -86,13 +101,21 @@ const athleteSleepData: AthleteSleepData[] = [
       7, 8, 6, 5, 4, 6, 7, 8, 6, 5,
       4, 6, 7, 8, 6, 5, 4, 6, 7, 8,
     ],
+    runningTimes: [
+      48, 46, 50, 44, 52, 47, 45, 49, 43, 51,
+      46, 54, 42, 50, 45, 53, 44, 52, 47, 49,
+      43, 50, 46, 52, 44, 51, 45, 53, 47, 49,
+    ],
   },
 ];
 
 type VisibleMetrics = {
   sleep: boolean;
   day: boolean;
+  run: boolean;
 };
+
+type AxisMetric = "date" | "sleep" | "day" | "run";
 
 export default function StatisticsPage() {
   const router = useRouter();
@@ -103,10 +126,10 @@ export default function StatisticsPage() {
   const [visibleMetrics, setVisibleMetrics] = useState<VisibleMetrics>({
     sleep: true,
     day: true,
+    run: false,
   });
-  const [xAxisMetric, setXAxisMetric] = useState<"date" | "sleep" | "day">(
-    "date",
-  );
+  const [xAxisMetric, setXAxisMetric] = useState<AxisMetric>("date");
+  const [yAxisMetric, setYAxisMetric] = useState<AxisMetric>("sleep");
 
   useEffect(() => {
     if (isLoading || isLoadingProfile) return;
@@ -131,10 +154,11 @@ export default function StatisticsPage() {
       return { datasets: [] };
     }
 
-    const getXAxisValue = (index: number) => {
-      if (xAxisMetric === "date") return index + 1;
-      if (xAxisMetric === "sleep") return selectedAthlete.sleepRatings[index];
-      return selectedAthlete.dayRatings[index];
+    const getMetricValue = (metric: AxisMetric, index: number) => {
+      if (metric === "date") return index + 1;
+      if (metric === "sleep") return selectedAthlete.sleepRatings[index];
+      if (metric === "day") return selectedAthlete.dayRatings[index];
+      return selectedAthlete.runningTimes[index];
     };
 
     const datasets = [] as {
@@ -152,9 +176,9 @@ export default function StatisticsPage() {
     if (visibleMetrics.sleep) {
       datasets.push({
         label: `${selectedAthlete.name} · sömnskattning`,
-        data: selectedAthlete.sleepRatings.map((sleepRating, index) => ({
-          x: getXAxisValue(index),
-          y: sleepRating,
+        data: selectedAthlete.sleepRatings.map((_, index) => ({
+          x: getMetricValue(xAxisMetric, index),
+          y: getMetricValue(yAxisMetric, index),
         })),
         borderColor: selectedAthlete.sleepColor,
         backgroundColor: `${selectedAthlete.sleepColor
@@ -170,9 +194,9 @@ export default function StatisticsPage() {
     if (visibleMetrics.day) {
       datasets.push({
         label: `${selectedAthlete.name} · dagskattning`,
-        data: selectedAthlete.dayRatings.map((dayRating, index) => ({
-          x: getXAxisValue(index),
-          y: dayRating,
+        data: selectedAthlete.dayRatings.map((_, index) => ({
+          x: getMetricValue(xAxisMetric, index),
+          y: getMetricValue(yAxisMetric, index),
         })),
         borderColor: selectedAthlete.dayColor,
         backgroundColor: "transparent",
@@ -183,31 +207,55 @@ export default function StatisticsPage() {
       });
     }
 
+    if (visibleMetrics.run) {
+      datasets.push({
+        label: `${selectedAthlete.name} · löpartid`,
+        data: selectedAthlete.runningTimes.map((_, index) => ({
+          x: getMetricValue(xAxisMetric, index),
+          y: getMetricValue(yAxisMetric, index),
+        })),
+        borderColor: selectedAthlete.runColor,
+        backgroundColor: `${selectedAthlete.runColor
+          .replace("rgb", "rgba")
+          .replace(")", ", 0.12)")}`,
+        tension: 0,
+        fill: false,
+        pointRadius: 4,
+        pointHoverRadius: 6,
+        borderDash: [2, 6],
+      });
+    }
+
     return { datasets };
-  }, [selectedAthlete, visibleMetrics.day, visibleMetrics.sleep, xAxisMetric]);
+  }, [selectedAthlete, visibleMetrics.day, visibleMetrics.run, visibleMetrics.sleep, xAxisMetric, yAxisMetric]);
 
   const xAxisTitle = useMemo(() => {
     if (xAxisMetric === "date") return "Datum (dag i november)";
     if (xAxisMetric === "sleep") return "Sömnskattning (1-10)";
-    return "Dagskattning (1-10)";
+    if (xAxisMetric === "day") return "Dagskattning (1-10)";
+    return "Löpartid (minuter)";
   }, [xAxisMetric]);
 
+  const yAxisTitle = useMemo(() => {
+    if (yAxisMetric === "date") return "Datum (dag i november)";
+    if (yAxisMetric === "sleep") return "Sömnskattning (1-10)";
+    if (yAxisMetric === "day") return "Dagskattning (1-10)";
+    return "Löpartid (minuter)";
+  }, [yAxisMetric]);
+
   const { xMin, xMax } = useMemo(() => {
-    if (xAxisMetric === "date") {
-      return { xMin: 1, xMax: 30 };
-    }
+    if (xAxisMetric === "date") return { xMin: 1, xMax: 30 };
+    if (xAxisMetric === "run") return { xMin: 35, xMax: 65 };
 
     return { xMin: 1, xMax: 10 };
   }, [xAxisMetric]);
 
-  const yAxisTitle = useMemo(() => {
-    if (visibleMetrics.sleep && visibleMetrics.day) return "Skattning (sömn & dag)";
-    if (visibleMetrics.sleep) return "Sömnskattning (1-10)";
-    if (visibleMetrics.day) return "Dagskattning (1-10)";
-    return "Ingen skattning vald";
-  }, [visibleMetrics.day, visibleMetrics.sleep]);
+  const { yMin, yMax } = useMemo(() => {
+    if (yAxisMetric === "date") return { yMin: 1, yMax: 30 };
+    if (yAxisMetric === "run") return { yMin: 35, yMax: 65 };
 
-  const { yMin, yMax } = useMemo(() => ({ yMin: 1, yMax: 10 }), []);
+    return { yMin: 1, yMax: 10 };
+  }, [yAxisMetric]);
 
   const chartOptions = useMemo(() => {
     return {
@@ -223,7 +271,7 @@ export default function StatisticsPage() {
         tooltip: {
           callbacks: {
             label: (context: TooltipItem<"line">) =>
-              `${context.dataset.label}: (x: ${context.parsed.x}, y: ${context.formattedValue})`,
+              `${context.dataset.label}: (x: ${context.parsed.x}, y: ${context.parsed.y})`,
           },
         },
       },
@@ -250,13 +298,13 @@ export default function StatisticsPage() {
             stepSize: 1,
           },
           title: {
-            display: visibleMetrics.day || visibleMetrics.sleep,
+            display: true,
             text: yAxisTitle,
           },
         },
       },
     };
-  }, [visibleMetrics.day, visibleMetrics.sleep, xAxisTitle, xMax, xMin, yAxisTitle, yMax, yMin]);
+  }, [xAxisTitle, xMax, xMin, yAxisTitle, yMax, yMin]);
 
   const handleToggleMetric = (metric: keyof VisibleMetrics) => {
     setVisibleMetrics((prev) => ({ ...prev, [metric]: !prev[metric] }));
@@ -315,24 +363,44 @@ export default function StatisticsPage() {
             </select>
           </div>
 
-          <div className="flex flex-wrap items-center gap-3">
-            <label className="text-sm text-base-content/70" htmlFor="x-axis-select">
-              X-axel data
-            </label>
-            <select
-              id="x-axis-select"
-              className="select select-bordered select-sm"
-              value={xAxisMetric}
-              onChange={(event) => setXAxisMetric(event.target.value as "date" | "sleep" | "day")}
-            >
-              <option value="date">Datum</option>
-              <option value="sleep">Sömnskattning</option>
-              <option value="day">Skattning av dag</option>
-            </select>
+          <div className="flex flex-wrap items-center gap-4">
+            <div className="flex items-center gap-2">
+              <label className="text-sm text-base-content/70" htmlFor="x-axis-select">
+                X-axel
+              </label>
+              <select
+                id="x-axis-select"
+                className="select select-bordered select-sm"
+                value={xAxisMetric}
+                onChange={(event) => setXAxisMetric(event.target.value as AxisMetric)}
+              >
+                <option value="date">Datum</option>
+                <option value="sleep">Sömnskattning</option>
+                <option value="day">Skattning av dag</option>
+                <option value="run">Löpartid</option>
+              </select>
+            </div>
+
+            <div className="flex items-center gap-2">
+              <label className="text-sm text-base-content/70" htmlFor="y-axis-select">
+                Y-axel
+              </label>
+              <select
+                id="y-axis-select"
+                className="select select-bordered select-sm"
+                value={yAxisMetric}
+                onChange={(event) => setYAxisMetric(event.target.value as AxisMetric)}
+              >
+                <option value="date">Datum</option>
+                <option value="sleep">Sömnskattning</option>
+                <option value="day">Skattning av dag</option>
+                <option value="run">Löpartid</option>
+              </select>
+            </div>
           </div>
 
           <div className="flex flex-wrap items-center gap-3">
-            <span className="text-sm text-base-content/70">Visa på y-axel:</span>
+            <span className="text-sm text-base-content/70">Visa linjer:</span>
             <label className="label cursor-pointer gap-2">
               <span className="text-sm">Sömn</span>
               <input
@@ -349,6 +417,15 @@ export default function StatisticsPage() {
                 className="checkbox checkbox-sm"
                 checked={visibleMetrics.day}
                 onChange={() => handleToggleMetric("day")}
+              />
+            </label>
+            <label className="label cursor-pointer gap-2">
+              <span className="text-sm">Löpartid</span>
+              <input
+                type="checkbox"
+                className="checkbox checkbox-sm"
+                checked={visibleMetrics.run}
+                onChange={() => handleToggleMetric("run")}
               />
             </label>
           </div>
