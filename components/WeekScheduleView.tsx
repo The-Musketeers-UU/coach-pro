@@ -1,8 +1,14 @@
 "use client";
 
-import { useState } from "react";
+import Link from "next/link";
+import { useEffect, useState } from "react";
 
 import { ModuleBadges } from "@/components/ModuleBadges";
+import {
+  buildModuleSlug,
+  getSyntheticEntriesForModule,
+  type PerformanceEntry,
+} from "@/lib/syntheticPerformance";
 
 export type ProgramModule = {
   id?: string;
@@ -33,13 +39,6 @@ type LocalComment = {
   id: string;
   body: string;
   createdAt: string;
-};
-
-type PerformanceEntry = {
-  id: string;
-  time: string;
-  performance: string;
-  recordedAt: string;
 };
 
 type SelectedModuleState = {
@@ -104,12 +103,38 @@ export function WeekScheduleView({
       ? week.label || `Vecka ${weekNumber}`
       : emptyWeekTitle || `Vecka ${weekNumber}`);
 
+  useEffect(() => {
+    if (!week) return;
+
+    setPerformanceEntriesByModule((previous) => {
+      const next = { ...previous };
+
+      week.days.forEach((day) => {
+        day.modules.forEach((module, moduleIndex) => {
+          const moduleKey = module.id ?? `${day.id}-${moduleIndex}`;
+          if (next[moduleKey]) return;
+
+          const moduleSlug = buildModuleSlug(module, moduleKey);
+          next[moduleKey] = getSyntheticEntriesForModule(
+            moduleSlug,
+            module.title,
+          );
+        });
+      });
+
+      return next;
+    });
+  }, [week]);
+
   const selectedComments = selectedModule
     ? commentsByModule[selectedModule.key] ?? []
     : [];
   const selectedPerformanceEntries = selectedModule
     ? performanceEntriesByModule[selectedModule.key] ?? []
     : [];
+  const selectedModuleSlug = selectedModule
+    ? buildModuleSlug(selectedModule.module, selectedModule.key)
+    : null;
 
   const handleAddComment = () => {
     if (!selectedModule) return;
@@ -328,6 +353,16 @@ export function WeekScheduleView({
                       : "Visar registrerade prestationer från coacher."}
                   </p>
                 </div>
+                {selectedModuleSlug && (
+                  <Link
+                    href={`/modules/${selectedModuleSlug}/progress?title=${encodeURIComponent(
+                      selectedModule.module.title,
+                    )}`}
+                    className="btn btn-outline btn-xs"
+                  >
+                    Jämför atleter
+                  </Link>
+                )}
               </div>
 
               <div className="space-y-2 max-h-44 overflow-y-auto">
