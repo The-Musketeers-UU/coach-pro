@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 
 import { ModuleBadges } from "@/components/ModuleBadges";
 
@@ -63,11 +63,65 @@ export function WeekScheduleView({
   const [selectedModule, setSelectedModule] = useState<ProgramModule | null>(
     null
   );
+  const [selectedDayId, setSelectedDayId] = useState<string | null>(
+    week?.days[0]?.id ?? null
+  );
   const heading =
     title ??
     (week
       ? week.label || `Vecka ${weekNumber}`
       : emptyWeekTitle || `Vecka ${weekNumber}`);
+
+  useEffect(() => {
+    setSelectedDayId(week?.days[0]?.id ?? null);
+  }, [week?.id, week?.days]);
+
+  const selectedDay = useMemo(
+    () => week?.days.find((day) => day.id === selectedDayId),
+    [selectedDayId, week?.days]
+  );
+
+  const renderDayContent = (day: ProgramDay) => (
+    <article
+      key={day.id}
+      className="flex min-h-[600px] flex-col rounded-2xl border border-dashed border-base-200 bg-base-300 p-2"
+    >
+      <div className="flex items-center justify-between">
+        <div>
+          <p className="text-xs font-semibold uppercase tracking-wide text-neutral">
+            {day.label}
+          </p>
+        </div>
+      </div>
+
+      <div className="mt-3 flex-1 space-y-1">
+        {day.modules.map((module, index) => (
+          <button
+            key={`${day.id}-${index}-${module.title}`}
+            type="button"
+            onClick={() => setSelectedModule(module)}
+            className="group w-full text-left"
+          >
+            <div className="space-y-2 rounded-xl border border-base-200 bg-base-100 p-3 transition hover:border-primary focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary">
+              <div className="flex items-start justify-between gap-2">
+                <p className="text-sm font-semibold text-base-content">
+                  {module.title}
+                </p>
+              </div>
+              <p className="text-xs text-base-content/70">{module.description}</p>
+              <ModuleBadges module={module} />
+            </div>
+          </button>
+        ))}
+
+        {day.modules.length === 0 && (
+          <p className="flex min-h-[120px] items-center justify-center rounded-xl border border-dashed border-base-200 bg-base-100/60 p-4 text-center text-xs text-base-content/60">
+            Inga pass schemalagda.
+          </p>
+        )}
+      </div>
+    </article>
+  );
 
   return (
     <div className="card bg-base-200 border border-base-300 shadow-md">
@@ -82,50 +136,40 @@ export function WeekScheduleView({
         </div>
 
         {week ? (
-          <div className="grid grid-cols-1 gap-1 md:grid-cols-2 xl:grid-cols-7">
-            {week.days.map((day) => (
-              <article
-                key={day.id}
-                className="flex min-h-[600px] flex-col rounded-2xl border border-dashed border-base-200 bg-base-300 p-2"
-              >
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-xs font-semibold uppercase tracking-wide text-neutral">
-                      {day.label}
-                    </p>
-                  </div>
-                </div>
+          <div className="space-y-4">
+            {week.days.length > 0 && (
+              <div className="md:hidden -mx-4 sm:-mx-6">
+                <div className="tabs tabs-border tabs-sm w-full">
+                  {week.days.map((day) => {
+                    const inputId = `day-tab-${day.id}`;
+                    const isSelected = selectedDay?.id === day.id;
 
-                <div className="mt-3 flex-1 space-y-1">
-                  {day.modules.map((module, index) => (
-                    <button
-                      key={`${day.id}-${index}-${module.title}`}
-                      type="button"
-                      onClick={() => setSelectedModule(module)}
-                      className="group w-full text-left"
-                    >
-                      <div className="space-y-2 rounded-xl border border-base-200 bg-base-100 p-3 transition hover:border-primary focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary">
-                        <div className="flex items-start justify-between gap-2">
-                          <p className="text-sm font-semibold text-base-content">
-                            {module.title}
-                          </p>
+                    return (
+                      <div key={day.id} className="w-full">
+                        <input
+                          id={inputId}
+                          type="radio"
+                          name="day-tabs"
+                          className="tab relative flex-1 text-transparent before:absolute before:inset-0 before:flex before:items-center before:justify-center before:text-base-content before:content-[attr(data-initial)]"
+                          checked={isSelected}
+                          onChange={() => setSelectedDayId(day.id)}
+                          aria-label={day.label}
+                          data-initial={day.label.slice(0, 1)}
+                          title={day.label}
+                        />
+                        <div className="tab-content border-base-300 bg-base-100 px-4 py-3 sm:px-6">
+                          {renderDayContent(day)}
                         </div>
-                        <p className="text-xs text-base-content/70">
-                          {module.description}
-                        </p>
-                        <ModuleBadges module={module}/>
                       </div>
-                    </button>
-                  ))}
-
-                  {day.modules.length === 0 && (
-                    <p className="flex min-h-[120px] items-center justify-center rounded-xl border border-dashed border-base-200 bg-base-100/60 p-4 text-center text-xs text-base-content/60">
-                      Inga pass schemalagda.
-                    </p>
-                  )}
+                    );
+                  })}
                 </div>
-              </article>
-            ))}
+              </div>
+            )}
+
+            <div className="hidden grid-cols-1 gap-1 md:grid md:grid-cols-2 xl:grid-cols-7">
+              {week.days.map((day) => renderDayContent(day))}
+            </div>
           </div>
         ) : (
           <div className="rounded-2xl border border-dashed border-base-300 bg-base-100/60 p-6 text-center text-sm text-base-content/70">
