@@ -139,40 +139,31 @@ export function WeekScheduleView({
           <div className="space-y-4">
             {week.days.length > 0 && (
               <div className="md:hidden -mx-4 sm:-mx-6">
-                <div className="tabs tabs-boxed tabs-sm w-full gap-2 overflow-x-auto rounded-2xl border border-base-300 bg-base-100 p-2 px-4 sm:px-6">
+                <div className="tabs tabs-border tabs-sm w-full">
                   {week.days.map((day) => {
                     const inputId = `day-tab-${day.id}`;
                     const isSelected = selectedDay?.id === day.id;
 
                     return (
-                      <div key={day.id} className="flex-1">
+                      <div key={day.id} className="w-full">
                         <input
                           id={inputId}
                           type="radio"
                           name="day-tabs"
-                          className="peer sr-only"
+                          className="tab relative flex-1 text-transparent before:absolute before:inset-0 before:flex before:items-center before:justify-center before:text-base-content before:content-[attr(data-initial)]"
                           checked={isSelected}
                           onChange={() => setSelectedDayId(day.id)}
                           aria-label={day.label}
-                        />
-                        <label
-                          htmlFor={inputId}
-                          className="tab tab-sm w-full justify-center whitespace-nowrap rounded-xl px-3 peer-checked:tab-active"
+                          data-initial={day.label.slice(0, 1)}
                           title={day.label}
-                        >
-                          <span aria-hidden>{day.label.slice(0, 1)}</span>
-                          <span className="sr-only">{day.label}</span>
-                        </label>
+                        />
+                        <div className="tab-content border-base-300 bg-base-100 px-4 py-3 sm:px-6">
+                          {renderDayContent(day)}
+                        </div>
                       </div>
                     );
                   })}
                 </div>
-
-                {selectedDay && (
-                  <div className="mt-2 w-full px-4 sm:px-6">
-                    {renderDayContent(selectedDay)}
-                  </div>
-                )}
               </div>
             )}
 
