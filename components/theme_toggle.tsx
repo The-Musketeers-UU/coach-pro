@@ -1,9 +1,19 @@
 "use client";
 
-export function ThemeToggle() {
+type ThemeToggleProps = {
+  compact?: boolean;
+};
+
+export function ThemeToggle({ compact = false }: ThemeToggleProps) {
   return (
     <div className="dropdown">
-      <div tabIndex={0} role="button" className="btn btn-ghost btn-sm rounded-full px-4">
+      <div
+        tabIndex={0}
+        role="button"
+        className={`btn btn-ghost btn-sm rounded-full px-4 ${
+          compact ? "py-0 sm:py-2 min-h-0 h-auto" : ""
+        }`}
+      >
         Färgtema
         <svg
           width="12px"
