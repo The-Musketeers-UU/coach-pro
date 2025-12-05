@@ -2,7 +2,7 @@
 
 export function ThemeToggle() {
   return (
-    <div className="dropdown dropdown-end">
+    <div className="dropdown">
       <div tabIndex={0} role="button" className="btn btn-ghost btn-sm rounded-full px-4">
         Färgtema
         <svg
@@ -18,7 +18,7 @@ export function ThemeToggle() {
 
       <ul
         tabIndex={-1}
-        className="dropdown-content bg-base-300 rounded-box z-50 w-56 p-2 shadow-2xl max-h-[50vh] overflow-y-auto right-0 left-auto"
+        className="dropdown-content bg-base-300 rounded-box z-50 w-56 p-2 shadow-2xl max-h-[50vh] overflow-y-auto left-0 right-auto"
       >
         {/* --- Light & Dark först --- */}
         {[
