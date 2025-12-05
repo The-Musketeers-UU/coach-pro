@@ -139,33 +139,31 @@ export function WeekScheduleView({
           <div className="space-y-4">
             {week.days.length > 0 && (
               <div className="md:hidden -mx-4 sm:-mx-6">
-                <div className="tabs tabs-border tabs-sm flex w-full">
+                <div className="tabs tabs-border tabs-sm w-full">
                   {week.days.map((day) => {
                     const inputId = `day-tab-${day.id}`;
                     const isSelected = selectedDay?.id === day.id;
 
                     return (
-                      <input
-                        key={day.id}
-                        id={inputId}
-                        type="radio"
-                        name="day-tabs"
-                        className="tab relative flex-1 text-transparent before:absolute before:inset-0 before:flex before:items-center before:justify-center before:text-base-content before:content-[attr(data-initial)]"
-                        checked={isSelected}
-                        onChange={() => setSelectedDayId(day.id)}
-                        aria-label={day.label}
-                        data-initial={day.label.slice(0, 1)}
-                        title={day.label}
-                      />
+                      <div key={day.id} className="w-full">
+                        <input
+                          id={inputId}
+                          type="radio"
+                          name="day-tabs"
+                          className="tab relative flex-1 text-transparent before:absolute before:inset-0 before:flex before:items-center before:justify-center before:text-base-content before:content-[attr(data-initial)]"
+                          checked={isSelected}
+                          onChange={() => setSelectedDayId(day.id)}
+                          aria-label={day.label}
+                          data-initial={day.label.slice(0, 1)}
+                          title={day.label}
+                        />
+                        <div className="tab-content border-base-300 bg-base-100 px-4 py-3 sm:px-6">
+                          {renderDayContent(day)}
+                        </div>
+                      </div>
                     );
                   })}
                 </div>
-
-                {selectedDay && (
-                  <div className="tab-content border-base-300 bg-base-100 px-4 py-3 sm:px-6">
-                    {renderDayContent(selectedDay)}
-                  </div>
-                )}
               </div>
             )}
 
