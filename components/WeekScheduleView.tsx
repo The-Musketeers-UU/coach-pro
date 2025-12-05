@@ -138,8 +138,8 @@ export function WeekScheduleView({
         {week ? (
           <div className="space-y-4">
             {week.days.length > 0 && (
-              <div className="md:hidden">
-                <div className="flex w-full items-center gap-2 overflow-x-auto rounded-2xl border border-base-300 bg-base-100 p-2">
+              <div className="md:hidden -mx-4 sm:-mx-6">
+                <div className="flex w-full items-center gap-2 overflow-x-auto rounded-2xl border border-base-300 bg-base-100 p-2 px-4 sm:px-6">
                   {week.days.map((day) => (
                     <button
                       key={day.id}
@@ -158,7 +158,9 @@ export function WeekScheduleView({
                 </div>
 
                 {selectedDay && (
-                  <div className="mt-2 w-full">{renderDayContent(selectedDay)}</div>
+                  <div className="mt-2 w-full px-4 sm:px-6">
+                    {renderDayContent(selectedDay)}
+                  </div>
                 )}
               </div>
             )}
