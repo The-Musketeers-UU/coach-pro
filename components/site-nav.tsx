@@ -49,13 +49,39 @@ export function SiteNav() {
           })}
 
           {user ? (
-            <div className="flex flex-wrap items-center gap-2 rounded-full border border-base-300 bg-base-100 px-3 py-2 text-sm">
-              <div className="flex flex-col leading-tight">
-                <span className="font-semibold text-xs">{user.email}</span>
-              </div>
-              <button className="btn btn-xs btn-ghost" onClick={handleSignOut} disabled={isLoading}>
-                Logga ut
+            <div className="dropdown dropdown-end">
+              <button
+                className="btn btn-sm btn-primary rounded-full"
+                type="button"
+                tabIndex={0}
+                aria-label="Visa kontoinformation"
+              >
+                <i className="ri-account-circle-fill text-lg" aria-hidden="true" />
               </button>
+              <div className="dropdown-content z-[1] mt-3 w-64 rounded-box border border-base-300 bg-base-100 p-4 shadow">
+                <div className="flex flex-col gap-2 text-sm">
+                  <div className="font-semibold">
+                    {profile?.name?.split(" ")[0] ?? user.email}
+                    {profile?.name?.includes(" ") && (
+                      <>
+                        {" "}
+                        {profile.name.split(" ").slice(1).join(" ")}
+                      </>
+                    )}
+                  </div>
+                  <div className="text-xs text-base-content/70">{user.email}</div>
+                  <div className="badge badge-outline w-fit">
+                    {profile?.isCoach ? "Coach" : "Inte coach"}
+                  </div>
+                  <button
+                    className="btn btn-sm btn-ghost justify-start"
+                    onClick={handleSignOut}
+                    disabled={isLoading}
+                  >
+                    Logga ut
+                  </button>
+                </div>
+              </div>
             </div>
           ) : (
             <Link
