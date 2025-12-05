@@ -139,22 +139,33 @@ export function WeekScheduleView({
           <div className="space-y-4">
             {week.days.length > 0 && (
               <div className="md:hidden -mx-4 sm:-mx-6">
-                <div className="flex w-full items-center gap-2 overflow-x-auto rounded-2xl border border-base-300 bg-base-100 p-2 px-4 sm:px-6">
-                  {week.days.map((day) => (
-                    <button
-                      key={day.id}
-                      type="button"
-                      onClick={() => setSelectedDayId(day.id)}
-                      className={`btn btn-sm w-full flex-1 whitespace-nowrap ${
-                        selectedDay?.id === day.id
-                          ? "btn-primary"
-                          : "btn-ghost"
-                      }`}
-                    >
-                      <span aria-hidden>{day.label.slice(0, 1)}</span>
-                      <span className="sr-only">{day.label}</span>
-                    </button>
-                  ))}
+                <div className="tabs tabs-boxed tabs-sm w-full gap-2 overflow-x-auto rounded-2xl border border-base-300 bg-base-100 p-2 px-4 sm:px-6">
+                  {week.days.map((day) => {
+                    const inputId = `day-tab-${day.id}`;
+                    const isSelected = selectedDay?.id === day.id;
+
+                    return (
+                      <div key={day.id} className="flex-1">
+                        <input
+                          id={inputId}
+                          type="radio"
+                          name="day-tabs"
+                          className="peer sr-only"
+                          checked={isSelected}
+                          onChange={() => setSelectedDayId(day.id)}
+                          aria-label={day.label}
+                        />
+                        <label
+                          htmlFor={inputId}
+                          className="tab tab-sm w-full justify-center whitespace-nowrap rounded-xl px-3 peer-checked:tab-active"
+                          title={day.label}
+                        >
+                          <span aria-hidden>{day.label.slice(0, 1)}</span>
+                          <span className="sr-only">{day.label}</span>
+                        </label>
+                      </div>
+                    );
+                  })}
                 </div>
 
                 {selectedDay && (
