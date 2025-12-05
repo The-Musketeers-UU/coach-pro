@@ -56,7 +56,15 @@ export function SiteNav() {
                 tabIndex={0}
                 aria-label="Visa kontoinformation"
               >
-                <i className="ri-account-circle-fill text-lg" aria-hidden="true" />
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  viewBox="0 0 24 24"
+                  fill="currentColor"
+                  className="h-5 w-5"
+                  aria-hidden="true"
+                >
+                  <path d="M12 2C17.52 2 22 6.48 22 12C22 17.52 17.52 22 12 22C6.48 22 2 17.52 2 12C2 6.48 6.48 2 12 2ZM6.02332 15.4163C7.49083 17.6069 9.69511 19 12.1597 19C14.6243 19 16.8286 17.6069 18.2961 15.4163C16.6885 13.9172 14.5312 13 12.1597 13C9.78821 13 7.63095 13.9172 6.02332 15.4163ZM12 11C13.6569 11 15 9.65685 15 8C15 6.34315 13.6569 5 12 5C10.3431 5 9 6.34315 9 8C9 9.65685 10.3431 11 12 11Z" />
+                </svg>
               </button>
               <div className="dropdown-content z-[1] mt-3 w-64 rounded-box border border-base-300 bg-base-100 p-4 shadow">
                 <div className="flex flex-col gap-2 text-sm">
@@ -71,7 +79,7 @@ export function SiteNav() {
                   </div>
                   <div className="text-xs text-base-content/70">{user.email}</div>
                   <div className="badge badge-outline w-fit">
-                    {profile?.isCoach ? "Coach" : "Inte coach"}
+                    {profile?.isCoach ? "Coach" : "Atlet"}
                   </div>
                   <button
                     className="btn btn-sm btn-ghost justify-start"
