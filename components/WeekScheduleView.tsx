@@ -139,25 +139,26 @@ export function WeekScheduleView({
           <div className="space-y-4">
             {week.days.length > 0 && (
               <div className="md:hidden">
-                <div className="flex items-center gap-2 overflow-x-auto rounded-2xl border border-base-300 bg-base-100 p-2">
+                <div className="flex w-full items-center gap-2 overflow-x-auto rounded-2xl border border-base-300 bg-base-100 p-2">
                   {week.days.map((day) => (
                     <button
                       key={day.id}
                       type="button"
                       onClick={() => setSelectedDayId(day.id)}
-                      className={`btn btn-sm flex-1 whitespace-nowrap ${
+                      className={`btn btn-sm w-full flex-1 whitespace-nowrap ${
                         selectedDay?.id === day.id
                           ? "btn-primary"
                           : "btn-ghost"
                       }`}
                     >
-                      {day.label}
+                      <span aria-hidden>{day.label.slice(0, 1)}</span>
+                      <span className="sr-only">{day.label}</span>
                     </button>
                   ))}
                 </div>
 
                 {selectedDay && (
-                  <div className="mt-2">{renderDayContent(selectedDay)}</div>
+                  <div className="mt-2 w-full">{renderDayContent(selectedDay)}</div>
                 )}
               </div>
             )}
