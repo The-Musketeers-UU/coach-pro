@@ -18,7 +18,7 @@ export function ThemeToggle() {
 
       <ul
         tabIndex={-1}
-        className="dropdown-content bg-base-300 rounded-box z-50 w-56 p-2 shadow-2xl max-h-[50vh] overflow-y-auto"
+        className="dropdown-content bg-base-300 rounded-box z-50 w-56 p-2 shadow-2xl max-h-[50vh] overflow-y-auto right-0 left-auto"
       >
         {/* --- Light & Dark först --- */}
         {[
