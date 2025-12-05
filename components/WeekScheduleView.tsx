@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 
 import { ModuleBadges } from "@/components/ModuleBadges";
 
@@ -63,11 +63,65 @@ export function WeekScheduleView({
   const [selectedModule, setSelectedModule] = useState<ProgramModule | null>(
     null
   );
+  const [selectedDayId, setSelectedDayId] = useState<string | null>(
+    week?.days[0]?.id ?? null
+  );
   const heading =
     title ??
     (week
       ? week.label || `Vecka ${weekNumber}`
       : emptyWeekTitle || `Vecka ${weekNumber}`);
+
+  useEffect(() => {
+    setSelectedDayId(week?.days[0]?.id ?? null);
+  }, [week?.id, week?.days]);
+
+  const selectedDay = useMemo(
+    () => week?.days.find((day) => day.id === selectedDayId),
+    [selectedDayId, week?.days]
+  );
+
+  const renderDayContent = (day: ProgramDay) => (
+    <article
+      key={day.id}
+      className="flex min-h-[600px] flex-col rounded-2xl border border-dashed border-base-200 bg-base-300 p-2"
+    >
+      <div className="flex items-center justify-between">
+        <div>
+          <p className="text-xs font-semibold uppercase tracking-wide text-neutral">
+            {day.label}
+          </p>
+        </div>
+      </div>
+
+      <div className="mt-3 flex-1 space-y-1">
+        {day.modules.map((module, index) => (
+          <button
+            key={`${day.id}-${index}-${module.title}`}
+            type="button"
+            onClick={() => setSelectedModule(module)}
+            className="group w-full text-left"
+          >
+            <div className="space-y-2 rounded-xl border border-base-200 bg-base-100 p-3 transition hover:border-primary focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary">
+              <div className="flex items-start justify-between gap-2">
+                <p className="text-sm font-semibold text-base-content">
+                  {module.title}
+                </p>
+              </div>
+              <p className="text-xs text-base-content/70">{module.description}</p>
+              <ModuleBadges module={module} />
+            </div>
+          </button>
+        ))}
+
+        {day.modules.length === 0 && (
+          <p className="flex min-h-[120px] items-center justify-center rounded-xl border border-dashed border-base-200 bg-base-100/60 p-4 text-center text-xs text-base-content/60">
+            Inga pass schemalagda.
+          </p>
+        )}
+      </div>
+    </article>
+  );
 
   return (
     <div className="card bg-base-200 border border-base-300 shadow-md">
@@ -82,50 +136,35 @@ export function WeekScheduleView({
         </div>
 
         {week ? (
-          <div className="grid grid-cols-1 gap-1 md:grid-cols-2 xl:grid-cols-7">
-            {week.days.map((day) => (
-              <article
-                key={day.id}
-                className="flex min-h-[600px] flex-col rounded-2xl border border-dashed border-base-200 bg-base-300 p-2"
-              >
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-xs font-semibold uppercase tracking-wide text-neutral">
-                      {day.label}
-                    </p>
-                  </div>
-                </div>
-
-                <div className="mt-3 flex-1 space-y-1">
-                  {day.modules.map((module, index) => (
+          <div className="space-y-4">
+            {week.days.length > 0 && (
+              <div className="md:hidden">
+                <div className="flex items-center gap-2 overflow-x-auto rounded-2xl border border-base-300 bg-base-100 p-2">
+                  {week.days.map((day) => (
                     <button
-                      key={`${day.id}-${index}-${module.title}`}
+                      key={day.id}
                       type="button"
-                      onClick={() => setSelectedModule(module)}
-                      className="group w-full text-left"
+                      onClick={() => setSelectedDayId(day.id)}
+                      className={`btn btn-sm flex-1 whitespace-nowrap ${
+                        selectedDay?.id === day.id
+                          ? "btn-primary"
+                          : "btn-ghost"
+                      }`}
                     >
-                      <div className="space-y-2 rounded-xl border border-base-200 bg-base-100 p-3 transition hover:border-primary focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary">
-                        <div className="flex items-start justify-between gap-2">
-                          <p className="text-sm font-semibold text-base-content">
-                            {module.title}
-                          </p>
-                        </div>
-                        <p className="text-xs text-base-content/70">
-                          {module.description}
-                        </p>
-                        <ModuleBadges module={module}/>
-                      </div>
+                      {day.label}
                     </button>
                   ))}
-
-                  {day.modules.length === 0 && (
-                    <p className="flex min-h-[120px] items-center justify-center rounded-xl border border-dashed border-base-200 bg-base-100/60 p-4 text-center text-xs text-base-content/60">
-                      Inga pass schemalagda.
-                    </p>
-                  )}
                 </div>
-              </article>
-            ))}
+
+                {selectedDay && (
+                  <div className="mt-2">{renderDayContent(selectedDay)}</div>
+                )}
+              </div>
+            )}
+
+            <div className="hidden grid-cols-1 gap-1 md:grid md:grid-cols-2 xl:grid-cols-7">
+              {week.days.map((day) => renderDayContent(day))}
+            </div>
           </div>
         ) : (
           <div className="rounded-2xl border border-dashed border-base-300 bg-base-100/60 p-6 text-center text-sm text-base-content/70">
