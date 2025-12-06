@@ -1,6 +1,7 @@
 import type { User as SupabaseAuthUser } from "@supabase/supabase-js";
 
 import { supabaseRequest } from "./client";
+import { supabase } from '@/lib/supabase';
 
 export type ModuleRow = {
   id: string;
@@ -443,18 +444,31 @@ export const createUser = async (input: CreateUserInput): Promise<AthleteRow> =>
   return data[0];
 };
 
-export const findUserByEmail = async (email: string): Promise<AthleteRow | null> => {
-  const users = await supabaseRequest<AthleteRow[]>("user", {
-    searchParams: {
-      select: "id,name,email,isCoach",
-      email: `eq.${email}`,
-      limit: "1",
-    },
-  });
+export const findUserByEmail = async (
+  email: string,
+  options?: { accessToken?: string },
+): Promise<AthleteRow | null> => {
+  console.log("🔍 Finding user by email:", email);
 
-  return users[0] ?? null;
+  try {
+    const users = await supabaseRequest<AthleteRow[]>("user", {
+      searchParams: {
+        select: "id,name,email,isCoach",
+        email: `eq.${email}`,
+        limit: "1",
+      },
+      accessToken: options?.accessToken,
+    });
+
+    console.log("✅ Users found:", users);
+    console.log("📊 Number of users:", users?.length);
+
+    return users[0] ?? null;
+  } catch (error) {
+    console.error("❌ Error finding user by email:", error);
+    throw error;
+  }
 };
-
 export const ensureUserForAuth = async (
   authUser: SupabaseAuthUser,
 ): Promise<AthleteRow> => {

@@ -9,6 +9,12 @@ import {
   getSyntheticEntriesForModule,
   type PerformanceEntry,
 } from "@/lib/syntheticPerformance";
+import {
+  createModuleComment,
+  getCommentsForModule,
+  updateModuleComment,
+  type ModuleCommentRow,
+} from "@/lib/supabase/comments";
 
 export type ProgramModule = {
   id?: string;
@@ -35,12 +41,6 @@ export type ProgramWeek = {
   days: ProgramDay[];
 };
 
-type LocalComment = {
-  id: string;
-  body: string;
-  createdAt: string;
-};
-
 type SelectedModuleState = {
   module: ProgramModule;
   key: string;
@@ -53,6 +53,8 @@ type WeekScheduleViewProps = {
   emptyWeekTitle?: string;
   emptyWeekDescription?: string;
   viewerRole?: "coach" | "athlete";
+  athleteId?: string;
+  coachId?: string;
 };
 
 const formatDuration = (minutes?: number, seconds?: number) => {
@@ -79,14 +81,22 @@ export function WeekScheduleView({
   emptyWeekTitle = "Inget program",
   emptyWeekDescription = "Ingen data for veckan.",
   viewerRole = "coach",
+  athleteId,
+  coachId,
 }: WeekScheduleViewProps) {
   const [selectedModule, setSelectedModule] = useState<SelectedModuleState | null>(
     null,
   );
   const [commentDraft, setCommentDraft] = useState("");
   const [commentsByModule, setCommentsByModule] = useState<
-    Record<string, LocalComment[]>
+    Record<string, ModuleCommentRow[]>
   >({});
+  const [loadingCommentsForKey, setLoadingCommentsForKey] = useState<
+    Record<string, boolean>
+  >({});
+  const [commentError, setCommentError] = useState<string | null>(null);
+  const [editingCommentId, setEditingCommentId] = useState<string | null>(null);
+  const [editDrafts, setEditDrafts] = useState<Record<string, string>>({});
   const [performanceEntriesByModule, setPerformanceEntriesByModule] = useState<
     Record<string, PerformanceEntry[]>
   >({});
@@ -135,29 +145,119 @@ export function WeekScheduleView({
   const selectedModuleSlug = selectedModule
     ? buildModuleSlug(selectedModule.module, selectedModule.key)
     : null;
+  const isLoadingComments = selectedModule
+    ? Boolean(loadingCommentsForKey[selectedModule.key])
+    : false;
+  const canSubmitComment =
+    isCoach && Boolean(selectedModule?.module.id && athleteId && coachId);
 
   const handleAddComment = () => {
+    void handlePersistComment();
+  };
+
+  const handlePersistComment = async () => {
     if (!selectedModule) return;
+    const moduleId = selectedModule.module.id;
+    if (!moduleId) {
+      setCommentError("Kan inte spara kommentar: modul saknar id.");
+      return;
+    }
+    if (!athleteId) {
+      setCommentError("Kan inte spara kommentar: atlet-id saknas.");
+      return;
+    }
+    if (!coachId) {
+      setCommentError("Kan inte spara kommentar: coach-id saknas.");
+      return;
+    }
 
     const body = commentDraft.trim();
     if (!body) return;
 
-    const newComment: LocalComment = {
-      id: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
-      body,
-      createdAt: new Date().toISOString(),
+    try {
+      setCommentError(null);
+      const created = await createModuleComment({
+        moduleId,
+        athleteId,
+        coachId,
+        body,
+      });
+
+      setCommentsByModule((prev) => {
+        const existing = prev[selectedModule.key] ?? [];
+        return {
+          ...prev,
+          [selectedModule.key]: [...existing, created],
+        };
+      });
+      setCommentDraft("");
+    } catch (error) {
+      setCommentError(
+        error instanceof Error ? error.message : "Kunde inte spara kommentaren.",
+      );
+    }
+  };
+
+  const handleUpdateCommentBody = async (commentId: string) => {
+    if (!selectedModule) return;
+    const draftBody = editDrafts[commentId]?.trim();
+    if (!draftBody) return;
+
+    try {
+      setCommentError(null);
+      const updated = await updateModuleComment(commentId, { body: draftBody });
+      setCommentsByModule((prev) => {
+        const existing = prev[selectedModule.key] ?? [];
+        return {
+          ...prev,
+          [selectedModule.key]: existing.map((item) =>
+            item.id === commentId ? updated : item,
+          ),
+        };
+      });
+      setEditingCommentId(null);
+    } catch (error) {
+      setCommentError(
+        error instanceof Error ? error.message : "Kunde inte uppdatera kommentaren.",
+      );
+    }
+  };
+
+  useEffect(() => {
+    if (!selectedModule) return;
+    const moduleId = selectedModule.module.id;
+    if (!moduleId || !athleteId) return;
+
+    const moduleKey = selectedModule.key;
+    let isActive = true;
+
+    const fetchComments = async () => {
+      setLoadingCommentsForKey((prev) => ({ ...prev, [moduleKey]: true }));
+      setCommentError(null);
+      try {
+        const comments = await getCommentsForModule({ moduleId, athleteId });
+        if (!isActive) return;
+        setCommentsByModule((prev) => ({ ...prev, [moduleKey]: comments }));
+      } catch (error) {
+        if (!isActive) return;
+        setCommentError(
+          error instanceof Error
+            ? error.message
+            : "Kunde inte hämta kommentarer från databasen.",
+        );
+      } finally {
+        if (isActive) {
+          setLoadingCommentsForKey((prev) => ({ ...prev, [moduleKey]: false }));
+        }
+      }
     };
 
-    setCommentsByModule((prev) => {
-      const existing = prev[selectedModule.key] ?? [];
-      return {
-        ...prev,
-        [selectedModule.key]: [...existing, newComment],
-      };
-    });
+    void fetchComments();
 
-    setCommentDraft("");
-  };
+    return () => {
+      isActive = false;
+    };
+  }, [athleteId, selectedModule]);
 
   const handleAddPerformanceEntry = () => {
     if (!selectedModule) return;
@@ -220,6 +320,8 @@ export function WeekScheduleView({
                         const moduleKey = module.id ?? `${day.id}-${index}`;
                         setSelectedModule({ module, key: moduleKey });
                         setCommentDraft("");
+                        setEditingCommentId(null);
+                        setCommentError(null);
                         setPerformanceDraft({ time: "", performance: "" });
                       }}
                       className="group w-full text-left"
@@ -446,15 +548,21 @@ export function WeekScheduleView({
                     Kommentarer
                   </p>
                   <p className="text-xs text-base-content/70">
-                    Testlage: sparas bara lokalt medan sidan ar oppen.
+                    Sparas i databasen per atlet och modul.
                   </p>
                 </div>
               </div>
 
+              {commentError && (
+                <div className="alert alert-warning py-2 text-xs">{commentError}</div>
+              )}
+
               <div className="space-y-2 max-h-48 overflow-y-auto">
-                {selectedComments.length === 0 ? (
+                {isLoadingComments ? (
+                  <p className="text-xs text-base-content/60">Laddar kommentarer...</p>
+                ) : selectedComments.length === 0 ? (
                   <p className="text-xs text-base-content/60">
-                    Inga kommentarer annu.
+                    Inga kommentarer ännu.
                   </p>
                 ) : (
                   selectedComments.map((comment) => (
@@ -465,30 +573,80 @@ export function WeekScheduleView({
                       <p className="text-xs text-base-content/60">
                         {new Date(comment.createdAt).toLocaleString()}
                       </p>
-                      <p className="text-sm text-base-content/90 whitespace-pre-wrap">
-                        {comment.body}
-                      </p>
+                      {editingCommentId === comment.id ? (
+                        <div className="space-y-2">
+                          <textarea
+                            className="textarea textarea-bordered textarea-sm w-full"
+                            value={editDrafts[comment.id] ?? comment.body}
+                            onChange={(event) =>
+                              setEditDrafts((prev) => ({
+                                ...prev,
+                                [comment.id]: event.target.value,
+                              }))
+                            }
+                            rows={3}
+                          />
+                          <div className="flex items-center gap-2">
+                            <button
+                              className="btn btn-primary btn-xs"
+                              onClick={() => void handleUpdateCommentBody(comment.id)}
+                              disabled={!editDrafts[comment.id]?.trim()}
+                            >
+                              Spara
+                            </button>
+                            <button
+                              className="btn btn-ghost btn-xs"
+                              onClick={() => setEditingCommentId(null)}
+                            >
+                              Avbryt
+                            </button>
+                          </div>
+                        </div>
+                      ) : (
+                        <div className="flex items-start justify-between gap-2">
+                          <p className="text-sm text-base-content/90 whitespace-pre-wrap">
+                            {comment.body}
+                          </p>
+                          {isCoach && (
+                            <button
+                              className="btn btn-ghost btn-xs"
+                              onClick={() => {
+                                setEditingCommentId(comment.id);
+                                setEditDrafts((prev) => ({
+                                  ...prev,
+                                  [comment.id]: comment.body,
+                                }));
+                              }}
+                            >
+                              Redigera
+                            </button>
+                          )}
+                        </div>
+                      )}
                     </div>
                   ))
                 )}
               </div>
 
-              <div className="form-control space-y-2">
-                <textarea
-                  className="textarea textarea-bordered"
-                  placeholder="Lamna en kommentar om passet"
-                  value={commentDraft}
-                  onChange={(event) => setCommentDraft(event.target.value)}
-                  rows={3}
-                />
-                <button
-                  className="btn btn-primary btn-sm self-end"
-                  onClick={handleAddComment}
-                  disabled={!commentDraft.trim()}
-                >
-                  Skicka kommentar
-                </button>
-              </div>
+              {isCoach && (
+                <div className="form-control space-y-2">
+                  <textarea
+                    className="textarea textarea-bordered"
+                    placeholder="Lämna en kommentar om passet"
+                    value={commentDraft}
+                    onChange={(event) => setCommentDraft(event.target.value)}
+                    rows={3}
+                    disabled={!canSubmitComment}
+                  />
+                  <button
+                    className="btn btn-primary btn-sm self-end"
+                    onClick={handleAddComment}
+                    disabled={!canSubmitComment || !commentDraft.trim()}
+                  >
+                    Skicka kommentar
+                  </button>
+                </div>
+              )}
             </div>
           </div>
 

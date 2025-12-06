@@ -137,6 +137,8 @@ export default function AthleteSchedulePage() {
             weekNumber={weekNumber}
             emptyWeekTitle="Inget program"
             emptyWeekDescription="Ingen data hittades i Supabase."
+            viewerRole="athlete"
+            athleteId={profile?.id}
           />
         ) : (
           <WeekScheduleView
@@ -144,6 +146,8 @@ export default function AthleteSchedulePage() {
             weekNumber={weekNumber}
             emptyWeekTitle="Inget program"
             emptyWeekDescription="Ingen data för veckan."
+            viewerRole="athlete"
+            athleteId={profile?.id}
           />
         )}
       </div>

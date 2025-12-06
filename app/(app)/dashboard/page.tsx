@@ -80,11 +80,15 @@ export default function AthleteSchedulePage() {
 
     if (!user) {
       router.replace("/login?redirectTo=/dashboard");
+      console.log("No user !")
       return;
     }
 
     if (!profile?.isCoach) {
       router.replace("/athlete");
+      console.log("user is athlete")
+    }else{
+     console.log("User is a coach")
     }
   }, [isLoading, isLoadingProfile, profile?.isCoach, router, user]);
 
@@ -224,6 +228,9 @@ export default function AthleteSchedulePage() {
             weekNumber={weekNumber}
             emptyWeekTitle="Inget program"
             emptyWeekDescription="Ingen data hittades i Supabase."
+            viewerRole="coach"
+            athleteId={selectedAthlete}
+            coachId={profile?.id}
           />
         ) : (
           <WeekScheduleView
@@ -231,6 +238,9 @@ export default function AthleteSchedulePage() {
             weekNumber={weekNumber}
             emptyWeekTitle="Inget program"
             emptyWeekDescription="Ingen data för veckan."
+            viewerRole="coach"
+            athleteId={selectedAthlete}
+            coachId={profile?.id}
           />
         )}
       </div>

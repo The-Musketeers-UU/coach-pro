@@ -16,23 +16,25 @@ generator client {
 }
 
 model User {
-  id       BigInt  @id @default(autoincrement()) @db.BigInt
-  name     String  @db.Text
-  email    String  @unique @db.Text
-  isCoach  Boolean @default(false)
+  id      String  @id @db.Uuid
+  name    String  @db.Text
+  email   String  @unique @db.Text
+  isCoach Boolean @default(false)
 
-  // Relations
-  modules      Module[]       @relation("UserModules")
-  ownedWeeks   ScheduleWeek[] @relation("CoachWeeks")
-  athleteWeeks ScheduleWeek[] @relation("AthleteWeeks")
+  modules         Module[]        @relation("UserModules")
+  ownedWeeks      ScheduleWeek[]  @relation("CoachWeeks")
+  athleteWeeks    ScheduleWeek[]  @relation("AthleteWeeks")
+  athleteComments ModuleComment[] @relation("ModuleCommentAthlete")
+  coachComments   ModuleComment[] @relation("ModuleCommentCoach")
 
-  @@map("user") // map to table name "user"
+  @@map("user")
 }
 
 model Module {
-  id              BigInt  @id @default(autoincrement()) @db.BigInt
-  ownerId         BigInt  @map("owner") @db.BigInt
-  owner           User    @relation("UserModules", fields: [ownerId], references: [id])
+  id BigInt @id @default(autoincrement()) @db.BigInt
+
+  ownerId String @map("owner") @db.Uuid
+  owner   User   @relation("UserModules", fields: [ownerId], references: [id])
 
   name            String  @db.Text
   category        String  @db.Text
@@ -43,34 +45,34 @@ model Module {
   weight          Int?
   description     String? @db.Text
 
-  // A module can be used in many schedule days
-  scheduleDays    ScheduleDay[]
+  scheduleDays ScheduleDay[]
+
+  comments ModuleComment[] @relation("ModuleToComment")
 
   @@map("module")
 }
 
 // One week, for one athlete, owned by one coach
 model ScheduleWeek {
-  id        BigInt @id @default(autoincrement()) @db.BigInt
+  id BigInt @id @default(autoincrement()) @db.BigInt
 
-  ownerId   BigInt @map("owner")   @db.BigInt
-  owner     User   @relation("CoachWeeks", fields: [ownerId],   references: [id])
+  ownerId String @map("owner") @db.Uuid
+  owner   User   @relation("CoachWeeks", fields: [ownerId], references: [id])
 
-  athleteId BigInt @map("athlete") @db.BigInt
+  athleteId String @map("athlete") @db.Uuid
   athlete   User   @relation("AthleteWeeks", fields: [athleteId], references: [id])
 
-  week      Int
-  title     String @default("") @db.Text
+  week  Int
+  title String @default("") @db.Text
 
-  // Relation: one week has many days
-  days      ScheduleDay[]
+  days ScheduleDay[]
 
   @@map("scheduleWeek")
 }
 
 model ScheduleDay {
-  id     BigInt @id @default(autoincrement()) @db.BigInt
-  day    Int    
+  id  BigInt @id @default(autoincrement()) @db.BigInt
+  day Int
 
   // Foreign key to the week this day belongs to
   weekId BigInt?       @db.BigInt
@@ -80,4 +82,25 @@ model ScheduleDay {
   modules Module[]
 
   @@map("scheduleDay")
+}
+
+model ModuleComment {
+  id        BigInt   @id @default(autoincrement()) @db.BigInt
+
+  moduleId  BigInt   @db.BigInt
+  athleteId String   @db.Uuid
+  coachId   String   @db.Uuid
+
+  body      String   @db.Text
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  module  Module @relation("ModuleToComment", fields: [moduleId], references: [id])
+  athlete User   @relation("ModuleCommentAthlete", fields: [athleteId], references: [id])
+  coach   User   @relation("ModuleCommentCoach", fields: [coachId], references: [id])
+
+  @@map("moduleComment")
+  @@index([moduleId])
+  @@index([athleteId])
+  @@index([coachId])
 }

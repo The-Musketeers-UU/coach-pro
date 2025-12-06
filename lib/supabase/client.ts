@@ -1,12 +1,15 @@
+// Separate client and server implementations
+
+// For CLIENT-SIDE usage (components, pages)
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL;
-const SUPABASE_KEY =
-  process.env.SUPABASE_SERVICE_ROLE_KEY ?? process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+const SUPABASE_ANON_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
 type SupabaseRequestOptions = {
   method?: "GET" | "POST" | "PATCH" | "DELETE";
   body?: unknown;
   searchParams?: Record<string, string>;
   prefer?: string;
+  accessToken?: string; // User's access token
 };
 
 const buildRestUrl = (path: string, searchParams?: Record<string, string>) => {
@@ -27,18 +30,19 @@ export const supabaseRequest = async <T>(
   path: string,
   options: SupabaseRequestOptions,
 ): Promise<T> => {
-  if (!SUPABASE_KEY) {
-    throw new Error(
-      "Missing SUPABASE_SERVICE_ROLE_KEY or NEXT_PUBLIC_SUPABASE_ANON_KEY environment variable.",
-    );
+  if (!SUPABASE_ANON_KEY) {
+    throw new Error("Missing NEXT_PUBLIC_SUPABASE_ANON_KEY environment variable.");
   }
+
+  // IMPORTANT: Use user's access token if provided, otherwise anon key
+  const authToken = options.accessToken ?? SUPABASE_ANON_KEY;
 
   const url = buildRestUrl(path, options.searchParams);
   const response = await fetch(url, {
     method: options.method ?? "GET",
     headers: {
-      apikey: SUPABASE_KEY,
-      Authorization: `Bearer ${SUPABASE_KEY}`,
+      apikey: SUPABASE_ANON_KEY, // Always use anon key for apikey header
+      Authorization: `Bearer ${authToken}`, // Use user token or anon key
       ...(options.body ? { "Content-Type": "application/json" } : {}),
       ...(options.prefer ? { Prefer: options.prefer } : {}),
     },
