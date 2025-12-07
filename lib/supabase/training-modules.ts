@@ -17,13 +17,27 @@ export type ModuleRow = {
 };
 
 export const getModulesByOwner = async (ownerId: string): Promise<ModuleRow[]> =>
-  supabaseRequest<ModuleRow[]>("module", {
-    searchParams: {
-      select: "id,owner,name,category,subCategory,distance,durationSeconds,durationMinutes,weight,description",
-      owner: `eq.${ownerId}`,
-      order: "name.asc",
-    },
-  });
+  {
+    try {
+      const { data, error } = await supabase
+        .from("module")
+        .select(
+          "id,owner,name,category,subCategory,distance,durationSeconds,durationMinutes,weight,description",
+        )
+        .eq("owner", ownerId)
+        .order("name", { ascending: true });
+
+      if (error) {
+        console.error("Error fetching modules by owner:", error);
+        throw error;
+      }
+
+      return data ?? [];
+    } catch (error) {
+      console.error("Error retrieving modules via SQL query:", error);
+      throw error;
+    }
+  };
 
 export type ScheduleWeekRow = {
   id: string;
