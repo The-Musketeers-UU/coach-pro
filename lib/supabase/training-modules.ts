@@ -94,13 +94,28 @@ const buildInFilter = (values: string[]) =>
   `in.(${values.map((value) => `"${value}"`).join(",")})`;
 
 export const getAthletes = async (): Promise<AthleteRow[]> =>
-  supabaseRequest<AthleteRow[]>("user", {
-    searchParams: {
-      select: "id,name,email,isCoach",
-      isCoach: "eq.false",
-      order: "name.asc",
-    },
-  });
+  {
+    try {
+      const { data, error } = await supabase
+        .from("user")
+        .select("id,name,email,isCoach")
+        .eq("isCoach", false)
+        .order("name", { ascending: true });
+
+      if (error) {
+        console.error("Error fetching athletes:", error);
+        throw error;
+      }
+
+      return data ?? [];
+    } catch (error) {
+      console.error("Error retrieving athletes via SQL query:", error);
+      throw error;
+    }
+  };
+
+
+
 
 export const getCoaches = async (): Promise<AthleteRow[]> =>
   supabaseRequest<AthleteRow[]>("user", {
