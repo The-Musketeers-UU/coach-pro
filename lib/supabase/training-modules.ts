@@ -446,29 +446,30 @@ export const createUser = async (input: CreateUserInput): Promise<AthleteRow> =>
 
 export const findUserByEmail = async (
   email: string,
-  options?: { accessToken?: string },
 ): Promise<AthleteRow | null> => {
   console.log("🔍 Finding user by email:", email);
 
   try {
-    const users = await supabaseRequest<AthleteRow[]>("user", {
-      searchParams: {
-        select: "id,name,email,isCoach",
-        email: `eq.${email}`,
-        limit: "1",
-      },
-      accessToken: options?.accessToken,
-    });
+    const { data: user, error } = await supabase
+      .from('user')
+      .select('id,name,email,isCoach')
+      .eq('email', email)
+      .limit(1)
+      .maybeSingle(); // Returns null if not found, throws on multiple results
 
-    console.log("✅ Users found:", users);
-    console.log("📊 Number of users:", users?.length);
+    if (error) {
+      console.error("❌ Error finding user by email:", error);
+      throw error;
+    }
 
-    return users[0] ?? null;
+    console.log("✅ User found:", user);
+    return user;
   } catch (error) {
     console.error("❌ Error finding user by email:", error);
     throw error;
   }
 };
+
 export const ensureUserForAuth = async (
   authUser: SupabaseAuthUser,
 ): Promise<AthleteRow> => {
