@@ -336,13 +336,23 @@ export const createModule = async (input: CreateModuleInput): Promise<ModuleRow>
     description: input.description?.trim() || null,
   } satisfies Omit<ModuleRow, "id">;
 
-  const data = await supabaseRequest<ModuleRow[]>("module", {
-    method: "POST",
-    body: payload,
-    prefer: "return=representation",
-  });
+  try {
+    const { data, error } = await supabase
+      .from("module")
+      .insert(payload)
+      .select()
+      .single();
 
-  return data[0];
+    if (error) {
+      console.error("❌ Error adding a new module:", error);
+      throw error;
+    }
+
+    return data;
+  } catch (error) {
+    console.error("❌ Error creating module:", error);
+    throw error;
+  }
 };
 
 export const createScheduleWeek = async (
