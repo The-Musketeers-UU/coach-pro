@@ -42,7 +42,7 @@ export function SiteNav() {
 
   return (
     <header className="border-b border-base-300 bg-base-200 z-40">
-      <div className="mx-auto flex max-w-7xl gap-4 px-4 py-4 flex-row justify-end xl:justify-between">
+      <div className="mx-auto flex max-w-7xl py-4 flex-row justify-center sm:justify-between">
         <div className="flex flex-wrap items-center gap-3">
           <Link
             href="/"
