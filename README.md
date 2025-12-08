@@ -1,40 +1,45 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+## Coach Pro
 
-## Getting Started
+A role-aware Next.js app for coaches who plan weekly training programs for their athletes. Coaches create reusable modules (with details like duration, distance, weight, and subjective feedback fields) and assign them to ISO weeks; athletes sign in to review the assigned sessions. Supabase handles authentication and data storage, with Prisma managing the schema.
 
-First, run the development server:
+### Key features
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
-```
+- **Coach workflows:** Build reusable training modules, drag them into week/day slots, save the week with a title, and assign it to an athlete. Weeks can be re-opened for edits from the dashboard.
+- **Athlete experience:** Athletes see their current week’s schedule and session details after signing in. Navigation routes users to the appropriate coach or athlete area based on their profile.
+- **Supabase-backed data:** Modules, athletes, and schedules are stored in Supabase via REST calls. Prisma migrations keep the Supabase schema in sync (see `docs/supabase-prisma.md`).
+- **UI stack:** Next.js App Router, Tailwind CSS, and DaisyUI components with client-side data fetching.
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## Getting started
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+1. Install dependencies:
+   ```bash
+   npm install
+   ```
+2. Configure environment variables (e.g., in `.env.local`):
+   ```bash
+   NEXT_PUBLIC_SUPABASE_URL=<your-supabase-url>
+   NEXT_PUBLIC_SUPABASE_ANON_KEY=<your-supabase-anon-key>
+   SUPABASE_SERVICE_ROLE_KEY=<service-role-key-for-server-requests>
+   ```
+3. Apply the Prisma schema to your Supabase project by following [docs/supabase-prisma.md](docs/supabase-prisma.md).
+4. Start the development server:
+   ```bash
+   npm run dev
+   ```
+   The app runs at [http://localhost:3000](http://localhost:3000).
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## Scripts
 
-## Supabase and Prisma
+- `npm run dev` – start the development server
+- `npm run build` – create a production build
+- `npm run start` – serve the production build
+- `npm run lint` – run ESLint
 
-If you see PostgREST errors like `Could not find the table 'public.user' in the schema cache`, make sure your Prisma schema has been applied to your Supabase database. See [docs/supabase-prisma.md](docs/supabase-prisma.md) for the steps to point Prisma at Supabase, deploy migrations locally, and run them from CI (e.g., Vercel) when you do not have direct terminal access.
+## Project structure highlights
 
-## Learn More
-
-To learn more about Next.js, take a look at the following resources:
-
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+- `app/(app)/schedule_builder` – coach-facing schedule builder UI
+- `app/(app)/dashboard` – coach dashboard to review/modify scheduled weeks per athlete
+- `app/(app)/athlete` – athlete-facing weekly schedule
+- `components/` – shared UI components (navigation, schedule/ module forms, etc.)
+- `lib/supabase/` – Supabase REST helpers for browser/server usage
+- `prisma/` – Prisma schema and migrations for Supabase
