@@ -286,17 +286,102 @@ export const getScheduleWeeksWithModules = async (
     return true;
   });
 
-  const weeksWithModules: ScheduleWeekWithModules[] = [];
-
-  for (const week of uniqueWeeks) {
-    const days = await getScheduleDaysWithModules(week.id);
-    weeksWithModules.push({
-      ...week,
-      days: fillMissingDays(week.id, days),
-    });
+  if (uniqueWeeks.length === 0) {
+    return [];
   }
 
-  return weeksWithModules;
+  const weekIds = uniqueWeeks.map((week) => week.id);
+  const daysByWeek = new Map<string, Map<number, ScheduleDayWithModules>>();
+
+  const { data: days, error: daysError } = await supabase
+    .from("scheduleDay")
+    .select("id,day,weekId")
+    .in("weekId", weekIds)
+    .order("day", { ascending: true });
+
+  if (daysError) {
+    console.error("Error fetching schedule days:", daysError);
+    throw daysError;
+  }
+
+  const dayRows = days ?? [];
+  const dayIds = dayRows.map((day) => day.id);
+
+  const links: ModuleScheduleDayRow[] = [];
+  if (dayIds.length > 0) {
+    const { data: moduleLinks, error: moduleLinksError } = await supabase
+      .from("_ModuleToScheduleDay")
+      .select("A,B")
+      .in("B", dayIds);
+
+    if (moduleLinksError) {
+      console.error("Error fetching module links for schedule days:", moduleLinksError);
+      throw moduleLinksError;
+    }
+
+    links.push(...(moduleLinks ?? []));
+  }
+
+  const moduleIds = Array.from(new Set(links.map((link) => link.A)));
+
+  const modulesList: ModuleRow[] = [];
+  if (moduleIds.length > 0) {
+    const { data: modules, error: modulesError } = await supabase
+      .from("module")
+      .select(
+        "id,owner,name,category,subCategory,distance,durationSeconds,durationMinutes,weight,description",
+      )
+      .in("id", moduleIds);
+
+    if (modulesError) {
+      console.error("Error fetching modules for schedule days:", modulesError);
+      throw modulesError;
+    }
+
+    modulesList.push(...(modules ?? []));
+  }
+  const modulesById = new Map(modulesList.map((module) => [module.id, module]));
+  const modulesByDayId = new Map<string, ModuleRow[]>();
+  dayIds.forEach((dayId) => modulesByDayId.set(dayId, []));
+
+  links.forEach((link) => {
+    const linkedModule = modulesById.get(link.A);
+    if (!linkedModule) return;
+
+    const current = modulesByDayId.get(link.B);
+    if (current) {
+      current.push(linkedModule);
+    }
+  });
+
+  dayRows.forEach((day) => {
+    const weekId = day.weekId ?? "";
+    if (!daysByWeek.has(weekId)) {
+      daysByWeek.set(weekId, new Map());
+    }
+
+    const weekDays = daysByWeek.get(weekId)!;
+    const modulesForDay = modulesByDayId.get(day.id) ?? [];
+    const existingDay = weekDays.get(day.day);
+
+    if (existingDay) {
+      existingDay.modules.push(...modulesForDay);
+      return;
+    }
+
+    weekDays.set(day.day, {
+      ...day,
+      modules: [...modulesForDay],
+    });
+  });
+
+  return uniqueWeeks.map((week) => {
+    const aggregatedDays = Array.from(daysByWeek.get(week.id)?.values() ?? []);
+    return {
+      ...week,
+      days: fillMissingDays(week.id, aggregatedDays),
+    };
+  });
 };
 
 export const getScheduleWeekByAthleteAndWeek = async (
@@ -506,6 +591,24 @@ export const updateScheduleWeek = async (
 
 const createScheduleDay = async (weekId: string, day: number): Promise<ScheduleDayRow> => {
   try {
+    const { data: existingDay, error: existingError } = await supabase
+      .from("scheduleDay")
+      .select("id,day,weekId")
+      .eq("weekId", weekId)
+      .eq("day", day)
+      .order("id", { ascending: true })
+      .limit(1);
+
+    if (existingError) {
+      console.error("Error checking for existing schedule day:", existingError);
+      throw existingError;
+    }
+
+    const alreadyCreatedDay = existingDay?.[0];
+    if (alreadyCreatedDay) {
+      return alreadyCreatedDay;
+    }
+
     const { data, error } = await supabase
       .from("scheduleDay")
       .insert({ weekId, day })

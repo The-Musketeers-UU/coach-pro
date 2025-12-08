@@ -37,12 +37,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     const getInitialSession = async () => {
       const { data, error } = await supabaseBrowserClient.auth.getSession();
-     
 
       if (!error) {
         setSession(data.session);
-         console.log("🔐 Session:", session);
-      console.log("👤 Session user:", session?.user);
       }
       setIsLoadingSession(false);
     };
@@ -67,15 +64,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const syncProfile = async () => {
       setIsLoadingProfile(true);
       try {
-            console.log("🔍 Starting profile sync for user:", session.user.id);
-    console.log("📧 User email:", session.user.email);
-
         const userProfile = await ensureUserForAuth(session.user);
-            console.log("✅ Profile synced successfully:", userProfile);
 
         setProfile(userProfile);
       } catch (profileError) {
-        console.error("Failed to sync pdddrofile", profileError);
+        console.error("Failed to sync profile", profileError);
         setProfile(null);
       } finally {
         setIsLoadingProfile(false);
