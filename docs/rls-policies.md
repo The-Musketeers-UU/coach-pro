@@ -37,6 +37,7 @@ drop policy if exists "Weeks visible to participants" on public."scheduleWeek";
 drop policy if exists "Weeks writable by owner" on public."scheduleWeek";
 drop policy if exists "Days visible to participants" on public."scheduleDay";
 drop policy if exists "Days writable by owner" on public."scheduleDay";
+drop policy if exists "Days deletable by owner" on public."scheduleDay";
 drop policy if exists "Links readable to participants" on public."_ModuleToScheduleDay";
 drop policy if exists "Links writable by owner" on public."_ModuleToScheduleDay";
 ```
@@ -117,7 +118,7 @@ create policy "Days visible to participants"
 
 create policy "Days writable by owner"
   on public."scheduleDay"
-  for all
+  for insert, update
   to authenticated
   using (
     exists (
@@ -127,6 +128,18 @@ create policy "Days writable by owner"
     )
   )
   with check (
+    exists (
+      select 1
+      from public."scheduleWeek" sw
+      where sw.id = "weekId" and sw.owner = auth.uid()
+    )
+  );
+
+create policy "Days deletable by owner"
+  on public."scheduleDay"
+  for delete
+  to authenticated
+  using (
     exists (
       select 1
       from public."scheduleWeek" sw
