@@ -16,6 +16,21 @@ Coach Pro uses the Supabase anon key on the client, so **every data call is subj
 
 > These statements **replace** existing policies with predictable names. Run them in the SQL Editor while connected as the service role (or an owner with `supabase_admin`).
 
+### Baseline grants (prevents 42501 permission errors)
+
+The `authenticated` role needs basic table privileges **in addition to** RLS policies. If these grants are missing you will see `42501 | permission denied for table scheduleDay` even when the policy logic is correct. Run these once to ensure the role can interact with the tables before RLS evaluates access:
+
+```sql
+grant usage on schema public to authenticated;
+grant usage on schema public to anon;
+
+grant select, insert, update, delete on all tables in schema public to authenticated;
+grant select on all tables in schema public to anon;
+
+grant usage, select on all sequences in schema public to authenticated;
+grant usage, select on all sequences in schema public to anon;
+```
+
 ### Common helpers
 
 Enable RLS and clean up any conflicting policies first:
