@@ -102,13 +102,13 @@ export const getModulesByOwner = async (ownerId: string): Promise<ModuleRow[]> =
 
     if (error) {
       console.error("Error fetching modules by owner:", error);
-      throw error;
+      throw toReadableError(error);
     }
 
     return (data ?? []).map(coerceModuleRow);
   } catch (error) {
     console.error("Error retrieving modules via SQL query:", error);
-    throw error;
+    throw toReadableError(error);
   }
 };
 
@@ -177,6 +177,8 @@ const formatSupabaseError = (error: unknown) => {
   return String(error);
 };
 
+const toReadableError = (error: unknown) => new Error(formatSupabaseError(error));
+
 export const getAthletes = async (): Promise<AthleteRow[]> => {
   try {
     const { data, error } = await supabase
@@ -187,13 +189,13 @@ export const getAthletes = async (): Promise<AthleteRow[]> => {
 
     if (error) {
       console.error("Error fetching athletes:", error);
-      throw error;
+      throw toReadableError(error);
     }
 
     return data ?? [];
   } catch (error) {
     console.error("Error retrieving athletes via SQL query:", error);
-    throw error;
+    throw toReadableError(error);
   }
 };
 
@@ -207,13 +209,13 @@ export const getCoaches = async (): Promise<AthleteRow[]> => {
 
     if (error) {
       console.error("Error fetching coaches:", error);
-      throw error;
+      throw toReadableError(error);
     }
 
     return data ?? [];
   } catch (error) {
     console.error("Error retrieving coaches via SQL query:", error);
-    throw error;
+    throw toReadableError(error);
   }
 };
 
@@ -229,13 +231,13 @@ export const getScheduleWeeksByAthlete = async (
 
     if (error) {
       console.error("Error fetching schedule weeks:", error);
-      throw error;
+      throw toReadableError(error);
     }
 
     return (data ?? []).map(coerceScheduleWeekRow);
   } catch (error) {
     console.error("Error retrieving schedule weeks via SQL query:", error);
-    throw error;
+    throw toReadableError(error);
   }
 };
 
@@ -329,7 +331,7 @@ const getScheduleDaysWithModules = async (
     return Array.from(aggregatedByDay.values()).sort((a, b) => a.day - b.day);
   } catch (error) {
     console.error("Error retrieving schedule days with modules via SQL query:", error);
-    throw error;
+    throw toReadableError(error);
   }
 };
 
@@ -475,7 +477,7 @@ export const getScheduleWeekByAthleteAndWeek = async (
 
     if (error) {
       console.error("Error fetching schedule week by athlete and week:", error);
-      throw error;
+      throw toReadableError(error);
     }
 
     const existingWeeks = (data ?? []).map(coerceScheduleWeekRow);
@@ -489,7 +491,7 @@ export const getScheduleWeekByAthleteAndWeek = async (
     return existingWeeks[0] ?? null;
   } catch (error) {
     console.error("Error retrieving schedule week via SQL query:", error);
-    throw error;
+    throw toReadableError(error);
   }
 };
 
@@ -506,7 +508,7 @@ const deleteScheduleLinksForDays = async (dayIds: string[]) => {
   if (error) {
     const message = formatSupabaseError(error);
     console.error("Error deleting module links for schedule days:", message);
-    throw error;
+    throw toReadableError(error);
   }
 };
 
@@ -525,7 +527,7 @@ const deleteScheduleDays = async (weekId: string, dayIds: string[]) => {
   if (error) {
     const message = formatSupabaseError(error);
     console.error("Error deleting schedule days:", message);
-    throw error;
+    throw toReadableError(error);
   }
 };
 
@@ -541,7 +543,7 @@ export const clearScheduleWeek = async (weekId: string): Promise<void> => {
     if (error) {
       const message = formatSupabaseError(error);
       console.error("Error fetching schedule days to clear:", message);
-      throw error;
+      throw toReadableError(error);
     }
 
     const dayIds = toIds((existingDays ?? []).map((day) => day.id));
@@ -552,7 +554,7 @@ export const clearScheduleWeek = async (weekId: string): Promise<void> => {
   } catch (error) {
     const message = formatSupabaseError(error);
     console.error("Error clearing schedule week via SQL query:", message);
-    throw error;
+    throw toReadableError(error);
   }
 };
 
@@ -568,7 +570,7 @@ export const getScheduleWeekWithModulesById = async (
 
     if (error) {
       console.error("Error fetching schedule week by id:", error);
-      throw error;
+      throw toReadableError(error);
     }
 
     if (!week) return null;
@@ -583,7 +585,7 @@ export const getScheduleWeekWithModulesById = async (
     };
   } catch (error) {
     console.error("Error retrieving schedule week with modules via SQL query:", error);
-    throw error;
+    throw toReadableError(error);
   }
 };
 
@@ -607,13 +609,13 @@ export const createModule = async (input: CreateModuleInput): Promise<ModuleRow>
 
     if (error) {
       console.error("ƒ?O Error adding a new module:", error);
-      throw error;
+      throw toReadableError(error);
     }
 
     return coerceModuleRow(data);
   } catch (error) {
     console.error("ƒ?O Error creating module:", error);
-    throw error;
+    throw toReadableError(error);
   }
 };
 
@@ -647,13 +649,13 @@ export const createScheduleWeek = async (
 
     if (error) {
       console.error("Error creating schedule week:", error);
-      throw error;
+      throw toReadableError(error);
     }
 
     return coerceScheduleWeekRow(data);
   } catch (error) {
     console.error("Error persisting schedule week via SQL query:", error);
-    throw error;
+    throw toReadableError(error);
   }
 };
 
@@ -677,13 +679,13 @@ export const updateScheduleWeek = async (
 
     if (error) {
       console.error("Error updating schedule week:", error);
-      throw error;
+      throw toReadableError(error);
     }
 
     return coerceScheduleWeekRow(data);
   } catch (error) {
     console.error("Error persisting schedule week updates via SQL query:", error);
-    throw error;
+    throw toReadableError(error);
   }
 };
 
@@ -701,7 +703,7 @@ const createScheduleDay = async (weekId: string, day: number): Promise<ScheduleD
 
     if (existingError) {
       console.error("Error checking for existing schedule day:", existingError);
-      throw existingError;
+      throw toReadableError(existingError);
     }
 
     const alreadyCreatedDay = existingDay?.[0];
@@ -717,13 +719,13 @@ const createScheduleDay = async (weekId: string, day: number): Promise<ScheduleD
 
     if (error) {
       console.error("Error creating schedule day:", error);
-      throw error;
+      throw toReadableError(error);
     }
 
     return coerceScheduleDayRow(data);
   } catch (error) {
     console.error("Error persisting schedule day via SQL query:", error);
-    throw error;
+    throw toReadableError(error);
   }
 };
 
@@ -744,13 +746,13 @@ export const addModuleToScheduleDay = async (
 
     if (error) {
       console.error("Error linking module to schedule day:", error);
-      throw error;
+      throw toReadableError(error);
     }
 
     return { day: dayRow, link: coerceModuleLinkRow(linkRow) };
   } catch (error) {
     console.error("Error persisting module link via SQL query:", error);
-    throw error;
+    throw toReadableError(error);
   }
 };
 
@@ -766,13 +768,13 @@ export const createUser = async (input: CreateUserInput): Promise<AthleteRow> =>
 
     if (error) {
       console.error("Error creating user:", error);
-      throw error;
+      throw toReadableError(error);
     }
 
     return data;
   } catch (error) {
     console.error("Error persisting user via SQL query:", error);
-    throw error;
+    throw toReadableError(error);
   }
 };
 
@@ -789,14 +791,14 @@ export const findUserByEmail = async (email: string): Promise<AthleteRow | null>
 
     if (error) {
       console.error("ƒ?O Error finding user by email:", error);
-      throw error;
+      throw toReadableError(error);
     }
 
     console.log("ƒo. User found:", user);
     return user;
   } catch (error) {
     console.error("ƒ?O Error finding user by email:", error);
-    throw error;
+    throw toReadableError(error);
   }
 };
 
