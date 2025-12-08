@@ -47,7 +47,7 @@ export const getModulesByOwner = async (ownerId: string): Promise<ModuleRow[]> =
 };
 
 export type ScheduleWeekRow = {
-  id: string;
+  id: number;
   owner: string;
   athlete: string;
   week: number;
@@ -55,14 +55,14 @@ export type ScheduleWeekRow = {
 };
 
 type ScheduleDayRow = {
-  id: string;
+  id: number;
   day: number;
-  weekId: string | null;
+  weekId: number | null;
 };
 
 type ModuleScheduleDayRow = {
   A: string;
-  B: string;
+  B: number;
 };
 
 export type AthleteRow = {
@@ -102,7 +102,7 @@ export type CreateScheduleWeekInput = {
 
 export type AddModuleToScheduleDayInput = {
   moduleId: string;
-  weekId: string;
+  weekId: number | string;
   day: number;
 };
 
@@ -113,6 +113,20 @@ export type GetScheduleWeekByWeekInput = {
 
 const sanitizeNumber = (value: number | undefined) =>
   Number.isFinite(value) ? Number(value) : undefined;
+
+const normalizeNumericId = (value: number | string) => {
+  if (typeof value === "number") return value;
+
+  const parsed = Number.parseInt(value, 10);
+  if (!Number.isFinite(parsed)) {
+    throw new Error(`Ogiltigt id-värde: ${String(value)}`);
+  }
+
+  return parsed;
+};
+
+const normalizeNumericIds = (values: Array<number | string>) =>
+  values.map((value) => normalizeNumericId(value));
 
 export const getAthletes = async (): Promise<AthleteRow[]> => {
   try {
@@ -183,13 +197,15 @@ export type ScheduleWeekWithModules = ScheduleWeekRow & {
 };
 
 const getScheduleDaysWithModules = async (
-  weekId: string,
+  weekId: number | string,
 ): Promise<ScheduleDayWithModules[]> => {
   try {
+    const numericWeekId = normalizeNumericId(weekId);
+
     const { data: scheduleDays, error: scheduleDaysError } = await supabase
       .from("scheduleDay")
       .select("id,day,weekId")
-      .eq("weekId", weekId)
+      .eq("weekId", numericWeekId)
       .order("day", { ascending: true });
 
     if (scheduleDaysError) {
@@ -200,7 +216,7 @@ const getScheduleDaysWithModules = async (
     const days = scheduleDays ?? [];
     if (days.length === 0) return [];
 
-    const dayIds = days.map((day) => day.id);
+    const dayIds = normalizeNumericIds(days.map((day) => day.id));
 
     const { data: moduleLinks, error: moduleLinksError } = await supabase
       .from("_ModuleToScheduleDay")
@@ -234,7 +250,7 @@ const getScheduleDaysWithModules = async (
     const modulesList = modules ?? [];
     const modulesById = new Map(modulesList.map((module) => [module.id, module]));
 
-    const modulesByDayId = new Map<string, ModuleRow[]>();
+    const modulesByDayId = new Map<number, ModuleRow[]>();
     dayIds.forEach((dayId) => modulesByDayId.set(dayId, []));
 
     links.forEach((link) => {
@@ -271,14 +287,14 @@ const getScheduleDaysWithModules = async (
   }
 };
 
-const fillMissingDays = (weekId: string, days: ScheduleDayWithModules[]) => {
+const fillMissingDays = (weekId: number | string, days: ScheduleDayWithModules[]) => {
   const existing = new Map(days.map((day) => [day.day, day]));
 
   return Array.from({ length: 7 }, (_, index) => {
     const dayNumber = index + 1;
     return (
       existing.get(dayNumber) ?? {
-        id: `${weekId}-day-${dayNumber}`,
+        id: `${String(weekId)}-day-${dayNumber}`,
         day: dayNumber,
         weekId,
         modules: [],
@@ -303,7 +319,7 @@ export const getScheduleWeeksWithModules = async (
   }
 
   const weekIds = uniqueWeeks.map((week) => week.id);
-  const daysByWeek = new Map<string, Map<number, ScheduleDayWithModules>>();
+  const daysByWeek = new Map<number, Map<number, ScheduleDayWithModules>>();
 
   const { data: days, error: daysError } = await supabase
     .from("scheduleDay")
@@ -353,7 +369,7 @@ export const getScheduleWeeksWithModules = async (
     modulesList.push(...(modules ?? []));
   }
   const modulesById = new Map(modulesList.map((module) => [module.id, module]));
-  const modulesByDayId = new Map<string, ModuleRow[]>();
+  const modulesByDayId = new Map<number, ModuleRow[]>();
   dayIds.forEach((dayId) => modulesByDayId.set(dayId, []));
 
   links.forEach((link) => {
@@ -367,7 +383,9 @@ export const getScheduleWeeksWithModules = async (
   });
 
   dayRows.forEach((day) => {
-    const weekId = day.weekId ?? "";
+    if (day.weekId === null) return;
+
+    const weekId = day.weekId;
     if (!daysByWeek.has(weekId)) {
       daysByWeek.set(weekId, new Map());
     }
@@ -427,10 +445,15 @@ export const getScheduleWeekByAthleteAndWeek = async (
   }
 };
 
-const deleteScheduleLinksForDays = async (dayIds: string[]) => {
+const deleteScheduleLinksForDays = async (dayIds: Array<number | string>) => {
   if (dayIds.length === 0) return;
 
-  const { error } = await supabase.from("_ModuleToScheduleDay").delete().in("B", dayIds);
+  const numericDayIds = normalizeNumericIds(dayIds);
+
+  const { error } = await supabase
+    .from("_ModuleToScheduleDay")
+    .delete()
+    .in("B", numericDayIds);
 
   if (error) {
     console.error("Error deleting module links for schedule days:", error);
@@ -438,14 +461,17 @@ const deleteScheduleLinksForDays = async (dayIds: string[]) => {
   }
 };
 
-const deleteScheduleDays = async (weekId: string, dayIds: string[]) => {
+const deleteScheduleDays = async (weekId: number | string, dayIds: Array<number | string>) => {
   if (dayIds.length === 0) return;
+
+  const numericWeekId = normalizeNumericId(weekId);
+  const numericDayIds = normalizeNumericIds(dayIds);
 
   const { error } = await supabase
     .from("scheduleDay")
     .delete()
-    .in("id", dayIds)
-    .eq("weekId", weekId);
+    .in("id", numericDayIds)
+    .eq("weekId", numericWeekId);
 
   if (error) {
     console.error("Error deleting schedule days:", error);
@@ -453,19 +479,21 @@ const deleteScheduleDays = async (weekId: string, dayIds: string[]) => {
   }
 };
 
-export const clearScheduleWeek = async (weekId: string): Promise<void> => {
+export const clearScheduleWeek = async (weekId: number | string): Promise<void> => {
   try {
+    const numericWeekId = normalizeNumericId(weekId);
+
     const { data: existingDays, error } = await supabase
       .from("scheduleDay")
       .select("id")
-      .eq("weekId", weekId);
+      .eq("weekId", numericWeekId);
 
     if (error) {
       console.error("Error fetching schedule days to clear:", error);
       throw error;
     }
 
-    const dayIds = (existingDays ?? []).map((day) => day.id);
+    const dayIds = normalizeNumericIds((existingDays ?? []).map((day) => day.id));
     if (dayIds.length === 0) return;
 
     await deleteScheduleLinksForDays(dayIds);
@@ -477,13 +505,15 @@ export const clearScheduleWeek = async (weekId: string): Promise<void> => {
 };
 
 export const getScheduleWeekWithModulesById = async (
-  weekId: string,
+  weekId: number | string,
 ): Promise<ScheduleWeekWithModules | null> => {
   try {
+    const numericWeekId = normalizeNumericId(weekId);
+
     const { data: week, error } = await supabase
       .from("scheduleWeek")
       .select("id,week,owner,athlete,title")
-      .eq("id", weekId)
+      .eq("id", numericWeekId)
       .maybeSingle();
 
     if (error) {
@@ -582,7 +612,7 @@ export const createScheduleWeek = async (
 };
 
 export const updateScheduleWeek = async (
-  weekId: string,
+  weekId: number | string,
   updates: Partial<Pick<ScheduleWeekRow, "title">>,
 ): Promise<ScheduleWeekRow> => {
   const body = {
@@ -590,10 +620,12 @@ export const updateScheduleWeek = async (
   } satisfies Partial<ScheduleWeekRow>;
 
   try {
+    const numericWeekId = normalizeNumericId(weekId);
+
     const { data, error } = await supabase
       .from("scheduleWeek")
       .update(body)
-      .eq("id", weekId)
+      .eq("id", numericWeekId)
       .select()
       .single();
 
@@ -609,12 +641,14 @@ export const updateScheduleWeek = async (
   }
 };
 
-const createScheduleDay = async (weekId: string, day: number): Promise<ScheduleDayRow> => {
+const createScheduleDay = async (weekId: number | string, day: number): Promise<ScheduleDayRow> => {
   try {
+    const numericWeekId = normalizeNumericId(weekId);
+
     const { data: existingDay, error: existingError } = await supabase
       .from("scheduleDay")
       .select("id,day,weekId")
-      .eq("weekId", weekId)
+      .eq("weekId", numericWeekId)
       .eq("day", day)
       .order("id", { ascending: true })
       .limit(1);
@@ -631,7 +665,7 @@ const createScheduleDay = async (weekId: string, day: number): Promise<ScheduleD
 
     const { data, error } = await supabase
       .from("scheduleDay")
-      .insert({ weekId, day })
+      .insert({ weekId: numericWeekId, day })
       .select()
       .single();
 
