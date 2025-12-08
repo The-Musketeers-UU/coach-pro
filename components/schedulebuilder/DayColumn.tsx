@@ -31,6 +31,7 @@ type DayColumnProps = {
   expandedScheduleModuleIds: string[];
   onSelectScheduledModule: (moduleId: string, isMultiSelect: boolean) => void;
   onToggleScheduledModuleExpansion: (moduleId: string) => void;
+  onOpenMobileLibrary: (dayId: string) => void;
 };
 
 export function DayColumn({
@@ -51,6 +52,7 @@ export function DayColumn({
   expandedScheduleModuleIds,
   onSelectScheduledModule,
   onToggleScheduledModuleExpansion,
+  onOpenMobileLibrary,
 }: DayColumnProps) {
   return (
     <div
@@ -69,6 +71,15 @@ export function DayColumn({
             {day.label}
           </p>
         </div>
+
+        <button
+          type="button"
+          className="btn btn-primary btn-sm gap-2 sm:hidden"
+          onClick={() => onOpenMobileLibrary(day.id)}
+        >
+          <span aria-hidden="true">＋</span>
+          Lägg till modul
+        </button>
       </div>
 
       <div className="mt-3 flex-1 space-y-1">

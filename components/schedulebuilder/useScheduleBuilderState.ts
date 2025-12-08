@@ -135,6 +135,16 @@ export const useScheduleBuilderState = ({
     event.preventDefault();
   };
 
+  const addLibraryModuleToDay = (dayId: string, moduleId: string) => {
+    const moduleToAdd = moduleLibrary.find((module) => module.id === moduleId);
+    if (!moduleToAdd) return;
+
+    setSchedule((prev) => ({
+      ...prev,
+      [dayId]: [cloneModuleForSchedule(moduleToAdd), ...(prev[dayId] ?? [])],
+    }));
+  };
+
   const registerScheduleCardRef = (
     dayId: string,
     index: number,
@@ -577,6 +587,7 @@ export const useScheduleBuilderState = ({
       handleDayDragOver,
       handleDrop,
       allowDrop,
+      addLibraryModuleToDay,
       isPreviewLocation,
       handleRemoveModule,
       registerScheduleCardRef,

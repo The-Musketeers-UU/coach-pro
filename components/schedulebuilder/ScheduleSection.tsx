@@ -42,6 +42,7 @@ type ScheduleSectionProps = {
   onWeekChange: (value: string) => void;
   scheduleTitle: string;
   onScheduleTitleChange: (value: string) => void;
+  onOpenMobileLibrary: (dayId: string) => void;
 };
 
 export function ScheduleSection({
@@ -68,6 +69,7 @@ export function ScheduleSection({
   onWeekChange,
   scheduleTitle,
   onScheduleTitleChange,
+  onOpenMobileLibrary,
 }: ScheduleSectionProps) {
   return (
     <section className="w-full max-w-full self-center space-y-6">
@@ -138,6 +140,7 @@ export function ScheduleSection({
               expandedScheduleModuleIds={expandedScheduleModuleIds}
               onSelectScheduledModule={onSelectScheduledModule}
               onToggleScheduledModuleExpansion={onToggleScheduledModuleExpansion}
+              onOpenMobileLibrary={onOpenMobileLibrary}
             />
           ))}
           </div>
