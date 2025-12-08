@@ -149,7 +149,8 @@ create policy "Links readable to participants"
       select 1
       from public."scheduleDay" sd
       join public."scheduleWeek" sw on sw.id = sd."weekId"
-      where sd.id = "_ModuleToScheduleDay".B
+      -- The join table columns are Pascal-case ("A" = module id, "B" = schedule day id)
+      where sd.id = "_ModuleToScheduleDay"."B"
         and (sw.owner = auth.uid() or sw.athlete = auth.uid())
     )
   );
@@ -163,7 +164,7 @@ create policy "Links writable by owner"
       select 1
       from public."scheduleDay" sd
       join public."scheduleWeek" sw on sw.id = sd."weekId"
-      where sd.id = "_ModuleToScheduleDay".B
+      where sd.id = "_ModuleToScheduleDay"."B"
         and sw.owner = auth.uid()
     )
   )
@@ -172,7 +173,7 @@ create policy "Links writable by owner"
       select 1
       from public."scheduleDay" sd
       join public."scheduleWeek" sw on sw.id = sd."weekId"
-      where sd.id = "_ModuleToScheduleDay".B
+      where sd.id = "_ModuleToScheduleDay"."B"
         and sw.owner = auth.uid()
     )
   );
