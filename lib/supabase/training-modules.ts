@@ -363,14 +363,14 @@ export const getScheduleWeeksWithModules = async (
   }
 
   const dayRows = days ?? [];
-  const dayIds = dayRows.map((day) => day.id);
+  const normalizedDayIds = dayRows.map((day) => normalizeNumericId(day.id));
 
   const links: ModuleScheduleDayRow[] = [];
-  if (dayIds.length > 0) {
+  if (normalizedDayIds.length > 0) {
     const { data: moduleLinks, error: moduleLinksError } = await supabase
       .from("_ModuleToScheduleDay")
       .select("A,B")
-      .in("B", dayIds);
+      .in("B", normalizedDayIds);
 
     if (moduleLinksError) {
       console.error("Error fetching module links for schedule days:", moduleLinksError);
@@ -380,7 +380,12 @@ export const getScheduleWeeksWithModules = async (
     links.push(...(moduleLinks ?? []));
   }
 
-  const moduleIds = Array.from(new Set(links.map((link) => link.A)));
+  const normalizedLinks = links.map((link) => ({
+    moduleId: String(link.A),
+    dayId: normalizeNumericId(link.B),
+  }));
+
+  const moduleIds = Array.from(new Set(normalizedLinks.map((link) => link.moduleId)));
 
   const modulesList: ModuleRow[] = [];
   if (moduleIds.length > 0) {
@@ -396,17 +401,17 @@ export const getScheduleWeeksWithModules = async (
       throw modulesError;
     }
 
-    modulesList.push(...(modules ?? []));
+    modulesList.push(...(modules ?? []).map(coerceModuleRow));
   }
-  const modulesById = new Map(modulesList.map((module) => [module.id, module]));
+  const modulesById = new Map(modulesList.map((module) => [String(module.id), module]));
   const modulesByDayId = new Map<number, ModuleRow[]>();
-  dayIds.forEach((dayId) => modulesByDayId.set(dayId, []));
+  normalizedDayIds.forEach((dayId) => modulesByDayId.set(dayId, []));
 
-  links.forEach((link) => {
-    const linkedModule = modulesById.get(link.A);
+  normalizedLinks.forEach((link) => {
+    const linkedModule = modulesById.get(link.moduleId);
     if (!linkedModule) return;
 
-    const current = modulesByDayId.get(link.B);
+    const current = modulesByDayId.get(link.dayId);
     if (current) {
       current.push(linkedModule);
     }
