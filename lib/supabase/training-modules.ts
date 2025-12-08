@@ -122,6 +122,30 @@ export type GetScheduleWeekByWeekInput = {
 const sanitizeNumber = (value: number | undefined) =>
   Number.isFinite(value) ? Number(value) : undefined;
 
+const formatSupabaseError = (error: unknown) => {
+  if (!error) return "Okänt fel";
+
+  if (error instanceof Error) {
+    return error.message;
+  }
+
+  if (typeof error === "object") {
+    const maybeError = error as {
+      message?: string;
+      code?: string;
+      details?: string;
+      hint?: string;
+    };
+
+    const parts = [maybeError.code, maybeError.message, maybeError.details, maybeError.hint].filter(Boolean);
+    if (parts.length) {
+      return parts.join(" | ");
+    }
+  }
+
+  return String(error);
+};
+
 const normalizeNumericId = (value: number | string) => {
   if (typeof value === "number") return value;
 
@@ -462,7 +486,8 @@ const deleteScheduleLinksForDays = async (dayIds: Array<number | string>) => {
     .in("B", numericDayIds);
 
   if (error) {
-    console.error("Error deleting module links for schedule days:", error);
+    const message = formatSupabaseError(error);
+    console.error("Error deleting module links for schedule days:", message);
     throw error;
   }
 };
@@ -480,7 +505,8 @@ const deleteScheduleDays = async (weekId: number | string, dayIds: Array<number 
     .eq("weekId", numericWeekId);
 
   if (error) {
-    console.error("Error deleting schedule days:", error);
+    const message = formatSupabaseError(error);
+    console.error("Error deleting schedule days:", message);
     throw error;
   }
 };
@@ -495,7 +521,8 @@ export const clearScheduleWeek = async (weekId: number | string): Promise<void> 
       .eq("weekId", numericWeekId);
 
     if (error) {
-      console.error("Error fetching schedule days to clear:", error);
+      const message = formatSupabaseError(error);
+      console.error("Error fetching schedule days to clear:", message);
       throw error;
     }
 
@@ -505,7 +532,8 @@ export const clearScheduleWeek = async (weekId: number | string): Promise<void> 
     await deleteScheduleLinksForDays(dayIds);
     await deleteScheduleDays(weekId, dayIds);
   } catch (error) {
-    console.error("Error clearing schedule week via SQL query:", error);
+    const message = formatSupabaseError(error);
+    console.error("Error clearing schedule week via SQL query:", message);
     throw error;
   }
 };
