@@ -8,8 +8,8 @@ export type FeedbackFieldPayload = {
   prompt: string;
 };
 
-export type ModuleRow = {
-  id: string;
+type DbModuleRow = {
+  id: number | string;
   owner: string;
   name: string;
   category: string;
@@ -24,13 +24,21 @@ export type ModuleRow = {
   feedbackFields: FeedbackFieldPayload[] | null;
 };
 
+export type ModuleRow = DbModuleRow & { id: string };
+
+const moduleSelectColumns =
+  "id,owner,name,category,subCategory,distance,duration,weight,description,comment,feeling,sleepHours,feedbackFields";
+
+const coerceModuleRow = (row: DbModuleRow): ModuleRow => ({
+  ...row,
+  id: String(row.id),
+});
+
 export const getModulesByOwner = async (ownerId: string): Promise<ModuleRow[]> => {
   try {
     const { data, error } = await supabase
       .from("module")
-      .select(
-        "id,owner,name,category,subCategory,distance,duration,weight,description,comment,feeling,sleepHours,feedbackFields",
-      )
+      .select(moduleSelectColumns)
       .eq("owner", ownerId)
       .order("name", { ascending: true });
 
@@ -39,7 +47,7 @@ export const getModulesByOwner = async (ownerId: string): Promise<ModuleRow[]> =
       throw error;
     }
 
-    return data ?? [];
+    return (data ?? []).map(coerceModuleRow);
   } catch (error) {
     console.error("Error retrieving modules via SQL query:", error);
     throw error;
@@ -237,9 +245,7 @@ const getScheduleDaysWithModules = async (
 
     const { data: modules, error: modulesError } = await supabase
       .from("module")
-      .select(
-        "id,owner,name,category,subCategory,distance,duration,weight,description,comment,feeling,sleepHours,feedbackFields",
-      )
+      .select(moduleSelectColumns)
       .in("id", moduleIds);
 
     if (modulesError) {
@@ -247,7 +253,7 @@ const getScheduleDaysWithModules = async (
       throw modulesError;
     }
 
-    const modulesList = modules ?? [];
+    const modulesList = (modules ?? []).map(coerceModuleRow);
     const modulesById = new Map(modulesList.map((module) => [module.id, module]));
 
     const modulesByDayId = new Map<number, ModuleRow[]>();
