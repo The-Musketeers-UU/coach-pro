@@ -154,31 +154,9 @@ export default function AthleteSchedulePage() {
     <div className="min-h-screen">
       <div className="mx-auto max-w-full space-y-5 px-5 py-5">
         <div className="flex gap-4 flex-row items-center justify-between">
-          <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:gap-12">
-            <h1 className="hidden pl-5 text-xl font-semibold sm:block">
-              Träningsöversikt
-            </h1>
-
-            <div className="flex w-full max-w-sm items-center gap-2">
-              <span className="whitespace-nowrap text-sm">Atlet:</span>
-
-              <select
-                className="select select-bordered select-sm flex-1"
-                value={selectedAthlete}
-                onChange={(event) => setSelectedAthlete(event.target.value)}
-                disabled={athletes.length === 0}
-              >
-                <option value="" disabled>
-                  {athletes.length === 0 ? "Inga atleter" : "Välj en atlet"}
-                </option>
-                {athletes.map((athlete) => (
-                  <option key={athlete.id} value={athlete.id}>
-                    {athlete.name} ({athlete.email})
-                  </option>
-                ))}
-              </select>
-            </div>
-          </div>
+          <h1 className="hidden pl-5 text-xl font-semibold sm:block w-[26vw]">
+            Träningsöversikt
+          </h1>
 
           <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-end">
             <div className="flex items-center gap-2">
@@ -204,6 +182,26 @@ export default function AthleteSchedulePage() {
                 &gt;
               </button>
             </div>
+          </div>
+
+          <div className="flex w-full max-w-sm items-center gap-2">
+            <span className="whitespace-nowrap text-sm">Atlet:</span>
+
+            <select
+              className="select select-bordered select-sm flex-1"
+              value={selectedAthlete}
+              onChange={(event) => setSelectedAthlete(event.target.value)}
+              disabled={athletes.length === 0}
+            >
+              <option value="" disabled>
+                {athletes.length === 0 ? "Inga atleter" : "Välj en atlet"}
+              </option>
+              {athletes.map((athlete) => (
+                <option key={athlete.id} value={athlete.id}>
+                  {athlete.name} ({athlete.email})
+                </option>
+              ))}
+            </select>
           </div>
         </div>
 
