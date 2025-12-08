@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, type ReactNode } from "react";
 
 import { ModuleBadges } from "@/components/ModuleBadges";
 
@@ -32,6 +32,7 @@ type WeekScheduleViewProps = {
   week?: ProgramWeek;
   weekNumber: number;
   title?: string;
+  headerAction?: ReactNode;
   emptyWeekTitle?: string;
   emptyWeekDescription?: string;
 };
@@ -57,6 +58,7 @@ export function WeekScheduleView({
   week,
   weekNumber,
   title,
+  headerAction,
   emptyWeekTitle = "Inget program",
   emptyWeekDescription = "Ingen data för veckan.",
 }: WeekScheduleViewProps) {
@@ -126,13 +128,17 @@ export function WeekScheduleView({
   return (
     <div className="card bg-base-200 border border-base-300 shadow-md">
       <div className="card-body gap-6">
-        <div className="grid grid-cols-3 items-center w-full">
-          <div>
+        <div className="flex items-start justify-between gap-4">
+          <div className="space-y-1">
             <h2 className="text-xl font-semibold">{heading}</h2>
             {week?.focus && (
               <p className="text-sm text-base-content/70">{week.focus}</p>
             )}
           </div>
+
+          {headerAction && (
+            <div className="flex items-center justify-end">{headerAction}</div>
+          )}
         </div>
 
         {week ? (

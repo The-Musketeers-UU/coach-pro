@@ -153,14 +153,14 @@ export default function AthleteSchedulePage() {
   return (
     <div className="min-h-screen">
       <div className="mx-auto max-w-full space-y-5 px-5 py-5">
-        <div className="grid grid-cols-3">
-          <div className="flex gap-12">
-            <h1 className="text-xl font-semibold pl-5 hidden sm:block">
+        <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:gap-12">
+            <h1 className="hidden pl-5 text-xl font-semibold sm:block">
               Träningsöversikt
             </h1>
 
             <div className="flex w-full max-w-sm items-center gap-3">
-              <span className="text-sm whitespace-nowrap">Välj atlet</span>
+              <span className="whitespace-nowrap text-sm">Välj atlet</span>
 
               <select
                 className="select select-bordered select-sm flex-1"
@@ -180,7 +180,7 @@ export default function AthleteSchedulePage() {
             </div>
           </div>
 
-          <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between justify-self-center">
+          <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-end">
             <div className="flex items-center gap-3">
               <button
                 className="btn btn-outline btn-xs btn-primary"
@@ -205,16 +205,6 @@ export default function AthleteSchedulePage() {
               </button>
             </div>
           </div>
-
-          <div className="flex items-center justify-end">
-            <button
-              className="btn btn-primary btn-sm"
-              onClick={handleModifyWeek}
-              disabled={!activeWeekId}
-            >
-              Redigera vecka
-            </button>
-          </div>
         </div>
 
         {error && <div className="alert alert-error">{error}</div>}
@@ -232,6 +222,15 @@ export default function AthleteSchedulePage() {
             weekNumber={weekNumber}
             emptyWeekTitle="Inget program"
             emptyWeekDescription="Ingen data för veckan."
+            headerAction={
+              <button
+                className="btn btn-primary btn-sm"
+                onClick={handleModifyWeek}
+                disabled={!activeWeekId}
+              >
+                Redigera schema
+              </button>
+            }
           />
         )}
       </div>
