@@ -6,7 +6,7 @@ A role-aware Next.js app for coaches who plan weekly training programs for their
 
 - **Coach workflows:** Build reusable training modules, drag them into week/day slots, save the week with a title, and assign it to an athlete. Weeks can be re-opened for edits from the dashboard.
 - **Athlete experience:** Athletes see their current week’s schedule and session details after signing in. Navigation routes users to the appropriate coach or athlete area based on their profile.
-- **Supabase-backed data:** Modules, athletes, and schedules are stored in Supabase via REST calls. Prisma migrations keep the Supabase schema in sync (see `docs/supabase-prisma.md`).
+- **Supabase-backed data:** Modules, athletes, and schedules are stored in Supabase via REST calls. Prisma migrations keep the Supabase schema in sync (see `docs/supabase-prisma.md`). Row-level security rules are required for the client-side anon key; see `docs/rls-policies.md`.
 - **UI stack:** Next.js App Router, Tailwind CSS, and DaisyUI components with client-side data fetching.
 
 ## Getting started
