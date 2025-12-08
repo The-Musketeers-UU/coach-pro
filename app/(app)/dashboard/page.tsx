@@ -155,7 +155,7 @@ export default function AthleteSchedulePage() {
       <div className="mx-auto max-w-full space-y-5 px-5 py-5">
         <div className="grid grid-cols-3">
           <div className="flex gap-12">
-            <h1 className="text-xl font-semibold pl-5">Träningsöversikt</h1>
+            <h1 className="text-xl font-semibold pl-5 hidden sm:block">Träningsöversikt</h1>
 
             <div className="flex w-full max-w-sm items-center gap-3">
               <span className="text-sm whitespace-nowrap">Välj atlet</span>

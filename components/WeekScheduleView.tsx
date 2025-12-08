@@ -88,7 +88,7 @@ export function WeekScheduleView({
     >
       <div className="flex items-center justify-between">
         <div>
-          <p className="text-xs font-semibold uppercase tracking-wide text-neutral">
+          <p className="text-xs font-semibold uppercase tracking-wide text-neutral hidden sm:block">
             {day.label}
           </p>
         </div>
@@ -139,7 +139,7 @@ export function WeekScheduleView({
           <div className="space-y-4">
             {week.days.length > 0 && (
               <div className="md:hidden -mx-4 sm:-mx-6">
-                <div className="flex w-full items-center gap-2 overflow-x-auto rounded-2xl border border-base-300 bg-base-100 p-2 px-4 sm:px-6">
+                <div className="flex w-full items-center overflow-x-auto border border-base-300 bg-base-100">
                   {week.days.map((day) => (
                     <button
                       key={day.id}
@@ -158,7 +158,7 @@ export function WeekScheduleView({
                 </div>
 
                 {selectedDay && (
-                  <div className="mt-2 w-full px-4 sm:px-6">
+                  <div className="mt-2 w-full sm:px-6">
                     {renderDayContent(selectedDay)}
                   </div>
                 )}
