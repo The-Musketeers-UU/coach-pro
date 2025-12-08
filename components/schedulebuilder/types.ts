@@ -12,7 +12,6 @@ export type Module = {
   comment?: string;
   feeling?: number;
   sleepHours?: number;
-  feedbackFields?: FeedbackField[];
   sourceModuleId?: string;
 };
 
@@ -40,7 +39,7 @@ export type ModuleForm = {
   comment: string;
   feeling: string;
   sleepHours: string;
-  feedbackFields: FeedbackField[];
+  activeFeedbackFields: FeedbackFieldType[];
 };
 
 export type FeedbackFieldType =
@@ -50,12 +49,6 @@ export type FeedbackFieldType =
   | "comment"
   | "feeling"
   | "sleepHours";
-
-export type FeedbackField = {
-  id: string;
-  type: FeedbackFieldType;
-  prompt: string;
-};
 
 export type Athlete = {
   id: string;

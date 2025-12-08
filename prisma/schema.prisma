@@ -44,7 +44,6 @@ model Module {
   comment     String? @db.Text
   feeling     Int?
   sleepHours  Int?
-  feedbackFields Json?
 
   scheduleDays ScheduleDay[]
 

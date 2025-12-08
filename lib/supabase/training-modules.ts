@@ -2,12 +2,6 @@ import type { User as SupabaseAuthUser } from "@supabase/supabase-js";
 
 import { supabase } from "@/lib/supabase";
 
-export type FeedbackFieldPayload = {
-  id: string;
-  type: string;
-  prompt: string;
-};
-
 type DbModuleRow = {
   id: number | string;
   owner: string;
@@ -21,13 +15,12 @@ type DbModuleRow = {
   comment: string | null;
   feeling: number | null;
   sleepHours: number | null;
-  feedbackFields: FeedbackFieldPayload[] | null;
 };
 
 export type ModuleRow = DbModuleRow & { id: string };
 
 const moduleSelectColumns =
-  "id,owner,name,category,subCategory,distance,duration,weight,description,comment,feeling,sleepHours,feedbackFields";
+  "id,owner,name,category,subCategory,distance,duration,weight,description,comment,feeling,sleepHours";
 
 const coerceModuleRow = (row: DbModuleRow): ModuleRow => ({
   ...row,
@@ -98,7 +91,6 @@ export type CreateModuleInput = {
   comment?: string;
   feeling?: number;
   sleepHours?: number;
-  feedbackFields?: FeedbackFieldPayload[];
 };
 
 export type CreateScheduleWeekInput = {
@@ -575,11 +567,6 @@ export const getScheduleWeekWithModulesById = async (
 };
 
 export const createModule = async (input: CreateModuleInput): Promise<ModuleRow> => {
-  const feedbackFields =
-    Array.isArray(input.feedbackFields) && input.feedbackFields.length > 0
-      ? input.feedbackFields
-      : null;
-
   const payload = {
     owner: input.ownerId,
     name: input.name,
@@ -592,7 +579,6 @@ export const createModule = async (input: CreateModuleInput): Promise<ModuleRow>
     comment: input.comment?.trim() || null,
     feeling: sanitizeNumber(input.feeling) ?? null,
     sleepHours: sanitizeNumber(input.sleepHours) ?? null,
-    feedbackFields,
   } satisfies Omit<ModuleRow, "id">;
 
   try {

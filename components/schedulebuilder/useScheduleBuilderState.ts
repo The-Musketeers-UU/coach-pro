@@ -30,17 +30,8 @@ const createInitialFormState = (): ModuleForm => ({
   comment: "",
   feeling: "",
   sleepHours: "",
-  feedbackFields: [],
+  activeFeedbackFields: [],
 });
-
-const feedbackPromptFallbacks: Record<string, string> = {
-  distance: "Hur långt blev passet?",
-  duration: "Hur lång tid tog passet?",
-  weight: "Vilken vikt använde du?",
-  comment: "Lämna en kommentar om passet",
-  feeling: "Hur kändes passet?",
-  sleepHours: "Hur många timmars sömn fick du?",
-};
 
 const createEmptySchedule = (days: Day[]): DaySchedule =>
   days.reduce((acc, day) => ({ ...acc, [day.id]: [] }), {} as DaySchedule);
@@ -141,7 +132,6 @@ export const useScheduleBuilderState = ({
       comment: module.comment,
       feeling: module.feeling,
       sleepHours: module.sleepHours,
-      feedbackFields: module.feedbackFields,
       sourceModuleId: module.sourceModuleId ?? module.id,
     };
   };
@@ -378,16 +368,24 @@ export const useScheduleBuilderState = ({
       };
     }
 
-    const sanitizedFeedbackFields = formState.feedbackFields.map(
-      (field, index) => ({
-        id: field.id || `${field.type}-${index}`,
-        type: field.type,
-        prompt:
-          field.prompt.trim() ||
-          feedbackPromptFallbacks[field.type] ||
-          field.type,
-      })
-    );
+    const toNumberIfActive = (type: typeof formState.activeFeedbackFields[number]) => {
+      if (!formState.activeFeedbackFields.includes(type)) {
+        return undefined;
+      }
+
+      const rawValue = formState[type].trim();
+      if (!rawValue) return undefined;
+
+      const parsed = Number.parseFloat(rawValue);
+      return Number.isFinite(parsed) ? parsed : undefined;
+    };
+
+    const toTextIfActive = (type: "comment") => {
+      if (!formState.activeFeedbackFields.includes(type)) return undefined;
+
+      const trimmed = formState[type].trim();
+      return trimmed || undefined;
+    };
 
     return {
       module: {
@@ -396,7 +394,12 @@ export const useScheduleBuilderState = ({
         description: trimmedDescription,
         category: selectedCategory,
         subcategory: trimmedSubcategory || undefined,
-        feedbackFields: sanitizedFeedbackFields,
+        distance: toNumberIfActive("distance"),
+        duration: toNumberIfActive("duration"),
+        weight: toNumberIfActive("weight"),
+        feeling: toNumberIfActive("feeling"),
+        sleepHours: toNumberIfActive("sleepHours"),
+        comment: toTextIfActive("comment"),
         sourceModuleId: moduleId,
       },
     };
@@ -445,6 +448,32 @@ export const useScheduleBuilderState = ({
     setEditFormError(null);
     setIsEditMode(false);
     setEditingContext(context);
+    const activeFeedbackFields: ModuleForm["activeFeedbackFields"] = [];
+
+    if (module.distance !== undefined) {
+      activeFeedbackFields.push("distance");
+    }
+
+    if (module.duration !== undefined) {
+      activeFeedbackFields.push("duration");
+    }
+
+    if (module.weight !== undefined) {
+      activeFeedbackFields.push("weight");
+    }
+
+    if (module.comment) {
+      activeFeedbackFields.push("comment");
+    }
+
+    if (module.feeling !== undefined) {
+      activeFeedbackFields.push("feeling");
+    }
+
+    if (module.sleepHours !== undefined) {
+      activeFeedbackFields.push("sleepHours");
+    }
+
     setEditingModuleForm({
       title: module.title,
       description: module.description,
@@ -457,6 +486,7 @@ export const useScheduleBuilderState = ({
       feeling: module.feeling !== undefined ? String(module.feeling) : "",
       sleepHours:
         module.sleepHours !== undefined ? String(module.sleepHours) : "",
+      activeFeedbackFields,
     });
   };
 
