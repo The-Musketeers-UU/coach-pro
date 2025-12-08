@@ -1,7 +1,6 @@
 import type { User as SupabaseAuthUser } from "@supabase/supabase-js";
 
-import { supabaseRequest } from "./client";
-import { supabase } from '@/lib/supabase';
+import { supabase } from "@/lib/supabase";
 
 export type ModuleRow = {
   id: string;
@@ -16,28 +15,27 @@ export type ModuleRow = {
   description: string | null;
 };
 
-export const getModulesByOwner = async (ownerId: string): Promise<ModuleRow[]> =>
-  {
-    try {
-      const { data, error } = await supabase
-        .from("module")
-        .select(
-          "id,owner,name,category,subCategory,distance,durationSeconds,durationMinutes,weight,description",
-        )
-        .eq("owner", ownerId)
-        .order("name", { ascending: true });
+export const getModulesByOwner = async (ownerId: string): Promise<ModuleRow[]> => {
+  try {
+    const { data, error } = await supabase
+      .from("module")
+      .select(
+        "id,owner,name,category,subCategory,distance,durationSeconds,durationMinutes,weight,description",
+      )
+      .eq("owner", ownerId)
+      .order("name", { ascending: true });
 
-      if (error) {
-        console.error("Error fetching modules by owner:", error);
-        throw error;
-      }
-
-      return data ?? [];
-    } catch (error) {
-      console.error("Error retrieving modules via SQL query:", error);
+    if (error) {
+      console.error("Error fetching modules by owner:", error);
       throw error;
     }
-  };
+
+    return data ?? [];
+  } catch (error) {
+    console.error("Error retrieving modules via SQL query:", error);
+    throw error;
+  }
+};
 
 export type ScheduleWeekRow = {
   id: string;
@@ -104,52 +102,67 @@ export type GetScheduleWeekByWeekInput = {
 const sanitizeNumber = (value: number | undefined) =>
   Number.isFinite(value) ? Number(value) : undefined;
 
-const buildInFilter = (values: string[]) =>
-  `in.(${values.map((value) => `"${value}"`).join(",")})`;
+export const getAthletes = async (): Promise<AthleteRow[]> => {
+  try {
+    const { data, error } = await supabase
+      .from("user")
+      .select("id,name,email,isCoach")
+      .eq("isCoach", false)
+      .order("name", { ascending: true });
 
-export const getAthletes = async (): Promise<AthleteRow[]> =>
-  {
-    try {
-      const { data, error } = await supabase
-        .from("user")
-        .select("id,name,email,isCoach")
-        .eq("isCoach", false)
-        .order("name", { ascending: true });
-
-      if (error) {
-        console.error("Error fetching athletes:", error);
-        throw error;
-      }
-
-      return data ?? [];
-    } catch (error) {
-      console.error("Error retrieving athletes via SQL query:", error);
+    if (error) {
+      console.error("Error fetching athletes:", error);
       throw error;
     }
-  };
 
+    return data ?? [];
+  } catch (error) {
+    console.error("Error retrieving athletes via SQL query:", error);
+    throw error;
+  }
+};
 
+export const getCoaches = async (): Promise<AthleteRow[]> => {
+  try {
+    const { data, error } = await supabase
+      .from("user")
+      .select("id,name,email,isCoach")
+      .eq("isCoach", true)
+      .order("name", { ascending: true });
 
+    if (error) {
+      console.error("Error fetching coaches:", error);
+      throw error;
+    }
 
-export const getCoaches = async (): Promise<AthleteRow[]> =>
-  supabaseRequest<AthleteRow[]>("user", {
-    searchParams: {
-      select: "id,name,email,isCoach",
-      isCoach: "eq.true",
-      order: "name.asc",
-    },
-  });
+    return data ?? [];
+  } catch (error) {
+    console.error("Error retrieving coaches via SQL query:", error);
+    throw error;
+  }
+};
 
 export const getScheduleWeeksByAthlete = async (
   athleteId: string,
-): Promise<ScheduleWeekRow[]> =>
-  supabaseRequest<ScheduleWeekRow[]>("scheduleWeek", {
-    searchParams: {
-      select: "id,week,owner,athlete,title",
-      athlete: `eq.${athleteId}`,
-      order: "week.asc",
-    },
-  });
+): Promise<ScheduleWeekRow[]> => {
+  try {
+    const { data, error } = await supabase
+      .from("scheduleWeek")
+      .select("id,week,owner,athlete,title")
+      .eq("athlete", athleteId)
+      .order("week", { ascending: true });
+
+    if (error) {
+      console.error("Error fetching schedule weeks:", error);
+      throw error;
+    }
+
+    return data ?? [];
+  } catch (error) {
+    console.error("Error retrieving schedule weeks via SQL query:", error);
+    throw error;
+  }
+};
 
 export type ScheduleDayWithModules = ScheduleDayRow & { modules: ModuleRow[] };
 
@@ -160,72 +173,90 @@ export type ScheduleWeekWithModules = ScheduleWeekRow & {
 const getScheduleDaysWithModules = async (
   weekId: string,
 ): Promise<ScheduleDayWithModules[]> => {
-  const scheduleDays = await supabaseRequest<ScheduleDayRow[]>("scheduleDay", {
-    searchParams: {
-      select: "id,day,weekId",
-      weekId: `eq.${weekId}`,
-      order: "day.asc",
-    },
-  });
+  try {
+    const { data: scheduleDays, error: scheduleDaysError } = await supabase
+      .from("scheduleDay")
+      .select("id,day,weekId")
+      .eq("weekId", weekId)
+      .order("day", { ascending: true });
 
-  if (scheduleDays.length === 0) return [];
-
-  const dayIds = scheduleDays.map((day) => day.id);
-
-  const moduleLinks = await supabaseRequest<ModuleScheduleDayRow[]>(
-    "_ModuleToScheduleDay",
-    {
-      searchParams: {
-        B: buildInFilter(dayIds),
-      },
-    },
-  );
-
-  if (moduleLinks.length === 0) {
-    return scheduleDays.map((day) => ({ ...day, modules: [] }));
-  }
-
-  const moduleIds = Array.from(new Set(moduleLinks.map((link) => link.A)));
-
-  const modules = await supabaseRequest<ModuleRow[]>("module", {
-    searchParams: {
-      id: buildInFilter(moduleIds),
-    },
-  });
-
-  const modulesById = new Map(modules.map((module) => [module.id, module]));
-
-  const modulesByDayId = new Map<string, ModuleRow[]>();
-  dayIds.forEach((dayId) => modulesByDayId.set(dayId, []));
-
-  moduleLinks.forEach((link) => {
-    const linkedModule = modulesById.get(link.A);
-    if (!linkedModule) return;
-
-    const current = modulesByDayId.get(link.B);
-    if (current) {
-      current.push(linkedModule);
-    }
-  });
-
-  const aggregatedByDay = new Map<number, ScheduleDayWithModules>();
-
-  scheduleDays.forEach((day) => {
-    const modulesForDay = modulesByDayId.get(day.id) ?? [];
-    const existing = aggregatedByDay.get(day.day);
-
-    if (existing) {
-      existing.modules.push(...modulesForDay);
-      return;
+    if (scheduleDaysError) {
+      console.error("Error fetching schedule days:", scheduleDaysError);
+      throw scheduleDaysError;
     }
 
-    aggregatedByDay.set(day.day, {
-      ...day,
-      modules: [...modulesForDay],
+    const days = scheduleDays ?? [];
+    if (days.length === 0) return [];
+
+    const dayIds = days.map((day) => day.id);
+
+    const { data: moduleLinks, error: moduleLinksError } = await supabase
+      .from("_ModuleToScheduleDay")
+      .select("A,B")
+      .in("B", dayIds);
+
+    if (moduleLinksError) {
+      console.error("Error fetching module links for schedule days:", moduleLinksError);
+      throw moduleLinksError;
+    }
+
+    const links = moduleLinks ?? [];
+    if (links.length === 0) {
+      return days.map((day) => ({ ...day, modules: [] }));
+    }
+
+    const moduleIds = Array.from(new Set(links.map((link) => link.A)));
+
+    const { data: modules, error: modulesError } = await supabase
+      .from("module")
+      .select(
+        "id,owner,name,category,subCategory,distance,durationSeconds,durationMinutes,weight,description",
+      )
+      .in("id", moduleIds);
+
+    if (modulesError) {
+      console.error("Error fetching modules for schedule days:", modulesError);
+      throw modulesError;
+    }
+
+    const modulesList = modules ?? [];
+    const modulesById = new Map(modulesList.map((module) => [module.id, module]));
+
+    const modulesByDayId = new Map<string, ModuleRow[]>();
+    dayIds.forEach((dayId) => modulesByDayId.set(dayId, []));
+
+    links.forEach((link) => {
+      const linkedModule = modulesById.get(link.A);
+      if (!linkedModule) return;
+
+      const current = modulesByDayId.get(link.B);
+      if (current) {
+        current.push(linkedModule);
+      }
     });
-  });
 
-  return Array.from(aggregatedByDay.values()).sort((a, b) => a.day - b.day);
+    const aggregatedByDay = new Map<number, ScheduleDayWithModules>();
+
+    days.forEach((day) => {
+      const modulesForDay = modulesByDayId.get(day.id) ?? [];
+      const existing = aggregatedByDay.get(day.day);
+
+      if (existing) {
+        existing.modules.push(...modulesForDay);
+        return;
+      }
+
+      aggregatedByDay.set(day.day, {
+        ...day,
+        modules: [...modulesForDay],
+      });
+    });
+
+    return Array.from(aggregatedByDay.values()).sort((a, b) => a.day - b.day);
+  } catch (error) {
+    console.error("Error retrieving schedule days with modules via SQL query:", error);
+    throw error;
+  }
 };
 
 const fillMissingDays = (weekId: string, days: ScheduleDayWithModules[]) => {
@@ -271,85 +302,110 @@ export const getScheduleWeeksWithModules = async (
 export const getScheduleWeekByAthleteAndWeek = async (
   input: GetScheduleWeekByWeekInput,
 ): Promise<ScheduleWeekRow | null> => {
-  const existingWeeks = await supabaseRequest<ScheduleWeekRow[]>(
-    "scheduleWeek",
-    {
-      searchParams: {
-        select: "id,week,owner,athlete,title",
-        athlete: `eq.${input.athleteId}`,
-        week: `eq.${input.week}`,
-        order: "id.asc",
-      },
-    },
-  );
+  try {
+    const { data, error } = await supabase
+      .from("scheduleWeek")
+      .select("id,week,owner,athlete,title")
+      .eq("athlete", input.athleteId)
+      .eq("week", input.week)
+      .order("id", { ascending: true });
 
-  if (existingWeeks.length > 1) {
-    throw new Error(
-      "Flera scheman finns redan för samma vecka. Rensa dubbletter innan du fortsätter.",
-    );
+    if (error) {
+      console.error("Error fetching schedule week by athlete and week:", error);
+      throw error;
+    }
+
+    const existingWeeks = data ?? [];
+
+    if (existingWeeks.length > 1) {
+      throw new Error(
+        "Flera scheman finns redan fAr samma vecka. Rensa dubbletter innan du fortsAtter.",
+      );
+    }
+
+    return existingWeeks[0] ?? null;
+  } catch (error) {
+    console.error("Error retrieving schedule week via SQL query:", error);
+    throw error;
   }
-
-  return existingWeeks[0] ?? null;
 };
 
 const deleteScheduleLinksForDays = async (dayIds: string[]) => {
   if (dayIds.length === 0) return;
 
-  await supabaseRequest("_ModuleToScheduleDay", {
-    method: "DELETE",
-    searchParams: {
-      B: buildInFilter(dayIds),
-    },
-  });
+  const { error } = await supabase.from("_ModuleToScheduleDay").delete().in("B", dayIds);
+
+  if (error) {
+    console.error("Error deleting module links for schedule days:", error);
+    throw error;
+  }
 };
 
 const deleteScheduleDays = async (weekId: string, dayIds: string[]) => {
   if (dayIds.length === 0) return;
 
-  await supabaseRequest("scheduleDay", {
-    method: "DELETE",
-    searchParams: {
-      id: buildInFilter(dayIds),
-      weekId: `eq.${weekId}`,
-    },
-  });
+  const { error } = await supabase
+    .from("scheduleDay")
+    .delete()
+    .in("id", dayIds)
+    .eq("weekId", weekId);
+
+  if (error) {
+    console.error("Error deleting schedule days:", error);
+    throw error;
+  }
 };
 
 export const clearScheduleWeek = async (weekId: string): Promise<void> => {
-  const existingDays = await supabaseRequest<ScheduleDayRow[]>("scheduleDay", {
-    searchParams: {
-      select: "id",
-      weekId: `eq.${weekId}`,
-    },
-  });
+  try {
+    const { data: existingDays, error } = await supabase
+      .from("scheduleDay")
+      .select("id")
+      .eq("weekId", weekId);
 
-  const dayIds = existingDays.map((day) => day.id);
+    if (error) {
+      console.error("Error fetching schedule days to clear:", error);
+      throw error;
+    }
 
-  if (dayIds.length === 0) return;
+    const dayIds = (existingDays ?? []).map((day) => day.id);
+    if (dayIds.length === 0) return;
 
-  await deleteScheduleLinksForDays(dayIds);
-  await deleteScheduleDays(weekId, dayIds);
+    await deleteScheduleLinksForDays(dayIds);
+    await deleteScheduleDays(weekId, dayIds);
+  } catch (error) {
+    console.error("Error clearing schedule week via SQL query:", error);
+    throw error;
+  }
 };
 
 export const getScheduleWeekWithModulesById = async (
   weekId: string,
 ): Promise<ScheduleWeekWithModules | null> => {
-  const [week] = await supabaseRequest<ScheduleWeekRow[]>("scheduleWeek", {
-    searchParams: {
-      select: "id,week,owner,athlete,title",
-      id: `eq.${weekId}`,
-      limit: "1",
-    },
-  });
+  try {
+    const { data: week, error } = await supabase
+      .from("scheduleWeek")
+      .select("id,week,owner,athlete,title")
+      .eq("id", weekId)
+      .maybeSingle();
 
-  if (!week) return null;
+    if (error) {
+      console.error("Error fetching schedule week by id:", error);
+      throw error;
+    }
 
-  const days = await getScheduleDaysWithModules(week.id);
+    if (!week) return null;
 
-  return {
-    ...week,
-    days: fillMissingDays(week.id, days),
-  };
+    const days = await getScheduleDaysWithModules(week.id);
+
+    return {
+      ...week,
+      days: fillMissingDays(week.id, days),
+    };
+  } catch (error) {
+    console.error("Error retrieving schedule week with modules via SQL query:", error);
+    throw error;
+  }
 };
 
 export const createModule = async (input: CreateModuleInput): Promise<ModuleRow> => {
@@ -366,20 +422,16 @@ export const createModule = async (input: CreateModuleInput): Promise<ModuleRow>
   } satisfies Omit<ModuleRow, "id">;
 
   try {
-    const { data, error } = await supabase
-      .from("module")
-      .insert(payload)
-      .select()
-      .single();
+    const { data, error } = await supabase.from("module").insert(payload).select().single();
 
     if (error) {
-      console.error("❌ Error adding a new module:", error);
+      console.error("ƒ?O Error adding a new module:", error);
       throw error;
     }
 
     return data;
   } catch (error) {
-    console.error("❌ Error creating module:", error);
+    console.error("ƒ?O Error creating module:", error);
     throw error;
   }
 };
@@ -395,7 +447,7 @@ export const createScheduleWeek = async (
   });
 
   if (existingWeek) {
-    throw new Error("Ett schema för den här veckan finns redan för atleten.");
+    throw new Error("Ett schema fAr den hAr veckan finns redan fAr atleten.");
   }
 
   const payload = {
@@ -405,13 +457,23 @@ export const createScheduleWeek = async (
     title,
   } satisfies Omit<ScheduleWeekRow, "id">;
 
-  const data = await supabaseRequest<ScheduleWeekRow[]>("scheduleWeek", {
-    method: "POST",
-    body: payload,
-    prefer: "return=representation",
-  });
+  try {
+    const { data, error } = await supabase
+      .from("scheduleWeek")
+      .insert(payload)
+      .select()
+      .single();
 
-  return data[0];
+    if (error) {
+      console.error("Error creating schedule week:", error);
+      throw error;
+    }
+
+    return data;
+  } catch (error) {
+    console.error("Error persisting schedule week via SQL query:", error);
+    throw error;
+  }
 };
 
 export const updateScheduleWeek = async (
@@ -422,32 +484,44 @@ export const updateScheduleWeek = async (
     ...(updates.title !== undefined ? { title: updates.title.trim() } : {}),
   } satisfies Partial<ScheduleWeekRow>;
 
-  const data = await supabaseRequest<ScheduleWeekRow[]>("scheduleWeek", {
-    method: "PATCH",
-    searchParams: {
-      id: `eq.${weekId}`,
-    },
-    body,
-    prefer: "return=representation",
-  });
+  try {
+    const { data, error } = await supabase
+      .from("scheduleWeek")
+      .update(body)
+      .eq("id", weekId)
+      .select()
+      .single();
 
-  return data[0];
+    if (error) {
+      console.error("Error updating schedule week:", error);
+      throw error;
+    }
+
+    return data;
+  } catch (error) {
+    console.error("Error persisting schedule week updates via SQL query:", error);
+    throw error;
+  }
 };
 
-const createScheduleDay = async (
-  weekId: string,
-  day: number,
-): Promise<ScheduleDayRow> => {
-  const [createdDay] = await supabaseRequest<ScheduleDayRow[]>("scheduleDay", {
-    method: "POST",
-    body: {
-      weekId,
-      day,
-    },
-    prefer: "return=representation",
-  });
+const createScheduleDay = async (weekId: string, day: number): Promise<ScheduleDayRow> => {
+  try {
+    const { data, error } = await supabase
+      .from("scheduleDay")
+      .insert({ weekId, day })
+      .select()
+      .single();
 
-  return createdDay;
+    if (error) {
+      console.error("Error creating schedule day:", error);
+      throw error;
+    }
+
+    return data;
+  } catch (error) {
+    console.error("Error persisting schedule day via SQL query:", error);
+    throw error;
+  }
 };
 
 export const addModuleToScheduleDay = async (
@@ -455,16 +529,26 @@ export const addModuleToScheduleDay = async (
 ): Promise<{ day: ScheduleDayRow; link: ModuleScheduleDayRow }> => {
   const dayRow = await createScheduleDay(input.weekId, input.day);
 
-  const [linkRow] = await supabaseRequest<ModuleScheduleDayRow[]>("_ModuleToScheduleDay", {
-    method: "POST",
-    body: {
-      A: input.moduleId,
-      B: dayRow.id,
-    },
-    prefer: "return=representation",
-  });
+  try {
+    const { data: linkRow, error } = await supabase
+      .from("_ModuleToScheduleDay")
+      .insert({
+        A: input.moduleId,
+        B: dayRow.id,
+      })
+      .select()
+      .single();
 
-  return { day: dayRow, link: linkRow };
+    if (error) {
+      console.error("Error linking module to schedule day:", error);
+      throw error;
+    }
+
+    return { day: dayRow, link: linkRow };
+  } catch (error) {
+    console.error("Error persisting module link via SQL query:", error);
+    throw error;
+  }
 };
 
 export const createUser = async (input: CreateUserInput): Promise<AthleteRow> => {
@@ -474,37 +558,41 @@ export const createUser = async (input: CreateUserInput): Promise<AthleteRow> =>
     isCoach: Boolean(input.isCoach),
   } satisfies Omit<AthleteRow, "id">;
 
-  const data = await supabaseRequest<AthleteRow[]>("user", {
-    method: "POST",
-    body: payload,
-    prefer: "return=representation",
-  });
+  try {
+    const { data, error } = await supabase.from("user").insert(payload).select().single();
 
-  return data[0];
+    if (error) {
+      console.error("Error creating user:", error);
+      throw error;
+    }
+
+    return data;
+  } catch (error) {
+    console.error("Error persisting user via SQL query:", error);
+    throw error;
+  }
 };
 
-export const findUserByEmail = async (
-  email: string,
-): Promise<AthleteRow | null> => {
-  console.log("🔍 Finding user by email:", email);
+export const findUserByEmail = async (email: string): Promise<AthleteRow | null> => {
+  console.log("Finding user by email:", email);
 
   try {
     const { data: user, error } = await supabase
-      .from('user')
-      .select('id,name,email,isCoach')
-      .eq('email', email)
+      .from("user")
+      .select("id,name,email,isCoach")
+      .eq("email", email)
       .limit(1)
       .maybeSingle(); // Returns null if not found, throws on multiple results
 
     if (error) {
-      console.error("❌ Error finding user by email:", error);
+      console.error("ƒ?O Error finding user by email:", error);
       throw error;
     }
 
-    console.log("✅ User found:", user);
+    console.log("ƒo. User found:", user);
     return user;
   } catch (error) {
-    console.error("❌ Error finding user by email:", error);
+    console.error("ƒ?O Error finding user by email:", error);
     throw error;
   }
 };

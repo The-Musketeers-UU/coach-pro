@@ -15,6 +15,7 @@ import {
   updateModuleComment,
   type ModuleCommentRow,
 } from "@/lib/supabase/comments";
+import { isDataView } from "util/types";
 
 export type ProgramModule = {
   id?: string;

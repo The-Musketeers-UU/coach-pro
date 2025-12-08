@@ -1,4 +1,4 @@
-import { supabaseRequest } from "./client";
+import { supabase } from "../supabase";
 
 export type ModuleCommentRow = {
   id: string;
@@ -14,19 +14,28 @@ export const getCommentsForModule = async (input: {
   moduleId: string;
   athleteId?: string;
 }): Promise<ModuleCommentRow[]> => {
-  const searchParams: Record<string, string> = {
-    select: "id,moduleId,athleteId,coachId,body,createdAt,updatedAt",
-    moduleId: `eq.${input.moduleId}`,
-    order: "createdAt.asc",
-  };
+  try {
+    let query = supabase
+      .from("moduleComment")
+      .select("id,moduleId,athleteId,coachId,body,createdAt,updatedAt")
+      .eq("moduleId", input.moduleId)
+      .order("createdAt", { ascending: true });
 
-  if (input.athleteId) {
-    searchParams.athleteId = `eq.${input.athleteId}`;
+    if (input.athleteId) {
+      query = query.eq("athleteId", input.athleteId);
+    }
+
+    const { data, error } = await query;
+    if (error) {
+      console.error("Error fetching module comments:", error);
+      throw error;
+    }
+
+    return data ?? [];
+  } catch (error) {
+    console.error("Error retrieving module comments via SQL query:", error);
+    throw error;
   }
-
-  return supabaseRequest<ModuleCommentRow[]>("moduleComment", {
-    searchParams,
-  });
 };
 
 export const createModuleComment = async (input: {
@@ -35,36 +44,58 @@ export const createModuleComment = async (input: {
   coachId: string;
   body: string;
 }): Promise<ModuleCommentRow> => {
+  const timestamp = new Date().toISOString();
   const payload = {
     moduleId: input.moduleId,
     athleteId: input.athleteId,
     coachId: input.coachId,
     body: input.body.trim(),
+    createdAt: timestamp,
+    updatedAt: timestamp,
   };
 
-  const data = await supabaseRequest<ModuleCommentRow[]>("moduleComment", {
-    method: "POST",
-    body: payload,
-    prefer: "return=representation",
-  });
+  try {
+    const { data, error } = await supabase
+      .from("moduleComment")
+      .insert(payload)
+      .select()
+      .single();
 
-  return data[0];
+    if (error) {
+      console.error("Error creating module comment:", error);
+      throw error;
+    }
+
+    return data;
+  } catch (error) {
+    console.error("Error persisting module comment via SQL query:", error);
+    throw error;
+  }
 };
 
 export const updateModuleComment = async (
   commentId: string,
   updates: { body: string },
 ): Promise<ModuleCommentRow> => {
-  const data = await supabaseRequest<ModuleCommentRow[]>("moduleComment", {
-    method: "PATCH",
-    searchParams: {
-      id: `eq.${commentId}`,
-    },
-    body: {
-      body: updates.body.trim(),
-    },
-    prefer: "return=representation",
-  });
+  const trimmedBody = updates.body.trim();
+  const updatedAt = new Date().toISOString();
 
-  return data[0];
+  try {
+    const { data, error } = await supabase
+      .from("moduleComment")
+      .update({ body: trimmedBody, updatedAt })
+      .eq("id", commentId)
+      .select()
+      .single();
+
+    if (error) {
+      console.error("Error updating module comment:", error);
+      throw error;
+    }
+
+    return data;
+  } catch (error) {
+    console.error("Error persisting module comment update via SQL query:", error);
+    throw error;
+  }
 };
