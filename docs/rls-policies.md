@@ -28,7 +28,6 @@ alter table public."scheduleWeek" enable row level security;
 alter table public."scheduleDay" enable row level security;
 alter table public."_ModuleToScheduleDay" enable row level security;
 
--- Drop old policies with these names if they exist (no-op if missing)
 drop policy if exists "Users can read directory" on public."user";
 drop policy if exists "Users manage own row" on public."user";
 drop policy if exists "Modules readable by owner" on public."module";
@@ -36,7 +35,8 @@ drop policy if exists "Modules writable by owner" on public."module";
 drop policy if exists "Weeks visible to participants" on public."scheduleWeek";
 drop policy if exists "Weeks writable by owner" on public."scheduleWeek";
 drop policy if exists "Days visible to participants" on public."scheduleDay";
-drop policy if exists "Days writable by owner" on public."scheduleDay";
+drop policy if exists "Days insertable by owner" on public."scheduleDay";
+drop policy if exists "Days updatable by owner" on public."scheduleDay";
 drop policy if exists "Days deletable by owner" on public."scheduleDay";
 drop policy if exists "Links readable to participants" on public."_ModuleToScheduleDay";
 drop policy if exists "Links writable by owner" on public."_ModuleToScheduleDay";
@@ -101,7 +101,8 @@ create policy "Weeks writable by owner"
 
 ### `scheduleDay`
 
-Visibility and writes are inherited from the parent `scheduleWeek`.
+Visibility and writes are inherited from the parent `scheduleWeek`. Postgres policies only support a single command per policy,
+so insert and update rules are split for clarity.
 
 ```sql
 create policy "Days visible to participants"
@@ -116,9 +117,21 @@ create policy "Days visible to participants"
     )
   );
 
-create policy "Days writable by owner"
+create policy "Days insertable by owner"
   on public."scheduleDay"
-  for insert, update
+  for insert
+  to authenticated
+  with check (
+    exists (
+      select 1
+      from public."scheduleWeek" sw
+      where sw.id = "weekId" and sw.owner = auth.uid()
+    )
+  );
+
+create policy "Days updatable by owner"
+  on public."scheduleDay"
+  for update
   to authenticated
   using (
     exists (
