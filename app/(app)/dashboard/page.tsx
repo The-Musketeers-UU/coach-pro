@@ -33,16 +33,18 @@ const toProgramWeek = (week: ScheduleWeekWithModules): ProgramWeek => ({
     days: week.days.map((day) => ({
       id: day.id,
       label: dayLabels[day.day - 1] ?? `Dag ${day.day}`,
-      modules: day.modules.map((module) => ({
-        id: module.id,
-        title: module.name,
-        description: module.description ?? "",
-        category: module.category,
-        subcategory: module.subCategory ?? undefined,
-      distanceMeters: module.distance ?? undefined,
-      weightKg: module.weight ?? undefined,
-      durationMinutes: module.durationMinutes ?? undefined,
-      durationSeconds: module.durationSeconds ?? undefined,
+    modules: day.modules.map((module) => ({
+      id: module.id,
+      title: module.name,
+      description: module.description ?? "",
+      category: module.category,
+      subcategory: module.subCategory ?? undefined,
+      distance: module.distance ?? undefined,
+      weight: module.weight ?? undefined,
+      duration: module.duration ?? undefined,
+      comment: module.comment ?? undefined,
+      feeling: module.feeling ?? undefined,
+      sleepHours: module.sleepHours ?? undefined,
     })),
   })),
 });

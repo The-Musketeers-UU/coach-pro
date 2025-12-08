@@ -6,10 +6,12 @@ export type Module = {
   description: string;
   category: Category;
   subcategory?: string;
-  distanceMeters?: number;
-  durationMinutes?: number;
-  durationSeconds?: number;
-  weightKg?: number;
+  distance?: number;
+  duration?: number;
+  weight?: number;
+  comment?: string;
+  feeling?: number;
+  sleepHours?: number;
   sourceModuleId?: string;
 };
 
@@ -31,10 +33,12 @@ export type ModuleForm = {
   description: string;
   category: string;
   subcategory: string;
-  distanceMeters: string;
-  durationMinutes: string;
-  durationSeconds: string;
-  weightKg: string;
+  distance: string;
+  duration: string;
+  weight: string;
+  comment: string;
+  feeling: string;
+  sleepHours: string;
 };
 
 export type Athlete = {

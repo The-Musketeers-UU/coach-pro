@@ -24,10 +24,12 @@ const createInitialFormState = (): ModuleForm => ({
   description: "",
   category: "",
   subcategory: "",
-  distanceMeters: "",
-  durationMinutes: "",
-  durationSeconds: "",
-  weightKg: "",
+  distance: "",
+  duration: "",
+  weight: "",
+  comment: "",
+  feeling: "",
+  sleepHours: "",
 });
 
 const createEmptySchedule = (days: Day[]): DaySchedule =>
@@ -123,10 +125,12 @@ export const useScheduleBuilderState = ({
       description: module.description,
       category: module.category,
       subcategory: module.subcategory,
-      distanceMeters: module.distanceMeters,
-      durationMinutes: module.durationMinutes,
-      durationSeconds: module.durationSeconds,
-      weightKg: module.weightKg,
+      distance: module.distance,
+      duration: module.duration,
+      weight: module.weight,
+      comment: module.comment,
+      feeling: module.feeling,
+      sleepHours: module.sleepHours,
       sourceModuleId: module.sourceModuleId ?? module.id,
     };
   };
@@ -378,34 +382,25 @@ export const useScheduleBuilderState = ({
     }
 
     const distanceResult = parseOptionalNumber(
-      formState.distanceMeters,
+      formState.distance,
       "Distans"
     );
     if ("error" in distanceResult) return { error: distanceResult.error };
 
-    const durationMinutesResult = parseOptionalNumber(
-      formState.durationMinutes,
-      "Minuter"
-    );
-    if ("error" in durationMinutesResult)
-      return { error: durationMinutesResult.error };
+    const durationResult = parseOptionalNumber(formState.duration, "Tid");
+    if ("error" in durationResult) return { error: durationResult.error };
 
-    const durationSecondsResult = parseOptionalNumber(
-      formState.durationSeconds,
-      "Sekunder"
-    );
-    if ("error" in durationSecondsResult)
-      return { error: durationSecondsResult.error };
-
-    if (
-      durationSecondsResult.value !== undefined &&
-      durationSecondsResult.value >= 60
-    ) {
-      return { error: "Sekunder måste vara under 60." };
-    }
-
-    const weightResult = parseOptionalNumber(formState.weightKg, "Vikt");
+    const weightResult = parseOptionalNumber(formState.weight, "Vikt");
     if ("error" in weightResult) return { error: weightResult.error };
+
+    const feelingResult = parseOptionalNumber(formState.feeling, "Känsla");
+    if ("error" in feelingResult) return { error: feelingResult.error };
+
+    const sleepResult = parseOptionalNumber(
+      formState.sleepHours,
+      "Sömn (timmar)"
+    );
+    if ("error" in sleepResult) return { error: sleepResult.error };
 
     return {
       module: {
@@ -414,10 +409,12 @@ export const useScheduleBuilderState = ({
         description: trimmedDescription,
         category: selectedCategory,
         subcategory: trimmedSubcategory || undefined,
-        distanceMeters: distanceResult.value,
-        durationMinutes: durationMinutesResult.value,
-        durationSeconds: durationSecondsResult.value,
-        weightKg: weightResult.value,
+        distance: distanceResult.value,
+        duration: durationResult.value,
+        weight: weightResult.value,
+        comment: formState.comment.trim() || undefined,
+        feeling: feelingResult.value,
+        sleepHours: sleepResult.value,
         sourceModuleId: moduleId,
       },
     };
@@ -471,13 +468,13 @@ export const useScheduleBuilderState = ({
       description: module.description,
       category: module.category,
       subcategory: module.subcategory ?? "",
-      distanceMeters:
-        module.distanceMeters !== undefined ? String(module.distanceMeters) : "",
-      durationMinutes:
-        module.durationMinutes !== undefined ? String(module.durationMinutes) : "",
-      durationSeconds:
-        module.durationSeconds !== undefined ? String(module.durationSeconds) : "",
-      weightKg: module.weightKg !== undefined ? String(module.weightKg) : "",
+      distance: module.distance !== undefined ? String(module.distance) : "",
+      duration: module.duration !== undefined ? String(module.duration) : "",
+      weight: module.weight !== undefined ? String(module.weight) : "",
+      comment: module.comment ?? "",
+      feeling: module.feeling !== undefined ? String(module.feeling) : "",
+      sleepHours:
+        module.sleepHours !== undefined ? String(module.sleepHours) : "",
     });
   };
 

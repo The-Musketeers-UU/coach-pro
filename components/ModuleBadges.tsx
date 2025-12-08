@@ -1,25 +1,13 @@
 type ModuleBadgeData = {
   category: string;
   subcategory?: string;
-  distanceMeters?: number;
-  durationMinutes?: number;
-  durationSeconds?: number;
-  weightKg?: number;
+  distance?: number;
+  duration?: number;
+  weight?: number;
 };
 
-const formatDuration = (minutes?: number, seconds?: number) => {
-  const parts: string[] = [];
-
-  if (minutes !== undefined) {
-    parts.push(`${minutes} min`);
-  }
-
-  if (seconds !== undefined) {
-    parts.push(`${seconds} sec`);
-  }
-
-  return parts.join(" ");
-};
+const formatDuration = (duration?: number) =>
+  duration !== undefined ? `${duration} min` : "";
 
 type ModuleBadgesProps = {
   module: ModuleBadgeData;
@@ -30,10 +18,9 @@ export function ModuleBadges({
   module,
   showPlaceholders = false,
 }: ModuleBadgesProps) {
-  const hasDistance = module.distanceMeters !== undefined;
-  const hasWeight = module.weightKg !== undefined;
-  const hasDuration =
-    module.durationMinutes !== undefined || module.durationSeconds !== undefined;
+  const hasDistance = module.distance !== undefined;
+  const hasWeight = module.weight !== undefined;
+  const hasDuration = module.duration !== undefined;
 
   return (
     <div className="flex flex-wrap gap-1">
@@ -45,16 +32,16 @@ export function ModuleBadges({
       )}
       {(hasDistance || showPlaceholders) && (
         <span className="badge badge-xs">
-          Distans: {hasDistance ? module.distanceMeters : "-"} m
+          Distans: {hasDistance ? module.distance : "-"} m
         </span>
       )}
       {(hasDuration || showPlaceholders) && (
         <span className="badge badge-xs">
-          Tid: {formatDuration(module.durationMinutes, module.durationSeconds) || "-"}
+          Tid: {formatDuration(module.duration) || "-"}
         </span>
       )}
       {(hasWeight || showPlaceholders) && (
-        <span className="badge badge-xs">Vikt: {hasWeight ? module.weightKg : "-"} kg</span>
+        <span className="badge badge-xs">Vikt: {hasWeight ? module.weight : "-"} kg</span>
       )}
     </div>
   );

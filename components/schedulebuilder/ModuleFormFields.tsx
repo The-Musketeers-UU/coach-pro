@@ -80,11 +80,11 @@ export function ModuleFormFields({ formState, onChange }: ModuleFormFieldsProps)
           type="number"
           min="0"
           className="input input-sm input-bordered w-20"
-          value={formState.distanceMeters}
+          value={formState.distance}
           onChange={(event) =>
             onChange((prev) => ({
               ...prev,
-              distanceMeters: event.target.value,
+              distance: event.target.value,
             }))
           }
           placeholder=""
@@ -97,29 +97,63 @@ export function ModuleFormFields({ formState, onChange }: ModuleFormFieldsProps)
           type="number"
           min="0"
           className="input input-sm input-bordered w-20"
-          value={formState.weightKg}
+          value={formState.weight}
           onChange={(event) =>
             onChange((prev) => ({
               ...prev,
-              weightKg: event.target.value,
+              weight: event.target.value,
             }))
           }
           placeholder=""
         />
       </label>
 
+      <label className="form-control flex flex-col gap-1">
+        <span className="label-text text-sm">Tid (minuter):</span>
+        <input
+          type="number"
+          min="0"
+          className="input input-sm input-bordered"
+          value={formState.duration}
+          onChange={(event) =>
+            onChange((prev) => ({
+              ...prev,
+              duration: event.target.value,
+            }))
+          }
+          placeholder=""
+        />
+      </label>
+
+      <label className="form-control flex-col flex gap-1">
+        <span className="label-text text-sm">Kommentar:</span>
+        <textarea
+          className="textarea textarea-bordered w-full"
+          rows={2}
+          placeholder="Anteckningar om passet"
+          value={formState.comment}
+          onChange={(event) =>
+            onChange((prev) => ({
+              ...prev,
+              comment: event.target.value,
+            }))
+          }
+        />
+      </label>
+
       <div className="grid grid-cols-2 gap-3">
         <label className="form-control flex flex-col gap-1">
-          <span className="label-text text-sm">Minuter:</span>
+          <span className="label-text text-sm">Känsla (1-10):</span>
           <input
             type="number"
             min="0"
+            max="10"
             className="input input-sm input-bordered"
-            value={formState.durationMinutes}
+            value={formState.feeling}
             onChange={(event) =>
               onChange((prev) => ({
                 ...prev,
-                durationMinutes: event.target.value,
+                feeling: event.target.value,
               }))
             }
             placeholder=""
@@ -127,17 +161,16 @@ export function ModuleFormFields({ formState, onChange }: ModuleFormFieldsProps)
         </label>
 
         <label className="form-control flex flex-col gap-1">
-          <span className="label-text text-sm">Sekunder:</span>
+          <span className="label-text text-sm">Sömn (timmar):</span>
           <input
             type="number"
             min="0"
-            max="59"
             className="input input-sm input-bordered"
-            value={formState.durationSeconds}
+            value={formState.sleepHours}
             onChange={(event) =>
               onChange((prev) => ({
                 ...prev,
-                durationSeconds: event.target.value,
+                sleepHours: event.target.value,
               }))
             }
             placeholder=""

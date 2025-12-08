@@ -1,14 +1,8 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 
 import { ModuleBadges } from "@/components/ModuleBadges";
-import {
-  createModuleComment,
-  getCommentsForModule,
-  updateModuleComment,
-  type ModuleCommentRow,
-} from "@/lib/supabase/comments";
 
 export type ProgramModule = {
   id?: string;
@@ -16,10 +10,12 @@ export type ProgramModule = {
   description: string;
   category: string;
   subcategory?: string;
-  distanceMeters?: number;
-  weightKg?: number;
-  durationMinutes?: number;
-  durationSeconds?: number;
+  distance?: number;
+  weight?: number;
+  duration?: number;
+  comment?: string;
+  feeling?: number;
+  sleepHours?: number;
 };
 
 export type ProgramDay = {
@@ -46,27 +42,16 @@ type WeekScheduleViewProps = {
   title?: string;
   emptyWeekTitle?: string;
   emptyWeekDescription?: string;
-  viewerRole?: "coach" | "athlete";
-  athleteId?: string;
-  coachId?: string;
 };
 
-const formatDuration = (minutes?: number, seconds?: number) => {
-  if (minutes === undefined && seconds === undefined) {
-    return "";
-  }
+const formatDuration = (duration?: number) =>
+  duration !== undefined ? `${duration} min` : "-";
 
-  const minValue = minutes ?? 0;
-  const secValue = seconds ?? 0;
+const formatDistance = (distance?: number) =>
+  distance !== undefined ? `${distance} m` : "-";
 
-  return `${minValue} min ${secValue} sek`;
-};
-
-const formatDistance = (distanceMeters?: number) =>
-  distanceMeters !== undefined ? `${distanceMeters} m` : "-";
-
-const formatWeight = (weightKg?: number) =>
-  weightKg !== undefined ? `${weightKg} kg` : "-";
+const formatWeight = (weight?: number) =>
+  weight !== undefined ? `${weight} kg` : "-";
 
 export function WeekScheduleView({
   week,
@@ -74,147 +59,16 @@ export function WeekScheduleView({
   title,
   emptyWeekTitle = "Inget program",
   emptyWeekDescription = "Ingen data for veckan.",
-  viewerRole = "coach",
-  athleteId,
-  coachId,
 }: WeekScheduleViewProps) {
   const [selectedModule, setSelectedModule] = useState<SelectedModuleState | null>(
     null,
   );
-  const [commentDraft, setCommentDraft] = useState("");
-  const [commentsByModule, setCommentsByModule] = useState<
-    Record<string, ModuleCommentRow[]>
-  >({});
-  const [loadingCommentsForKey, setLoadingCommentsForKey] = useState<
-    Record<string, boolean>
-  >({});
-  const [commentError, setCommentError] = useState<string | null>(null);
-  const [editingCommentId, setEditingCommentId] = useState<string | null>(null);
-  const [editDrafts, setEditDrafts] = useState<Record<string, string>>({});
-  const isCoach = viewerRole === "coach";
 
   const heading =
     title ??
     (week
       ? week.label || `Vecka ${weekNumber}`
       : emptyWeekTitle || `Vecka ${weekNumber}`);
-
-  const selectedComments = selectedModule
-    ? commentsByModule[selectedModule.key] ?? []
-    : [];
-  const isLoadingComments = selectedModule
-    ? Boolean(loadingCommentsForKey[selectedModule.key])
-    : false;
-  const canSubmitComment =
-    isCoach && Boolean(selectedModule?.module.id && athleteId && coachId);
-
-  const handleAddComment = () => {
-    void handlePersistComment();
-  };
-
-  const handlePersistComment = async () => {
-    if (!selectedModule) return;
-    const moduleId = selectedModule.module.id;
-    if (!moduleId) {
-      setCommentError("Kan inte spara kommentar: modul saknar id.");
-      return;
-    }
-    if (!athleteId) {
-      setCommentError("Kan inte spara kommentar: atlet-id saknas.");
-      return;
-    }
-    if (!coachId) {
-      setCommentError("Kan inte spara kommentar: coach-id saknas.");
-      return;
-    }
-
-    const body = commentDraft.trim();
-    if (!body) return;
-
-    try {
-      setCommentError(null);
-      const created = await createModuleComment({
-        moduleId,
-        athleteId,
-        coachId,
-        body,
-      });
-
-      setCommentsByModule((prev) => {
-        const existing = prev[selectedModule.key] ?? [];
-        return {
-          ...prev,
-          [selectedModule.key]: [...existing, created],
-        };
-      });
-      setCommentDraft("");
-    } catch (error) {
-      setCommentError(
-        error instanceof Error ? error.message : "Kunde inte spara kommentaren.",
-      );
-    }
-  };
-
-  const handleUpdateCommentBody = async (commentId: string) => {
-    if (!selectedModule) return;
-    const draftBody = editDrafts[commentId]?.trim();
-    if (!draftBody) return;
-
-    try {
-      setCommentError(null);
-      const updated = await updateModuleComment(commentId, { body: draftBody });
-      setCommentsByModule((prev) => {
-        const existing = prev[selectedModule.key] ?? [];
-        return {
-          ...prev,
-          [selectedModule.key]: existing.map((item) =>
-            item.id === commentId ? updated : item,
-          ),
-        };
-      });
-      setEditingCommentId(null);
-    } catch (error) {
-      setCommentError(
-        error instanceof Error ? error.message : "Kunde inte uppdatera kommentaren.",
-      );
-    }
-  };
-
-  useEffect(() => {
-    if (!selectedModule) return;
-    const moduleId = selectedModule.module.id;
-    if (!moduleId || !athleteId) return;
-
-    const moduleKey = selectedModule.key;
-    let isActive = true;
-
-    const fetchComments = async () => {
-      setLoadingCommentsForKey((prev) => ({ ...prev, [moduleKey]: true }));
-      setCommentError(null);
-      try {
-        const comments = await getCommentsForModule({ moduleId, athleteId });
-        if (!isActive) return;
-        setCommentsByModule((prev) => ({ ...prev, [moduleKey]: comments }));
-      } catch (error) {
-        if (!isActive) return;
-        setCommentError(
-          error instanceof Error
-            ? error.message
-            : "Kunde inte hämta kommentarer från databasen.",
-        );
-      } finally {
-        if (isActive) {
-          setLoadingCommentsForKey((prev) => ({ ...prev, [moduleKey]: false }));
-        }
-      }
-    };
-
-    void fetchComments();
-
-    return () => {
-      isActive = false;
-    };
-  }, [athleteId, selectedModule]);
 
   return (
     <div className="card bg-base-200 border border-base-300 shadow-md">
@@ -251,9 +105,6 @@ export function WeekScheduleView({
                       onClick={() => {
                         const moduleKey = module.id ?? `${day.id}-${index}`;
                         setSelectedModule({ module, key: moduleKey });
-                        setCommentDraft("");
-                        setEditingCommentId(null);
-                        setCommentError(null);
                       }}
                       className="group w-full text-left"
                     >
@@ -348,7 +199,7 @@ export function WeekScheduleView({
                     Distans
                   </p>
                   <p className="text-sm text-base-content/80">
-                    {formatDistance(selectedModule.module.distanceMeters)}
+                    {formatDistance(selectedModule.module.distance)}
                   </p>
                 </div>
 
@@ -357,7 +208,7 @@ export function WeekScheduleView({
                     Vikt
                   </p>
                   <p className="text-sm text-base-content/80">
-                    {formatWeight(selectedModule.module.weightKg)}
+                    {formatWeight(selectedModule.module.weight)}
                   </p>
                 </div>
 
@@ -366,127 +217,44 @@ export function WeekScheduleView({
                     Tid
                   </p>
                   <p className="text-sm text-base-content/80">
-                    {formatDuration(
-                      selectedModule.module.durationMinutes,
-                      selectedModule.module.durationSeconds,
-                    ) || "-"}
+                    {formatDuration(selectedModule.module.duration)}
                   </p>
                 </div>
-              </div>
-            </div>
 
-            <div className="space-y-3 rounded-2xl border border-base-300 bg-base-100 p-4">
-              <div className="flex items-center justify-between gap-2">
-                <div>
+                <div className="space-y-1 sm:col-span-2">
                   <p className="text-xs uppercase tracking-wide text-neutral">
-                    Kommentarer
+                    Kommentar
                   </p>
-                  <p className="text-xs text-base-content/70">
-                    Sparas i databasen per atlet och modul.
+                  <p className="text-sm text-base-content/80 whitespace-pre-wrap">
+                    {selectedModule.module.comment || "-"}
                   </p>
                 </div>
-              </div>
 
-              {commentError && (
-                <div className="alert alert-warning py-2 text-xs">{commentError}</div>
-              )}
-
-              <div className="space-y-2 max-h-48 overflow-y-auto">
-                {isLoadingComments ? (
-                  <p className="text-xs text-base-content/60">Laddar kommentarer...</p>
-                ) : selectedComments.length === 0 ? (
-                  <p className="text-xs text-base-content/60">
-                    Inga kommentarer ännu.
-                  </p>
-                ) : (
-                  selectedComments.map((comment) => (
-                    <div
-                      key={comment.id}
-                      className="rounded-lg border border-base-200 bg-base-100/80 p-2 text-sm"
-                    >
-                      <p className="text-xs text-base-content/60">
-                        {new Date(comment.createdAt).toLocaleString()}
-                      </p>
-                      {editingCommentId === comment.id ? (
-                        <div className="space-y-2">
-                          <textarea
-                            className="textarea textarea-bordered textarea-sm w-full"
-                            value={editDrafts[comment.id] ?? comment.body}
-                            onChange={(event) =>
-                              setEditDrafts((prev) => ({
-                                ...prev,
-                                [comment.id]: event.target.value,
-                              }))
-                            }
-                            rows={3}
-                          />
-                          <div className="flex items-center gap-2">
-                            <button
-                              className="btn btn-primary btn-xs"
-                              onClick={() => void handleUpdateCommentBody(comment.id)}
-                              disabled={!editDrafts[comment.id]?.trim()}
-                            >
-                              Spara
-                            </button>
-                            <button
-                              className="btn btn-ghost btn-xs"
-                              onClick={() => setEditingCommentId(null)}
-                            >
-                              Avbryt
-                            </button>
-                          </div>
-                        </div>
-                      ) : (
-                        <div className="flex items-start justify-between gap-2">
-                          <p className="text-sm text-base-content/90 whitespace-pre-wrap">
-                            {comment.body}
-                          </p>
-                          {isCoach && (
-                            <button
-                              className="btn btn-ghost btn-xs"
-                              onClick={() => {
-                                setEditingCommentId(comment.id);
-                                setEditDrafts((prev) => ({
-                                  ...prev,
-                                  [comment.id]: comment.body,
-                                }));
-                              }}
-                            >
-                              Redigera
-                            </button>
-                          )}
-                        </div>
-                      )}
-                    </div>
-                  ))
-                )}
-              </div>
-
-              {isCoach && (
-                <div className="form-control space-y-2">
-                  <textarea
-                    className="textarea textarea-bordered"
-                    placeholder="Lämna en kommentar om passet"
-                    value={commentDraft}
-                    onChange={(event) => setCommentDraft(event.target.value)}
-                    rows={3}
-                    disabled={!canSubmitComment}
-                  />
-                  <button
-                    className="btn btn-primary btn-sm self-end"
-                    onClick={handleAddComment}
-                    disabled={!canSubmitComment || !commentDraft.trim()}
-                  >
-                    Skicka kommentar
-                  </button>
+                <div className="grid grid-cols-2 gap-3 sm:col-span-2">
+                  <div className="space-y-1">
+                    <p className="text-xs uppercase tracking-wide text-neutral">
+                      Känsla
+                    </p>
+                    <p className="text-sm text-base-content/80">
+                      {selectedModule.module.feeling ?? "-"}
+                    </p>
+                  </div>
+                  <div className="space-y-1">
+                    <p className="text-xs uppercase tracking-wide text-neutral">
+                      Sömn (timmar)
+                    </p>
+                    <p className="text-sm text-base-content/80">
+                      {selectedModule.module.sleepHours ?? "-"}
+                    </p>
+                  </div>
                 </div>
-              )}
+              </div>
             </div>
-          </div>
 
-          <form method="dialog" className="modal-backdrop">
-            <button onClick={() => setSelectedModule(null)}>close</button>
-          </form>
+            <form method="dialog" className="modal-backdrop">
+              <button onClick={() => setSelectedModule(null)}>close</button>
+            </form>
+          </div>
         </dialog>
       )}
     </div>

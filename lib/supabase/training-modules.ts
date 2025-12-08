@@ -9,10 +9,12 @@ export type ModuleRow = {
   category: string;
   subCategory: string | null;
   distance: number | null;
-  durationSeconds: number | null;
-  durationMinutes: number | null;
+  duration: number | null;
   weight: number | null;
   description: string | null;
+  comment: string | null;
+  feeling: number | null;
+  sleepHours: number | null;
 };
 
 export const getModulesByOwner = async (ownerId: string): Promise<ModuleRow[]> => {
@@ -20,7 +22,7 @@ export const getModulesByOwner = async (ownerId: string): Promise<ModuleRow[]> =
     const { data, error } = await supabase
       .from("module")
       .select(
-        "id,owner,name,category,subCategory,distance,durationSeconds,durationMinutes,weight,description",
+        "id,owner,name,category,subCategory,distance,duration,weight,description,comment,feeling,sleepHours",
       )
       .eq("owner", ownerId)
       .order("name", { ascending: true });
@@ -75,10 +77,12 @@ export type CreateModuleInput = {
   category: string;
   subCategory?: string;
   distance?: number;
-  durationSeconds?: number;
-  durationMinutes?: number;
+  duration?: number;
   weight?: number;
   description?: string;
+  comment?: string;
+  feeling?: number;
+  sleepHours?: number;
 };
 
 export type CreateScheduleWeekInput = {
@@ -210,7 +214,7 @@ const getScheduleDaysWithModules = async (
     const { data: modules, error: modulesError } = await supabase
       .from("module")
       .select(
-        "id,owner,name,category,subCategory,distance,durationSeconds,durationMinutes,weight,description",
+        "id,owner,name,category,subCategory,distance,duration,weight,description,comment,feeling,sleepHours",
       )
       .in("id", moduleIds);
 
@@ -329,7 +333,7 @@ export const getScheduleWeeksWithModules = async (
     const { data: modules, error: modulesError } = await supabase
       .from("module")
       .select(
-        "id,owner,name,category,subCategory,distance,durationSeconds,durationMinutes,weight,description",
+        "id,owner,name,category,subCategory,distance,duration,weight,description,comment,feeling,sleepHours",
       )
       .in("id", moduleIds);
 
@@ -500,10 +504,12 @@ export const createModule = async (input: CreateModuleInput): Promise<ModuleRow>
     category: input.category,
     subCategory: input.subCategory?.trim() || null,
     distance: sanitizeNumber(input.distance) ?? null,
-    durationSeconds: sanitizeNumber(input.durationSeconds) ?? null,
-    durationMinutes: sanitizeNumber(input.durationMinutes) ?? null,
+    duration: sanitizeNumber(input.duration) ?? null,
     weight: sanitizeNumber(input.weight) ?? null,
     description: input.description?.trim() || null,
+    comment: input.comment?.trim() || null,
+    feeling: sanitizeNumber(input.feeling) ?? null,
+    sleepHours: sanitizeNumber(input.sleepHours) ?? null,
   } satisfies Omit<ModuleRow, "id">;
 
   try {
