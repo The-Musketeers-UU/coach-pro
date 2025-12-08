@@ -30,7 +30,17 @@ const createInitialFormState = (): ModuleForm => ({
   comment: "",
   feeling: "",
   sleepHours: "",
+  feedbackFields: [],
 });
+
+const feedbackPromptFallbacks: Record<string, string> = {
+  distance: "Hur långt blev passet?",
+  duration: "Hur lång tid tog passet?",
+  weight: "Vilken vikt använde du?",
+  comment: "Lämna en kommentar om passet",
+  feeling: "Hur kändes passet?",
+  sleepHours: "Hur många timmars sömn fick du?",
+};
 
 const createEmptySchedule = (days: Day[]): DaySchedule =>
   days.reduce((acc, day) => ({ ...acc, [day.id]: [] }), {} as DaySchedule);
@@ -131,6 +141,7 @@ export const useScheduleBuilderState = ({
       comment: module.comment,
       feeling: module.feeling,
       sleepHours: module.sleepHours,
+      feedbackFields: module.feedbackFields,
       sourceModuleId: module.sourceModuleId ?? module.id,
     };
   };
@@ -352,20 +363,6 @@ export const useScheduleBuilderState = ({
     setFormError(null);
   };
 
-  const parseOptionalNumber = (value: string, label: string) => {
-    const trimmed = value.trim();
-    if (!trimmed) return { value: undefined as number | undefined } as const;
-
-    const parsed = Number(trimmed);
-    if (Number.isNaN(parsed) || parsed < 0) {
-      return {
-        error: `${label} måste vara ett icke-negativt tal.`,
-      } as const;
-    }
-
-    return { value: parsed } as const;
-  };
-
   const prepareModuleToSave = (
     formState: ModuleForm,
     moduleId?: string
@@ -381,26 +378,16 @@ export const useScheduleBuilderState = ({
       };
     }
 
-    const distanceResult = parseOptionalNumber(
-      formState.distance,
-      "Distans"
+    const sanitizedFeedbackFields = formState.feedbackFields.map(
+      (field, index) => ({
+        id: field.id || `${field.type}-${index}`,
+        type: field.type,
+        prompt:
+          field.prompt.trim() ||
+          feedbackPromptFallbacks[field.type] ||
+          field.type,
+      })
     );
-    if ("error" in distanceResult) return { error: distanceResult.error };
-
-    const durationResult = parseOptionalNumber(formState.duration, "Tid");
-    if ("error" in durationResult) return { error: durationResult.error };
-
-    const weightResult = parseOptionalNumber(formState.weight, "Vikt");
-    if ("error" in weightResult) return { error: weightResult.error };
-
-    const feelingResult = parseOptionalNumber(formState.feeling, "Känsla");
-    if ("error" in feelingResult) return { error: feelingResult.error };
-
-    const sleepResult = parseOptionalNumber(
-      formState.sleepHours,
-      "Sömn (timmar)"
-    );
-    if ("error" in sleepResult) return { error: sleepResult.error };
 
     return {
       module: {
@@ -409,12 +396,7 @@ export const useScheduleBuilderState = ({
         description: trimmedDescription,
         category: selectedCategory,
         subcategory: trimmedSubcategory || undefined,
-        distance: distanceResult.value,
-        duration: durationResult.value,
-        weight: weightResult.value,
-        comment: formState.comment.trim() || undefined,
-        feeling: feelingResult.value,
-        sleepHours: sleepResult.value,
+        feedbackFields: sanitizedFeedbackFields,
         sourceModuleId: moduleId,
       },
     };

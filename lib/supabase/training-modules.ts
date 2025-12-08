@@ -2,6 +2,12 @@ import type { User as SupabaseAuthUser } from "@supabase/supabase-js";
 
 import { supabase } from "@/lib/supabase";
 
+export type FeedbackFieldPayload = {
+  id: string;
+  type: string;
+  prompt: string;
+};
+
 export type ModuleRow = {
   id: string;
   owner: string;
@@ -15,6 +21,7 @@ export type ModuleRow = {
   comment: string | null;
   feeling: number | null;
   sleepHours: number | null;
+  feedbackFields: FeedbackFieldPayload[] | null;
 };
 
 export const getModulesByOwner = async (ownerId: string): Promise<ModuleRow[]> => {
@@ -22,7 +29,7 @@ export const getModulesByOwner = async (ownerId: string): Promise<ModuleRow[]> =
     const { data, error } = await supabase
       .from("module")
       .select(
-        "id,owner,name,category,subCategory,distance,duration,weight,description,comment,feeling,sleepHours",
+        "id,owner,name,category,subCategory,distance,duration,weight,description,comment,feeling,sleepHours,feedbackFields",
       )
       .eq("owner", ownerId)
       .order("name", { ascending: true });
@@ -83,6 +90,7 @@ export type CreateModuleInput = {
   comment?: string;
   feeling?: number;
   sleepHours?: number;
+  feedbackFields?: FeedbackFieldPayload[];
 };
 
 export type CreateScheduleWeekInput = {
@@ -214,7 +222,7 @@ const getScheduleDaysWithModules = async (
     const { data: modules, error: modulesError } = await supabase
       .from("module")
       .select(
-        "id,owner,name,category,subCategory,distance,duration,weight,description,comment,feeling,sleepHours",
+        "id,owner,name,category,subCategory,distance,duration,weight,description,comment,feeling,sleepHours,feedbackFields",
       )
       .in("id", moduleIds);
 
@@ -498,6 +506,11 @@ export const getScheduleWeekWithModulesById = async (
 };
 
 export const createModule = async (input: CreateModuleInput): Promise<ModuleRow> => {
+  const feedbackFields =
+    Array.isArray(input.feedbackFields) && input.feedbackFields.length > 0
+      ? input.feedbackFields
+      : null;
+
   const payload = {
     owner: input.ownerId,
     name: input.name,
@@ -510,6 +523,7 @@ export const createModule = async (input: CreateModuleInput): Promise<ModuleRow>
     comment: input.comment?.trim() || null,
     feeling: sanitizeNumber(input.feeling) ?? null,
     sleepHours: sanitizeNumber(input.sleepHours) ?? null,
+    feedbackFields,
   } satisfies Omit<ModuleRow, "id">;
 
   try {

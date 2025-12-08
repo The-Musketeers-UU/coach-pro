@@ -8,6 +8,7 @@ import {
   type Athlete,
   type Day,
   type Module,
+  type FeedbackField,
   AssignScheduleModal,
   CreateModuleModal,
   DrawerHandle,
@@ -147,6 +148,7 @@ const createScheduleFromWeek = (
         comment: moduleRow.comment ?? undefined,
         feeling: moduleRow.feeling ?? undefined,
         sleepHours: moduleRow.sleepHours ?? undefined,
+        feedbackFields: parseFeedbackFields(moduleRow.feedbackFields),
         sourceModuleId: moduleRow.id,
       } satisfies Module;
     });
@@ -163,6 +165,39 @@ const parseWeekNumber = (value: string): number | null => {
   return Number.isNaN(week) ? null : week;
 };
 
+const parseFeedbackFields = (
+  rawFields: ModuleRow["feedbackFields"],
+): FeedbackField[] => {
+  if (!Array.isArray(rawFields)) return [];
+
+  return rawFields.flatMap((field, index) => {
+    if (
+      !field ||
+      typeof field !== "object" ||
+      !("type" in field) ||
+      typeof (field as { type: unknown }).type !== "string"
+    ) {
+      return [] as FeedbackField[];
+    }
+
+    const typedField = field as { id?: unknown; type: string; prompt?: unknown };
+
+    return [
+      {
+        id:
+          typeof typedField.id === "string"
+            ? typedField.id
+            : `${typedField.type}-${index}`,
+        type: typedField.type as FeedbackField["type"],
+        prompt:
+          typeof typedField.prompt === "string"
+            ? typedField.prompt
+            : "",
+      },
+    ];
+  });
+};
+
 const mapModuleRow = (row: ModuleRow): Module => ({
   id: row.id,
   title: row.name,
@@ -175,6 +210,7 @@ const mapModuleRow = (row: ModuleRow): Module => ({
   comment: row.comment ?? undefined,
   feeling: row.feeling ?? undefined,
   sleepHours: row.sleepHours ?? undefined,
+  feedbackFields: parseFeedbackFields(row.feedbackFields),
   sourceModuleId: row.id,
 });
 
@@ -219,6 +255,7 @@ function ScheduleBuilderPage() {
       comment: module.comment,
       feeling: module.feeling,
       sleepHours: module.sleepHours,
+      feedbackFields: module.feedbackFields,
     });
 
     return mapModuleRow(created);
