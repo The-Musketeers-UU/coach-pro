@@ -14,6 +14,7 @@ import {
   DrawerToggle,
   EditModuleModal,
   ReusableBlocksDrawer,
+  ReusableBlocksModal,
   ScheduleSection,
   type DaySchedule,
   useScheduleBuilderState,
@@ -235,9 +236,39 @@ function ScheduleBuilderPage() {
     setScheduleState,
     removeSelectedScheduleModules,
     clearSelectedScheduleModules,
+    addLibraryModuleToDay,
   } = scheduleControls;
 
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
+  const [mobileLibraryDayId, setMobileLibraryDayId] = useState<string | null>(
+    null
+  );
+  const [selectedMobileModuleId, setSelectedMobileModuleId] = useState<
+    string | null
+  >(null);
+
+  const mobileLibraryDayLabel = useMemo(
+    () => days.find((day) => day.id === mobileLibraryDayId)?.label,
+    [mobileLibraryDayId]
+  );
+
+  const openMobileLibrary = (dayId: string) => {
+    setSelectedMobileModuleId(null);
+    setMobileLibraryDayId(dayId);
+    setIsDrawerOpen(false);
+  };
+
+  const closeMobileLibrary = () => {
+    setMobileLibraryDayId(null);
+    setSelectedMobileModuleId(null);
+  };
+
+  const handleAddMobileModule = () => {
+    if (!mobileLibraryDayId || !selectedMobileModuleId) return;
+
+    addLibraryModuleToDay(mobileLibraryDayId, selectedMobileModuleId);
+    closeMobileLibrary();
+  };
 
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
@@ -589,6 +620,7 @@ function ScheduleBuilderPage() {
             onWeekChange={setSelectedWeek}
             scheduleTitle={scheduleTitle}
             onScheduleTitleChange={setScheduleTitle}
+            onOpenMobileLibrary={openMobileLibrary}
           />
         </div>
 
@@ -601,6 +633,22 @@ function ScheduleBuilderPage() {
           onSubmit={libraryControls.handleAddModule}
           onReset={libraryControls.resetModuleForm}
           onUpdate={libraryControls.setNewModule}
+        />
+
+        <ReusableBlocksModal
+          isOpen={Boolean(mobileLibraryDayId)}
+          dayLabel={mobileLibraryDayLabel}
+          search={libraryControls.search}
+          setSearch={libraryControls.setSearch}
+          filteredModules={libraryControls.filteredModules}
+          selectedModuleId={selectedMobileModuleId}
+          onSelectModule={setSelectedMobileModuleId}
+          onAddModule={handleAddMobileModule}
+          startEditingModule={editingControls.startEditingModule}
+          handleRemoveLibraryModule={libraryControls.handleRemoveLibraryModule}
+          resetModuleForm={libraryControls.resetModuleForm}
+          openCreateModal={libraryControls.openCreateModal}
+          onClose={closeMobileLibrary}
         />
 
         <AssignScheduleModal
