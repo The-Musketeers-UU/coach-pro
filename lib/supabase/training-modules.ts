@@ -22,9 +22,74 @@ export type ModuleRow = DbModuleRow & { id: string };
 const moduleSelectColumns =
   "id,owner,name,category,subCategory,distance,duration,weight,description,comment,feeling,sleepHours";
 
+type DbScheduleWeekRow = {
+  id: number | string;
+  owner: string;
+  athlete: string;
+  week: number;
+  title: string;
+};
+
+export type ScheduleWeekRow = DbScheduleWeekRow & { id: string };
+
+type DbScheduleDayRow = {
+  id: number | string;
+  day: number;
+  weekId: number | string | null;
+};
+
+type ScheduleDayRow = {
+  id: string;
+  day: number;
+  weekId: string | null;
+};
+
+type DbModuleScheduleDayRow = { A: string; B: number | string };
+
+type ModuleScheduleDayRow = { moduleId: string; dayId: string };
+
+export type AthleteRow = {
+  id: string;
+  name: string;
+  email: string;
+  isCoach: boolean;
+};
+
+const toId = (value: number | string) => String(value);
+
+const toIds = (values: Array<number | string>) => values.map((value) => toId(value));
+
+const toDbNumericId = (value: number | string) => {
+  const parsed = Number.parseInt(String(value), 10);
+  if (!Number.isFinite(parsed)) {
+    throw new Error(`Ogiltigt id-värde: ${String(value)}`);
+  }
+
+  return parsed;
+};
+
+const toDbNumericIds = (values: Array<number | string>) =>
+  values.map((value) => toDbNumericId(value));
+
 const coerceModuleRow = (row: DbModuleRow): ModuleRow => ({
   ...row,
-  id: String(row.id),
+  id: toId(row.id),
+});
+
+const coerceScheduleWeekRow = (row: DbScheduleWeekRow): ScheduleWeekRow => ({
+  ...row,
+  id: toId(row.id),
+});
+
+const coerceScheduleDayRow = (row: DbScheduleDayRow): ScheduleDayRow => ({
+  ...row,
+  id: toId(row.id),
+  weekId: row.weekId === null ? null : toId(row.weekId),
+});
+
+const coerceModuleLinkRow = (row: DbModuleScheduleDayRow): ModuleScheduleDayRow => ({
+  moduleId: toId(row.A),
+  dayId: toId(row.B),
 });
 
 export const getModulesByOwner = async (ownerId: string): Promise<ModuleRow[]> => {
@@ -45,32 +110,6 @@ export const getModulesByOwner = async (ownerId: string): Promise<ModuleRow[]> =
     console.error("Error retrieving modules via SQL query:", error);
     throw error;
   }
-};
-
-export type ScheduleWeekRow = {
-  id: number;
-  owner: string;
-  athlete: string;
-  week: number;
-  title: string;
-};
-
-type ScheduleDayRow = {
-  id: number;
-  day: number;
-  weekId: number | null;
-};
-
-type ModuleScheduleDayRow = {
-  A: string;
-  B: number;
-};
-
-export type AthleteRow = {
-  id: string;
-  name: string;
-  email: string;
-  isCoach: boolean;
 };
 
 export type CreateUserInput = {
@@ -102,7 +141,7 @@ export type CreateScheduleWeekInput = {
 
 export type AddModuleToScheduleDayInput = {
   moduleId: string;
-  weekId: number | string;
+  weekId: string;
   day: number;
 };
 
@@ -137,20 +176,6 @@ const formatSupabaseError = (error: unknown) => {
 
   return String(error);
 };
-
-const normalizeNumericId = (value: number | string) => {
-  if (typeof value === "number") return value;
-
-  const parsed = Number.parseInt(value, 10);
-  if (!Number.isFinite(parsed)) {
-    throw new Error(`Ogiltigt id-värde: ${String(value)}`);
-  }
-
-  return parsed;
-};
-
-const normalizeNumericIds = (values: Array<number | string>) =>
-  values.map((value) => normalizeNumericId(value));
 
 export const getAthletes = async (): Promise<AthleteRow[]> => {
   try {
@@ -207,7 +232,7 @@ export const getScheduleWeeksByAthlete = async (
       throw error;
     }
 
-    return data ?? [];
+    return (data ?? []).map(coerceScheduleWeekRow);
   } catch (error) {
     console.error("Error retrieving schedule weeks via SQL query:", error);
     throw error;
@@ -221,15 +246,13 @@ export type ScheduleWeekWithModules = ScheduleWeekRow & {
 };
 
 const getScheduleDaysWithModules = async (
-  weekId: number | string,
+  weekId: string,
 ): Promise<ScheduleDayWithModules[]> => {
   try {
-    const numericWeekId = normalizeNumericId(weekId);
-
     const { data: scheduleDays, error: scheduleDaysError } = await supabase
       .from("scheduleDay")
       .select("id,day,weekId")
-      .eq("weekId", numericWeekId)
+      .eq("weekId", toDbNumericId(weekId))
       .order("day", { ascending: true });
 
     if (scheduleDaysError) {
@@ -237,27 +260,28 @@ const getScheduleDaysWithModules = async (
       throw scheduleDaysError;
     }
 
-    const days = scheduleDays ?? [];
+    const days = (scheduleDays ?? []).map(coerceScheduleDayRow);
     if (days.length === 0) return [];
 
-    const dayIds = normalizeNumericIds(days.map((day) => day.id));
+    const dayIds = days.map((day) => day.id);
+    const dayIdsForQuery = toDbNumericIds(dayIds);
 
     const { data: moduleLinks, error: moduleLinksError } = await supabase
       .from("_ModuleToScheduleDay")
       .select("A,B")
-      .in("B", dayIds);
+      .in("B", dayIdsForQuery);
 
     if (moduleLinksError) {
       console.error("Error fetching module links for schedule days:", moduleLinksError);
       throw moduleLinksError;
     }
 
-    const links = moduleLinks ?? [];
+    const links = (moduleLinks ?? []).map(coerceModuleLinkRow);
     if (links.length === 0) {
       return days.map((day) => ({ ...day, modules: [] }));
     }
 
-    const moduleIds = Array.from(new Set(links.map((link) => link.A)));
+    const moduleIds = Array.from(new Set(links.map((link) => link.moduleId)));
 
     const { data: modules, error: modulesError } = await supabase
       .from("module")
@@ -272,14 +296,14 @@ const getScheduleDaysWithModules = async (
     const modulesList = (modules ?? []).map(coerceModuleRow);
     const modulesById = new Map(modulesList.map((module) => [module.id, module]));
 
-    const modulesByDayId = new Map<number, ModuleRow[]>();
+    const modulesByDayId = new Map<string, ModuleRow[]>();
     dayIds.forEach((dayId) => modulesByDayId.set(dayId, []));
 
     links.forEach((link) => {
-      const linkedModule = modulesById.get(link.A);
+      const linkedModule = modulesById.get(link.moduleId);
       if (!linkedModule) return;
 
-      const current = modulesByDayId.get(link.B);
+      const current = modulesByDayId.get(link.dayId);
       if (current) {
         current.push(linkedModule);
       }
@@ -309,14 +333,14 @@ const getScheduleDaysWithModules = async (
   }
 };
 
-const fillMissingDays = (weekId: number | string, days: ScheduleDayWithModules[]) => {
+const fillMissingDays = (weekId: string, days: ScheduleDayWithModules[]) => {
   const existing = new Map(days.map((day) => [day.day, day]));
 
   return Array.from({ length: 7 }, (_, index) => {
     const dayNumber = index + 1;
     return (
       existing.get(dayNumber) ?? {
-        id: `${String(weekId)}-day-${dayNumber}`,
+        id: `${weekId}-day-${dayNumber}`,
         day: dayNumber,
         weekId,
         modules: [],
@@ -341,12 +365,13 @@ export const getScheduleWeeksWithModules = async (
   }
 
   const weekIds = uniqueWeeks.map((week) => week.id);
-  const daysByWeek = new Map<number, Map<number, ScheduleDayWithModules>>();
+  const weekIdsForQuery = toDbNumericIds(weekIds);
+  const daysByWeek = new Map<string, Map<number, ScheduleDayWithModules>>();
 
   const { data: days, error: daysError } = await supabase
     .from("scheduleDay")
     .select("id,day,weekId")
-    .in("weekId", weekIds)
+    .in("weekId", weekIdsForQuery)
     .order("day", { ascending: true });
 
   if (daysError) {
@@ -354,30 +379,26 @@ export const getScheduleWeeksWithModules = async (
     throw daysError;
   }
 
-  const dayRows = days ?? [];
-  const normalizedDayIds = dayRows.map((day) => normalizeNumericId(day.id));
+  const dayRows = (days ?? []).map(coerceScheduleDayRow);
+  const dayIds = dayRows.map((day) => day.id);
+  const dayIdsForQuery = toDbNumericIds(dayIds);
 
   const links: ModuleScheduleDayRow[] = [];
-  if (normalizedDayIds.length > 0) {
+  if (dayIdsForQuery.length > 0) {
     const { data: moduleLinks, error: moduleLinksError } = await supabase
       .from("_ModuleToScheduleDay")
       .select("A,B")
-      .in("B", normalizedDayIds);
+      .in("B", dayIdsForQuery);
 
     if (moduleLinksError) {
       console.error("Error fetching module links for schedule days:", moduleLinksError);
       throw moduleLinksError;
     }
 
-    links.push(...(moduleLinks ?? []));
+    links.push(...(moduleLinks ?? []).map(coerceModuleLinkRow));
   }
 
-  const normalizedLinks = links.map((link) => ({
-    moduleId: String(link.A),
-    dayId: normalizeNumericId(link.B),
-  }));
-
-  const moduleIds = Array.from(new Set(normalizedLinks.map((link) => link.moduleId)));
+  const moduleIds = Array.from(new Set(links.map((link) => link.moduleId)));
 
   const modulesList: ModuleRow[] = [];
   if (moduleIds.length > 0) {
@@ -395,11 +416,11 @@ export const getScheduleWeeksWithModules = async (
 
     modulesList.push(...(modules ?? []).map(coerceModuleRow));
   }
-  const modulesById = new Map(modulesList.map((module) => [String(module.id), module]));
-  const modulesByDayId = new Map<number, ModuleRow[]>();
-  normalizedDayIds.forEach((dayId) => modulesByDayId.set(dayId, []));
+  const modulesById = new Map(modulesList.map((module) => [module.id, module]));
+  const modulesByDayId = new Map<string, ModuleRow[]>();
+  dayIds.forEach((dayId) => modulesByDayId.set(dayId, []));
 
-  normalizedLinks.forEach((link) => {
+  links.forEach((link) => {
     const linkedModule = modulesById.get(link.moduleId);
     if (!linkedModule) return;
 
@@ -457,7 +478,7 @@ export const getScheduleWeekByAthleteAndWeek = async (
       throw error;
     }
 
-    const existingWeeks = data ?? [];
+    const existingWeeks = (data ?? []).map(coerceScheduleWeekRow);
 
     if (existingWeeks.length > 1) {
       throw new Error(
@@ -472,10 +493,10 @@ export const getScheduleWeekByAthleteAndWeek = async (
   }
 };
 
-const deleteScheduleLinksForDays = async (dayIds: Array<number | string>) => {
+const deleteScheduleLinksForDays = async (dayIds: string[]) => {
   if (dayIds.length === 0) return;
 
-  const numericDayIds = normalizeNumericIds(dayIds);
+  const numericDayIds = toDbNumericIds(dayIds);
 
   const { error } = await supabase
     .from("_ModuleToScheduleDay")
@@ -489,11 +510,11 @@ const deleteScheduleLinksForDays = async (dayIds: Array<number | string>) => {
   }
 };
 
-const deleteScheduleDays = async (weekId: number | string, dayIds: Array<number | string>) => {
+const deleteScheduleDays = async (weekId: string, dayIds: string[]) => {
   if (dayIds.length === 0) return;
 
-  const numericWeekId = normalizeNumericId(weekId);
-  const numericDayIds = normalizeNumericIds(dayIds);
+  const numericWeekId = toDbNumericId(weekId);
+  const numericDayIds = toDbNumericIds(dayIds);
 
   const { error } = await supabase
     .from("scheduleDay")
@@ -508,9 +529,9 @@ const deleteScheduleDays = async (weekId: number | string, dayIds: Array<number 
   }
 };
 
-export const clearScheduleWeek = async (weekId: number | string): Promise<void> => {
+export const clearScheduleWeek = async (weekId: string): Promise<void> => {
   try {
-    const numericWeekId = normalizeNumericId(weekId);
+    const numericWeekId = toDbNumericId(weekId);
 
     const { data: existingDays, error } = await supabase
       .from("scheduleDay")
@@ -523,7 +544,7 @@ export const clearScheduleWeek = async (weekId: number | string): Promise<void> 
       throw error;
     }
 
-    const dayIds = normalizeNumericIds((existingDays ?? []).map((day) => day.id));
+    const dayIds = toIds((existingDays ?? []).map((day) => day.id));
     if (dayIds.length === 0) return;
 
     await deleteScheduleLinksForDays(dayIds);
@@ -536,15 +557,13 @@ export const clearScheduleWeek = async (weekId: number | string): Promise<void> 
 };
 
 export const getScheduleWeekWithModulesById = async (
-  weekId: number | string,
+  weekId: string,
 ): Promise<ScheduleWeekWithModules | null> => {
   try {
-    const numericWeekId = normalizeNumericId(weekId);
-
     const { data: week, error } = await supabase
       .from("scheduleWeek")
       .select("id,week,owner,athlete,title")
-      .eq("id", numericWeekId)
+      .eq("id", toDbNumericId(weekId))
       .maybeSingle();
 
     if (error) {
@@ -554,11 +573,13 @@ export const getScheduleWeekWithModulesById = async (
 
     if (!week) return null;
 
-    const days = await getScheduleDaysWithModules(week.id);
+    const days = await getScheduleDaysWithModules(toId(week.id));
+
+    const coercedWeek = coerceScheduleWeekRow(week);
 
     return {
-      ...week,
-      days: fillMissingDays(week.id, days),
+      ...coercedWeek,
+      days: fillMissingDays(coercedWeek.id, days),
     };
   } catch (error) {
     console.error("Error retrieving schedule week with modules via SQL query:", error);
@@ -589,7 +610,7 @@ export const createModule = async (input: CreateModuleInput): Promise<ModuleRow>
       throw error;
     }
 
-    return data;
+    return coerceModuleRow(data);
   } catch (error) {
     console.error("ƒ?O Error creating module:", error);
     throw error;
@@ -629,7 +650,7 @@ export const createScheduleWeek = async (
       throw error;
     }
 
-    return data;
+    return coerceScheduleWeekRow(data);
   } catch (error) {
     console.error("Error persisting schedule week via SQL query:", error);
     throw error;
@@ -637,7 +658,7 @@ export const createScheduleWeek = async (
 };
 
 export const updateScheduleWeek = async (
-  weekId: number | string,
+  weekId: string,
   updates: Partial<Pick<ScheduleWeekRow, "title">>,
 ): Promise<ScheduleWeekRow> => {
   const body = {
@@ -645,7 +666,7 @@ export const updateScheduleWeek = async (
   } satisfies Partial<ScheduleWeekRow>;
 
   try {
-    const numericWeekId = normalizeNumericId(weekId);
+    const numericWeekId = toDbNumericId(weekId);
 
     const { data, error } = await supabase
       .from("scheduleWeek")
@@ -659,16 +680,16 @@ export const updateScheduleWeek = async (
       throw error;
     }
 
-    return data;
+    return coerceScheduleWeekRow(data);
   } catch (error) {
     console.error("Error persisting schedule week updates via SQL query:", error);
     throw error;
   }
 };
 
-const createScheduleDay = async (weekId: number | string, day: number): Promise<ScheduleDayRow> => {
+const createScheduleDay = async (weekId: string, day: number): Promise<ScheduleDayRow> => {
   try {
-    const numericWeekId = normalizeNumericId(weekId);
+    const numericWeekId = toDbNumericId(weekId);
 
     const { data: existingDay, error: existingError } = await supabase
       .from("scheduleDay")
@@ -685,7 +706,7 @@ const createScheduleDay = async (weekId: number | string, day: number): Promise<
 
     const alreadyCreatedDay = existingDay?.[0];
     if (alreadyCreatedDay) {
-      return alreadyCreatedDay;
+      return coerceScheduleDayRow(alreadyCreatedDay);
     }
 
     const { data, error } = await supabase
@@ -699,7 +720,7 @@ const createScheduleDay = async (weekId: number | string, day: number): Promise<
       throw error;
     }
 
-    return data;
+    return coerceScheduleDayRow(data);
   } catch (error) {
     console.error("Error persisting schedule day via SQL query:", error);
     throw error;
@@ -716,7 +737,7 @@ export const addModuleToScheduleDay = async (
       .from("_ModuleToScheduleDay")
       .insert({
         A: input.moduleId,
-        B: dayRow.id,
+        B: toDbNumericId(dayRow.id),
       })
       .select()
       .single();
@@ -726,7 +747,7 @@ export const addModuleToScheduleDay = async (
       throw error;
     }
 
-    return { day: dayRow, link: linkRow };
+    return { day: dayRow, link: coerceModuleLinkRow(linkRow) };
   } catch (error) {
     console.error("Error persisting module link via SQL query:", error);
     throw error;
