@@ -110,7 +110,7 @@ export function ScheduledModuleCard({
               event.stopPropagation();
               handleRemoveModule(dayId, index);
             }}
-            className="btn btn-ghost btn-circle btn-xs text-error absolute right-16 top-2 sm:right-2"
+            className="btn btn-ghost btn-circle btn-xs text-error absolute right-10 top-2 sm:right-2"
             aria-label={`Delete ${module.title}`}
           >
             <span aria-hidden="true">✕</span>
