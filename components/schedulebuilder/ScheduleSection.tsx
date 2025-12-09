@@ -23,6 +23,7 @@ type ScheduleSectionProps = {
   handleDrop: (dayId: string, targetIndex?: number) => void;
   allowDrop: (event: DragEvent) => void;
   isPreviewLocation: (dayId: string, index: number) => boolean;
+  dropPreview: DropPreviewLocation | null;
   updateDropPreviewFromDragTop: (dayId: string, dragTop: number) => void;
   dragPointerOffsetYRef: MutableRefObject<number | null>;
   setActiveDrag: Dispatch<SetStateAction<ActiveDrag | null>>;
@@ -54,6 +55,7 @@ export function ScheduleSection({
   handleDrop,
   allowDrop,
   isPreviewLocation,
+  dropPreview,
   updateDropPreviewFromDragTop,
   dragPointerOffsetYRef,
   setActiveDrag,
@@ -163,6 +165,7 @@ export function ScheduleSection({
                     handleDayDragOver={handleDayDragOver}
                     handleDrop={handleDrop}
                     isPreviewLocation={isPreviewLocation}
+                    dropPreview={dropPreview}
                     updateDropPreviewFromDragTop={updateDropPreviewFromDragTop}
                     dragPointerOffsetYRef={dragPointerOffsetYRef}
                     setActiveDrag={setActiveDrag}
@@ -193,6 +196,7 @@ export function ScheduleSection({
                 handleDayDragOver={handleDayDragOver}
                 handleDrop={handleDrop}
                 isPreviewLocation={isPreviewLocation}
+                dropPreview={dropPreview}
                 updateDropPreviewFromDragTop={updateDropPreviewFromDragTop}
                 dragPointerOffsetYRef={dragPointerOffsetYRef}
                 setActiveDrag={setActiveDrag}

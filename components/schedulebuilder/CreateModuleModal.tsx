@@ -25,7 +25,7 @@ export function CreateModuleModal({
   onUpdate,
 }: CreateModuleModalProps) {
   return (
-    <dialog className={`modal ${isOpen ? "modal-open" : ""}`}>
+    <dialog className={`modal ${isOpen ? "modal-open" : ""} z-50`}>
       <div className="modal-box max-w-md space-y-4">
         <div className="flex items-start justify-between gap-4">
           <div>
@@ -57,7 +57,11 @@ export function CreateModuleModal({
           </div>
         </form>
       </div>
-      <form method="dialog" className="modal-backdrop" onSubmit={onClose}>
+      <form
+        method="dialog"
+        className="modal-backdrop z-40"
+        onSubmit={onClose}
+      >
         <button>close</button>
       </form>
     </dialog>

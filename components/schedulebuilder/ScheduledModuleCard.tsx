@@ -1,8 +1,12 @@
-import type {
-  Dispatch,
-  DragEvent,
-  MutableRefObject,
-  SetStateAction,
+import {
+  type Dispatch,
+  type DragEvent,
+  type MutableRefObject,
+  type SetStateAction,
+  type TouchEvent,
+  useEffect,
+  useRef,
+  useState,
 } from "react";
 
 import type {
@@ -17,8 +21,11 @@ type ScheduledModuleCardProps = DropPreviewLocation & {
   module: Module;
   allowDrop: (event: DragEvent) => void;
   handleDrop: (dayId: string, targetIndex?: number) => void;
+  dropPreview: DropPreviewLocation | null;
   dragPointerOffsetYRef: MutableRefObject<number | null>;
   setActiveDrag: Dispatch<SetStateAction<ActiveDrag | null>>;
+  updateDropPreviewFromDragTop: (dayId: string, dragTop: number) => void;
+  setDropPreview: Dispatch<SetStateAction<DropPreviewLocation | null>>;
   handleRemoveModule: (dayId: string, moduleIndex: number) => void;
   registerScheduleCardRef: (
     dayId: string,
@@ -38,8 +45,11 @@ export function ScheduledModuleCard({
   module,
   allowDrop,
   handleDrop,
+  dropPreview,
   dragPointerOffsetYRef,
   setActiveDrag,
+  updateDropPreviewFromDragTop,
+  setDropPreview,
   handleRemoveModule,
   registerScheduleCardRef,
   startEditingModule,
@@ -48,6 +58,97 @@ export function ScheduledModuleCard({
   onSelect,
   onToggleExpand,
 }: ScheduledModuleCardProps) {
+  const [isTouchDragging, setIsTouchDragging] = useState(false);
+  const longPressTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const touchStartYRef = useRef<number | null>(null);
+
+  const clearTouchDrag = () => {
+    setIsTouchDragging(false);
+    setActiveDrag(null);
+    setDropPreview(null);
+    touchStartYRef.current = null;
+  };
+
+  useEffect(() => {
+    return () => {
+      if (longPressTimeoutRef.current) {
+        clearTimeout(longPressTimeoutRef.current);
+      }
+    };
+  }, []);
+
+  const startTouchDrag = (touchY: number, target: HTMLElement) => {
+    const rect = target.getBoundingClientRect();
+    dragPointerOffsetYRef.current = touchY - rect.top;
+    setIsTouchDragging(true);
+    setActiveDrag({
+      module,
+      source: {
+        type: "schedule",
+        dayId,
+        moduleIndex: index,
+      },
+    });
+  };
+
+  const handleTouchStart = (event: TouchEvent<HTMLDivElement>) => {
+    if (longPressTimeoutRef.current) {
+      clearTimeout(longPressTimeoutRef.current);
+    }
+
+    const touch = event.touches[0];
+    if (!touch) return;
+
+    touchStartYRef.current = touch.clientY;
+
+    const target = event.currentTarget;
+    longPressTimeoutRef.current = setTimeout(() => {
+      startTouchDrag(touch.clientY, target);
+    }, 500);
+  };
+
+  const handleTouchMove = (event: TouchEvent<HTMLDivElement>) => {
+    const touch = event.touches[0];
+    if (!touch) return;
+
+    if (!isTouchDragging && touchStartYRef.current !== null) {
+      const movedDistance = Math.abs(touch.clientY - touchStartYRef.current);
+      if (movedDistance > 10 && longPressTimeoutRef.current) {
+        clearTimeout(longPressTimeoutRef.current);
+        longPressTimeoutRef.current = null;
+      }
+    }
+
+    if (isTouchDragging) {
+      event.preventDefault();
+      const dragTop = touch.clientY - (dragPointerOffsetYRef.current ?? 0);
+      updateDropPreviewFromDragTop(dayId, dragTop);
+    }
+  };
+
+  const handleTouchEnd = () => {
+    if (longPressTimeoutRef.current) {
+      clearTimeout(longPressTimeoutRef.current);
+    }
+
+    if (isTouchDragging) {
+      const targetIndex =
+        dropPreview?.dayId === dayId ? dropPreview.index : undefined;
+      handleDrop(dayId, targetIndex);
+      clearTouchDrag();
+      return;
+    }
+
+    clearTouchDrag();
+  };
+
+  const handleTouchCancel = () => {
+    if (longPressTimeoutRef.current) {
+      clearTimeout(longPressTimeoutRef.current);
+    }
+    clearTouchDrag();
+  };
+
   return (
     <div
       draggable
@@ -75,6 +176,10 @@ export function ScheduledModuleCard({
       onDragEnd={() => {
         setActiveDrag(null);
       }}
+      onTouchStart={handleTouchStart}
+      onTouchMove={handleTouchMove}
+      onTouchEnd={handleTouchEnd}
+      onTouchCancel={handleTouchCancel}
       onClick={(event) => {
         onSelect(event.shiftKey);
       }}

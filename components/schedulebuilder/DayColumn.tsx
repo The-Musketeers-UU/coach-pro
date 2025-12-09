@@ -21,6 +21,7 @@ type DayColumnProps = {
   handleDayDragOver: (event: DragEvent<HTMLElement>, dayId: string) => void;
   handleDrop: (dayId: string, targetIndex?: number) => void;
   isPreviewLocation: (dayId: string, index: number) => boolean;
+  dropPreview: DropPreviewLocation | null;
   updateDropPreviewFromDragTop: (dayId: string, dragTop: number) => void;
   dragPointerOffsetYRef: MutableRefObject<number | null>;
   setActiveDrag: Dispatch<SetStateAction<ActiveDrag | null>>;
@@ -46,6 +47,7 @@ export function DayColumn({
   handleDayDragOver,
   handleDrop,
   isPreviewLocation,
+  dropPreview,
   updateDropPreviewFromDragTop,
   dragPointerOffsetYRef,
   setActiveDrag,
@@ -131,8 +133,11 @@ export function DayColumn({
               module={module}
               allowDrop={allowDrop}
               handleDrop={handleDrop}
+              dropPreview={dropPreview}
               dragPointerOffsetYRef={dragPointerOffsetYRef}
               setActiveDrag={setActiveDrag}
+              updateDropPreviewFromDragTop={updateDropPreviewFromDragTop}
+              setDropPreview={setDropPreview}
               startEditingModule={startEditingModule}
               handleRemoveModule={handleRemoveModule}
               registerScheduleCardRef={registerScheduleCardRef}

@@ -621,6 +621,7 @@ export const useScheduleBuilderState = ({
     dragState: {
       activeDrag,
       setActiveDrag,
+      dropPreview,
       dragPointerOffsetYRef,
       updateDropPreviewFromDragTop,
       setDropPreview,

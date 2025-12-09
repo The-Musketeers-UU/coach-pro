@@ -601,6 +601,7 @@ function ScheduleBuilderPage() {
             handleDrop={scheduleControls.handleDrop}
             allowDrop={scheduleControls.allowDrop}
             isPreviewLocation={scheduleControls.isPreviewLocation}
+            dropPreview={dragState.dropPreview}
             updateDropPreviewFromDragTop={dragState.updateDropPreviewFromDragTop}
             dragPointerOffsetYRef={dragState.dragPointerOffsetYRef}
             setActiveDrag={dragState.setActiveDrag}
