@@ -57,32 +57,7 @@ export function ScheduledModuleCard({
   onToggleExpand,
 }: ScheduledModuleCardProps) {
   return (
-    <div className="relative pt-6 pb-6 sm:pt-0 sm:pb-0">
-      {isSelected && (
-        <div className="absolute left-1/2 top-0 z-20 -translate-x-1/2 -translate-y-full sm:hidden">
-          <button
-            type="button"
-            className="btn btn-circle btn-ghost btn-xs"
-            onClick={(event) => {
-              event.stopPropagation();
-              onMoveUp();
-            }}
-            aria-label="Flytta upp"
-            disabled={disableMoveUp}
-          >
-            <svg
-              aria-hidden="true"
-              xmlns="http://www.w3.org/2000/svg"
-              viewBox="0 0 24 24"
-              fill="currentColor"
-              className="h-4 w-4 text-primary"
-            >
-              <path d="M12 4.83582L5.79291 11.0429L7.20712 12.4571L12 7.66424L16.7929 12.4571L18.2071 11.0429L12 4.83582ZM12 10.4857L5.79291 16.6928L7.20712 18.107L12 13.3141L16.7929 18.107L18.2071 16.6928L12 10.4857Z"></path>
-            </svg>
-          </button>
-        </div>
-      )}
-
+    <div className="relative">
       <div
         draggable
         data-scheduled-module-card
@@ -129,19 +104,65 @@ export function ScheduledModuleCard({
         aria-pressed={isSelected}
       >
         <div className="space-y-1 text-xs text-base-content/60">
-          <div className="flex flex-row justify-between items-center">
+          <div className="flex flex-row items-start justify-between gap-2">
             <p className="font-semibold text-base-content">{module.title}</p>
-            <button
-              type="button"
-              onClick={(event) => {
-                event.stopPropagation();
-                handleRemoveModule(dayId, index);
-              }}
-              className="btn btn-ghost btn-circle btn-xs text-error self-start mr-1.5"
-              aria-label={`Delete ${module.title}`}
-            >
-              <span aria-hidden="true">✕</span>
-            </button>
+            <div className="flex items-center gap-1">
+              <button
+                type="button"
+                onClick={(event) => {
+                  event.stopPropagation();
+                  handleRemoveModule(dayId, index);
+                }}
+                className="btn btn-ghost btn-circle btn-xs text-error self-start"
+                aria-label={`Delete ${module.title}`}
+              >
+                <span aria-hidden="true">✕</span>
+              </button>
+              {isSelected && (
+                <div className="flex flex-col items-center gap-1 sm:hidden">
+                  <button
+                    type="button"
+                    className="btn btn-circle btn-ghost btn-xs"
+                    onClick={(event) => {
+                      event.stopPropagation();
+                      onMoveUp();
+                    }}
+                    aria-label="Flytta upp"
+                    disabled={disableMoveUp}
+                  >
+                    <svg
+                      aria-hidden="true"
+                      xmlns="http://www.w3.org/2000/svg"
+                      viewBox="0 0 24 24"
+                      fill="currentColor"
+                      className="h-4 w-4 text-primary"
+                    >
+                      <path d="M12 4.83582L5.79291 11.0429L7.20712 12.4571L12 7.66424L16.7929 12.4571L18.2071 11.0429L12 4.83582ZM12 10.4857L5.79291 16.6928L7.20712 18.107L12 13.3141L16.7929 18.107L18.2071 16.6928L12 10.4857Z"></path>
+                    </svg>
+                  </button>
+                  <button
+                    type="button"
+                    className="btn btn-circle btn-ghost btn-xs"
+                    onClick={(event) => {
+                      event.stopPropagation();
+                      onMoveDown();
+                    }}
+                    aria-label="Flytta ned"
+                    disabled={disableMoveDown}
+                  >
+                    <svg
+                      aria-hidden="true"
+                      xmlns="http://www.w3.org/2000/svg"
+                      viewBox="0 0 24 24"
+                      fill="currentColor"
+                      className="h-4 w-4 text-primary rotate-180"
+                    >
+                      <path d="M12 4.83582L5.79291 11.0429L7.20712 12.4571L12 7.66424L16.7929 12.4571L18.2071 11.0429L12 4.83582ZM12 10.4857L5.79291 16.6928L7.20712 18.107L12 13.3141L16.7929 18.107L18.2071 16.6928L12 10.4857Z"></path>
+                    </svg>
+                  </button>
+                </div>
+              )}
+            </div>
           </div>
           <div className="pr-3 space-y-2">
             <p className="text-xs text-base-content/70">{module.description}</p>
@@ -149,31 +170,6 @@ export function ScheduledModuleCard({
           </div>
         </div>
       </div>
-
-      {isSelected && (
-        <div className="absolute left-1/2 bottom-0 z-20 -translate-x-1/2 translate-y-full sm:hidden">
-          <button
-            type="button"
-            className="btn btn-circle btn-ghost btn-xs"
-            onClick={(event) => {
-              event.stopPropagation();
-              onMoveDown();
-            }}
-            aria-label="Flytta ned"
-            disabled={disableMoveDown}
-          >
-            <svg
-              aria-hidden="true"
-              xmlns="http://www.w3.org/2000/svg"
-              viewBox="0 0 24 24"
-              fill="currentColor"
-              className="h-4 w-4 text-primary rotate-180"
-            >
-              <path d="M12 4.83582L5.79291 11.0429L7.20712 12.4571L12 7.66424L16.7929 12.4571L18.2071 11.0429L12 4.83582ZM12 10.4857L5.79291 16.6928L7.20712 18.107L12 13.3141L16.7929 18.107L18.2071 16.6928L12 10.4857Z"></path>
-            </svg>
-          </button>
-        </div>
-      )}
     </div>
   );
 }
