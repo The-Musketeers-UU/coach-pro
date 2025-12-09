@@ -2,12 +2,13 @@
 
 import { useEffect, useMemo, useState } from "react";
 
-import { updateModuleFeedback } from "@/lib/supabase/training-modules";
+import { upsertScheduleModuleFeedback } from "@/lib/supabase/training-modules";
 
 import { ModuleBadges } from "@/components/ModuleBadges";
 
 export type ProgramModule = {
   id?: string;
+  scheduleDayId?: string;
   title: string;
   description: string;
   category: string;
@@ -18,6 +19,14 @@ export type ProgramModule = {
   comment?: string | null;
   feeling?: number | null;
   sleepHours?: number | null;
+  feedback?: {
+    distance: number | null;
+    weight: number | null;
+    duration: number | null;
+    comment: string | null;
+    feeling: number | null;
+    sleepHours: number | null;
+  };
 };
 
 export type ProgramDay = {
@@ -136,18 +145,26 @@ export function WeekScheduleView({
     const buildValue = (value: number | string | null | undefined) =>
       value === null || value === undefined ? "" : String(value);
 
-    const isActive = (value: unknown) => value !== undefined;
+    const toFieldState = (
+      templateValue: unknown,
+      feedbackValue: unknown,
+    ): { active: boolean; value: string } => {
+      const resolvedValue =
+        feedbackValue !== undefined ? feedbackValue : templateValue;
+
+      return {
+        active: templateValue !== undefined || feedbackValue !== undefined,
+        value: buildValue(resolvedValue),
+      };
+    };
 
     return {
-      distance: { active: isActive(module.distance), value: buildValue(module.distance) },
-      duration: { active: isActive(module.duration), value: buildValue(module.duration) },
-      weight: { active: isActive(module.weight), value: buildValue(module.weight) },
-      comment: { active: isActive(module.comment), value: buildValue(module.comment) },
-      feeling: { active: isActive(module.feeling), value: buildValue(module.feeling) },
-      sleepHours: {
-        active: isActive(module.sleepHours),
-        value: buildValue(module.sleepHours),
-      },
+      distance: toFieldState(module.distance, module.feedback?.distance),
+      duration: toFieldState(module.duration, module.feedback?.duration),
+      weight: toFieldState(module.weight, module.feedback?.weight),
+      comment: toFieldState(module.comment, module.feedback?.comment),
+      feeling: toFieldState(module.feeling, module.feedback?.feeling),
+      sleepHours: toFieldState(module.sleepHours, module.feedback?.sleepHours),
     } satisfies FeedbackFormState;
   }, [selectedModule]);
 
@@ -174,7 +191,8 @@ export function WeekScheduleView({
   };
 
   const formatSavePayload = () => {
-    if (!feedbackForm || !selectedModule?.module.id) return null;
+    if (!feedbackForm || !selectedModule?.module.id || !selectedModule.module.scheduleDayId)
+      return null;
 
     const toNumber = (value: string) => {
       const parsed = Number.parseFloat(value);
@@ -183,6 +201,7 @@ export function WeekScheduleView({
 
     return {
       moduleId: selectedModule.module.id,
+      scheduleDayId: selectedModule.module.scheduleDayId,
       distance: feedbackForm.distance.active ? toNumber(feedbackForm.distance.value) : null,
       duration: feedbackForm.duration.active ? toNumber(feedbackForm.duration.value) : null,
       weight: feedbackForm.weight.active ? toNumber(feedbackForm.weight.value) : null,
@@ -204,7 +223,7 @@ export function WeekScheduleView({
     setFeedbackError(null);
 
     try {
-      const updated = await updateModuleFeedback(payload);
+      const updated = await upsertScheduleModuleFeedback(payload);
 
       setWeekState((prev) => {
         if (!prev) return prev;
@@ -214,15 +233,18 @@ export function WeekScheduleView({
           days: prev.days.map((day) => ({
             ...day,
             modules: day.modules.map((module) =>
-              module.id === updated.id
+              module.id === payload.moduleId &&
+              module.scheduleDayId === payload.scheduleDayId
                 ? {
                     ...module,
-                    distance: updated.distance,
-                    duration: updated.duration,
-                    weight: updated.weight,
-                    comment: updated.comment,
-                    feeling: updated.feeling,
-                    sleepHours: updated.sleepHours,
+                    feedback: {
+                      distance: updated.distance,
+                      duration: updated.duration,
+                      weight: updated.weight,
+                      comment: updated.comment,
+                      feeling: updated.feeling,
+                      sleepHours: updated.sleepHours,
+                    },
                   }
                 : module,
             ),
@@ -236,12 +258,14 @@ export function WeekScheduleView({
               ...prev,
               module: {
                 ...prev.module,
-                distance: updated.distance,
-                duration: updated.duration,
-                weight: updated.weight,
-                comment: updated.comment,
-                feeling: updated.feeling,
-                sleepHours: updated.sleepHours,
+                feedback: {
+                  distance: updated.distance,
+                  duration: updated.duration,
+                  weight: updated.weight,
+                  comment: updated.comment,
+                  feeling: updated.feeling,
+                  sleepHours: updated.sleepHours,
+                },
               },
             }
           : prev,

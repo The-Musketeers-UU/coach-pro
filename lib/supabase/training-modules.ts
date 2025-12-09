@@ -22,6 +22,24 @@ export type ModuleRow = DbModuleRow & { id: string };
 const moduleSelectColumns =
   "id,owner,name,category,subCategory,distance,duration,weight,description,comment,feeling,sleepHours";
 
+type DbScheduleModuleFeedbackRow = {
+  id: number | string;
+  moduleId: number | string;
+  scheduleDayId: number | string;
+  distance: number | null;
+  duration: number | null;
+  weight: number | null;
+  comment: string | null;
+  feeling: number | null;
+  sleepHours: number | null;
+};
+
+export type ScheduleModuleFeedbackRow = DbScheduleModuleFeedbackRow & {
+  id: string;
+  moduleId: string;
+  scheduleDayId: string;
+};
+
 type DbScheduleWeekRow = {
   id: number | string;
   owner: string;
@@ -47,6 +65,11 @@ type ScheduleDayRow = {
 type DbModuleScheduleDayRow = { A: string; B: number | string };
 
 type ModuleScheduleDayRow = { moduleId: string; dayId: string };
+
+type ScheduleDayModule = ModuleRow & {
+  scheduleDayId: string;
+  feedback?: ScheduleModuleFeedbackRow;
+};
 
 export type AthleteRow = {
   id: string;
@@ -76,6 +99,15 @@ const coerceModuleRow = (row: DbModuleRow): ModuleRow => ({
   id: toId(row.id),
 });
 
+const coerceScheduleModuleFeedbackRow = (
+  row: DbScheduleModuleFeedbackRow,
+): ScheduleModuleFeedbackRow => ({
+  ...row,
+  id: toId(row.id),
+  moduleId: toId(row.moduleId),
+  scheduleDayId: toId(row.scheduleDayId),
+});
+
 const coerceScheduleWeekRow = (row: DbScheduleWeekRow): ScheduleWeekRow => ({
   ...row,
   id: toId(row.id),
@@ -91,6 +123,33 @@ const coerceModuleLinkRow = (row: DbModuleScheduleDayRow): ModuleScheduleDayRow 
   moduleId: toId(row.A),
   dayId: toId(row.B),
 });
+
+const mergeModuleFeedback = (
+  modulesByDayId: Map<string, ModuleRow[]>,
+  feedbackRows: ScheduleModuleFeedbackRow[],
+): Map<string, ScheduleDayModule[]> => {
+  const feedbackByKey = new Map<string, ScheduleModuleFeedbackRow>();
+  feedbackRows.forEach((row) => {
+    feedbackByKey.set(`${row.scheduleDayId}:${row.moduleId}`, row);
+  });
+
+  const result = new Map<string, ScheduleDayModule[]>();
+
+  modulesByDayId.forEach((modules, dayId) => {
+    const enriched = modules.map((module) => {
+      const feedback = feedbackByKey.get(`${dayId}:${module.id}`);
+      return {
+        ...module,
+        scheduleDayId: dayId,
+        feedback,
+      } satisfies ScheduleDayModule;
+    });
+
+    result.set(dayId, enriched);
+  });
+
+  return result;
+};
 
 export const getModulesByOwner = async (ownerId: string): Promise<ModuleRow[]> => {
   try {
@@ -139,8 +198,9 @@ export type CreateScheduleWeekInput = {
   title: string;
 };
 
-export type UpdateModuleFeedbackInput = {
+export type UpsertScheduleModuleFeedbackInput = {
   moduleId: string;
+  scheduleDayId: string;
   distance: number | null;
   duration: number | null;
   weight: number | null;
@@ -229,34 +289,41 @@ export const getCoaches = async (): Promise<AthleteRow[]> => {
   }
 };
 
-export const updateModuleFeedback = async (
-  input: UpdateModuleFeedbackInput,
-): Promise<ModuleRow> => {
+export const upsertScheduleModuleFeedback = async (
+  input: UpsertScheduleModuleFeedbackInput,
+): Promise<ScheduleModuleFeedbackRow> => {
   const payload = {
+    moduleId: toDbNumericId(input.moduleId),
+    scheduleDayId: toDbNumericId(input.scheduleDayId),
     distance: sanitizeNumber(input.distance) ?? null,
     duration: sanitizeNumber(input.duration) ?? null,
     weight: sanitizeNumber(input.weight) ?? null,
     comment: input.comment?.trim() || null,
     feeling: sanitizeNumber(input.feeling) ?? null,
     sleepHours: sanitizeNumber(input.sleepHours) ?? null,
-  } satisfies Omit<ModuleRow, "id" | "owner" | "name" | "category" | "subCategory">;
+  } satisfies Omit<DbScheduleModuleFeedbackRow, "id">;
 
   try {
     const { data, error } = await supabase
-      .from("module")
-      .update(payload)
-      .eq("id", toDbNumericId(input.moduleId))
-      .select(moduleSelectColumns)
+      .from("scheduleModuleFeedback")
+      .upsert(payload, { onConflict: "moduleId,scheduleDayId" })
+      .select(
+        "id,moduleId,scheduleDayId,distance,duration,weight,comment,feeling,sleepHours",
+      )
       .single();
 
     if (error) {
-      console.error("Error updating module feedback:", error);
+      console.error("Error upserting schedule module feedback:", error);
       throw toReadableError(error);
     }
 
-    return coerceModuleRow(data);
+    return coerceScheduleModuleFeedbackRow({
+      ...data,
+      moduleId: data.moduleId ?? payload.moduleId,
+      scheduleDayId: data.scheduleDayId ?? payload.scheduleDayId,
+    } as DbScheduleModuleFeedbackRow);
   } catch (error) {
-    console.error("Error persisting module feedback via SQL query:", error);
+    console.error("Error persisting schedule module feedback via SQL query:", error);
     throw toReadableError(error);
   }
 };
@@ -283,7 +350,7 @@ export const getScheduleWeeksByAthlete = async (
   }
 };
 
-export type ScheduleDayWithModules = ScheduleDayRow & { modules: ModuleRow[] };
+export type ScheduleDayWithModules = ScheduleDayRow & { modules: ScheduleDayModule[] };
 
 export type ScheduleWeekWithModules = ScheduleWeekRow & {
   days: ScheduleDayWithModules[];
@@ -353,10 +420,30 @@ const getScheduleDaysWithModules = async (
       }
     });
 
+    const feedbackRows: ScheduleModuleFeedbackRow[] = [];
+
+    if (dayIdsForQuery.length > 0) {
+      const { data: feedbackData, error: feedbackError } = await supabase
+        .from("scheduleModuleFeedback")
+        .select(
+          "id,moduleId,scheduleDayId,distance,duration,weight,comment,feeling,sleepHours",
+        )
+        .in("scheduleDayId", dayIdsForQuery);
+
+      if (feedbackError) {
+        console.error("Error fetching schedule module feedback:", feedbackError);
+        throw feedbackError;
+      }
+
+      feedbackRows.push(...(feedbackData ?? []).map(coerceScheduleModuleFeedbackRow));
+    }
+
+    const modulesWithFeedbackByDay = mergeModuleFeedback(modulesByDayId, feedbackRows);
+
     const aggregatedByDay = new Map<number, ScheduleDayWithModules>();
 
     days.forEach((day) => {
-      const modulesForDay = modulesByDayId.get(day.id) ?? [];
+      const modulesForDay = modulesWithFeedbackByDay.get(day.id) ?? [];
       const existing = aggregatedByDay.get(day.day);
 
       if (existing) {
@@ -474,6 +561,26 @@ export const getScheduleWeeksWithModules = async (
     }
   });
 
+  const feedbackRows: ScheduleModuleFeedbackRow[] = [];
+
+  if (dayIdsForQuery.length > 0) {
+    const { data: feedbackData, error: feedbackError } = await supabase
+      .from("scheduleModuleFeedback")
+      .select(
+        "id,moduleId,scheduleDayId,distance,duration,weight,comment,feeling,sleepHours",
+      )
+      .in("scheduleDayId", dayIdsForQuery);
+
+    if (feedbackError) {
+      console.error("Error fetching schedule module feedback:", feedbackError);
+      throw feedbackError;
+    }
+
+    feedbackRows.push(...(feedbackData ?? []).map(coerceScheduleModuleFeedbackRow));
+  }
+
+  const modulesWithFeedbackByDay = mergeModuleFeedback(modulesByDayId, feedbackRows);
+
   dayRows.forEach((day) => {
     if (day.weekId === null) return;
 
@@ -483,7 +590,7 @@ export const getScheduleWeeksWithModules = async (
     }
 
     const weekDays = daysByWeek.get(weekId)!;
-    const modulesForDay = modulesByDayId.get(day.id) ?? [];
+    const modulesForDay = modulesWithFeedbackByDay.get(day.id) ?? [];
     const existingDay = weekDays.get(day.day);
 
     if (existingDay) {
@@ -554,6 +661,23 @@ const deleteScheduleLinksForDays = async (dayIds: string[]) => {
   }
 };
 
+const deleteScheduleFeedbackForDays = async (dayIds: string[]) => {
+  if (dayIds.length === 0) return;
+
+  const numericDayIds = toDbNumericIds(dayIds);
+
+  const { error } = await supabase
+    .from("scheduleModuleFeedback")
+    .delete()
+    .in("scheduleDayId", numericDayIds);
+
+  if (error) {
+    const message = formatSupabaseError(error);
+    console.error("Error deleting schedule module feedback for days:", message);
+    throw toReadableError(error);
+  }
+};
+
 const deleteScheduleDays = async (weekId: string, dayIds: string[]) => {
   if (dayIds.length === 0) return;
 
@@ -591,6 +715,7 @@ export const clearScheduleWeek = async (weekId: string): Promise<void> => {
     const dayIds = toIds((existingDays ?? []).map((day) => day.id));
     if (dayIds.length === 0) return;
 
+    await deleteScheduleFeedbackForDays(dayIds);
     await deleteScheduleLinksForDays(dayIds);
     await deleteScheduleDays(weekId, dayIds);
   } catch (error) {

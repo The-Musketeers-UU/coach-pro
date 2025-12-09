@@ -79,5 +79,26 @@ model ScheduleDay {
   // Relation: a day has a list of modules (many-to-many)
   modules Module[]
 
+  feedback ScheduleModuleFeedback[]
+
   @@map("scheduleDay")
+}
+
+model ScheduleModuleFeedback {
+  id BigInt @id @default(autoincrement()) @db.BigInt
+
+  moduleId      BigInt      @db.BigInt
+  scheduleDayId BigInt      @db.BigInt
+  module        Module      @relation(fields: [moduleId], references: [id])
+  scheduleDay   ScheduleDay @relation(fields: [scheduleDayId], references: [id])
+
+  distance   Int?
+  duration   Int?
+  weight     Int?
+  comment    String? @db.Text
+  feeling    Int?
+  sleepHours Int?
+
+  @@unique([moduleId, scheduleDayId])
+  @@map("scheduleModuleFeedback")
 }

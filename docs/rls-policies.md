@@ -42,6 +42,7 @@ alter table public."module" enable row level security;
 alter table public."scheduleWeek" enable row level security;
 alter table public."scheduleDay" enable row level security;
 alter table public."_ModuleToScheduleDay" enable row level security;
+alter table public."scheduleModuleFeedback" enable row level security;
 
 drop policy if exists "Users can read directory" on public."user";
 drop policy if exists "Users manage own row" on public."user";
@@ -55,6 +56,8 @@ drop policy if exists "Days updatable by owner" on public."scheduleDay";
 drop policy if exists "Days deletable by owner" on public."scheduleDay";
 drop policy if exists "Links readable to participants" on public."_ModuleToScheduleDay";
 drop policy if exists "Links writable by owner" on public."_ModuleToScheduleDay";
+drop policy if exists "Feedback readable to participants" on public."scheduleModuleFeedback";
+drop policy if exists "Feedback writable by participants" on public."scheduleModuleFeedback";
 ```
 
 ### `user`
@@ -218,6 +221,46 @@ create policy "Links writable by owner"
         and sw.owner = auth.uid()
     )
   );
+
+### `scheduleModuleFeedback`
+
+Feedback entries belong to a specific module instance on a given schedule day. Participants in the parent week (owner coach and assigned athlete) can read and update them.
+
+```sql
+create policy "Feedback readable to participants"
+  on public."scheduleModuleFeedback"
+  for select
+  to authenticated
+  using (
+    exists (
+      select 1
+      from public."scheduleDay" sd
+      join public."scheduleWeek" sw on sw.id = sd."weekId"
+      where sd.id = "scheduleDayId" and (sw.owner = auth.uid() or sw.athlete = auth.uid())
+    )
+  );
+
+create policy "Feedback writable by participants"
+  on public."scheduleModuleFeedback"
+  for all
+  to authenticated
+  using (
+    exists (
+      select 1
+      from public."scheduleDay" sd
+      join public."scheduleWeek" sw on sw.id = sd."weekId"
+      where sd.id = "scheduleDayId" and (sw.owner = auth.uid() or sw.athlete = auth.uid())
+    )
+  )
+  with check (
+    exists (
+      select 1
+      from public."scheduleDay" sd
+      join public."scheduleWeek" sw on sw.id = sd."weekId"
+      where sd.id = "scheduleDayId" and (sw.owner = auth.uid() or sw.athlete = auth.uid())
+    )
+  );
+```
 ```
 
 ## Verifying the new policies
