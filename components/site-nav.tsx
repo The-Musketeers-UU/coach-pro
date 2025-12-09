@@ -76,7 +76,11 @@ export function SiteNav() {
             <div
               className={`dropdown dropdown-end ${isDropdownOpen ? "dropdown-open" : ""}`}
               ref={dropdownRef}
-              onPointerDown={(event) => event.stopPropagation()}
+              onPointerDownCapture={(event) => {
+                if (dropdownRef.current?.contains(event.target as Node)) {
+                  event.stopPropagation();
+                }
+              }}
             >
               <button
                 className="btn btn-sm btn-primary btn-circle"
