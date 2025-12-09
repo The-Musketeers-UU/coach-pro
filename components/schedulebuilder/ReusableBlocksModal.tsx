@@ -39,7 +39,7 @@ export function ReusableBlocksModal({
 }: ReusableBlocksModalProps) {
   return (
     <dialog className={`modal ${isOpen ? "modal-open" : ""}`}>
-      <div className="modal-box max-w-md space-y-4 p-0">
+      <div className="modal-box flex h-[90vh] max-w-md flex-col space-y-4 p-0 md:h-auto">
         <div className="flex items-center justify-between border-b border-base-200 px-5 py-4">
           <div>
             <p className="text-xs font-semibold uppercase tracking-wide text-neutral">
@@ -56,9 +56,9 @@ export function ReusableBlocksModal({
           >
             ✕
           </button>
-        </div>
+          </div>
 
-        <div className="space-y-3 px-5">
+        <div className="flex-1 space-y-3 overflow-y-auto px-5">
           <div className="flex flex-col gap-2">
             <label className="input input-bordered input-sm flex items-center gap-2">
               <input
@@ -81,7 +81,7 @@ export function ReusableBlocksModal({
             </button>
           </div>
 
-          <div className="max-h-[50vh] space-y-3 overflow-y-auto pr-1">
+          <div className="space-y-3 pr-1">
             {filteredModules.map((module) => {
               const isSelected = selectedModuleId === module.id;
               return (
