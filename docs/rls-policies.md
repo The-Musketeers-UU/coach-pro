@@ -103,7 +103,7 @@ create policy "Modules readable to participants"
       from public."_ModuleToScheduleDay" msd
       join public."scheduleDay" sd on sd.id = msd."B"
       join public."scheduleWeek" sw on sw.id = sd."weekId"
-      where msd."A" = id and sw.athlete = auth.uid()
+      where msd."A" = "module".id and sw.athlete = auth.uid()
     )
   );
 
@@ -352,7 +352,7 @@ create policy "Modules readable to participants"
       from public."_ModuleToScheduleDay" msd
       join public."scheduleDay" sd on sd.id = msd."B"
       join public."scheduleWeek" sw on sw.id = sd."weekId"
-      where msd."A" = id and sw.athlete = auth.uid()
+      where msd."A" = "module".id and sw.athlete = auth.uid()
     )
   );
 
