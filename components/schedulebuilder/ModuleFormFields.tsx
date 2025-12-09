@@ -4,7 +4,7 @@ import type { FeedbackFieldType, ModuleForm } from "@/components/schedulebuilder
 
 const feedbackFieldLabels: Record<FeedbackFieldType, string> = {
   distance: "Distans (m)",
-  duration: "Tid (min)",
+  duration: "Tid (mm:ss.hh)",
   weight: "Vikt (kg)",
   comment: "Kommentar",
   feeling: "Känsla (1-10)",
@@ -13,7 +13,7 @@ const feedbackFieldLabels: Record<FeedbackFieldType, string> = {
 
 const feedbackFieldPlaceholders: Record<FeedbackFieldType, string> = {
   distance: "Hur långt blev passet?",
-  duration: "Hur lång tid tog passet?",
+  duration: "Ange tid som mm:ss eller mm:ss.hh",
   weight: "Vilken vikt använde du?",
   comment: "Lämna en kommentar om passet",
   feeling: "Hur kändes passet?",
@@ -78,7 +78,7 @@ export function ModuleFormFields({ formState, onChange }: ModuleFormFieldsProps)
 
     const inputProps = {
       distance: { step: 10, min: 0, type: "number" },
-      duration: { step: 5, min: 0, type: "number" },
+      duration: { type: "text", inputMode: "decimal", pattern: "[0-9:.,]*" },
       weight: { step: 1, min: 0, type: "number" },
       feeling: { step: 1, min: 1, max: 10, type: "number" },
       sleepHours: { step: 0.5, min: 0, type: "number" },

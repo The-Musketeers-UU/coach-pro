@@ -2,6 +2,7 @@ import type { Dispatch, FormEvent, SetStateAction } from "react";
 
 import type { EditingContext, ModuleForm } from "@/components/schedulebuilder/types";
 import { ModuleFormFields } from "@/components/schedulebuilder/ModuleFormFields";
+import { formatCentiseconds, parseDurationToCentiseconds } from "@/lib/time";
 
 type EditModuleModalProps = {
   isOpen: boolean;
@@ -26,10 +27,9 @@ export function EditModuleModal({
   onClose,
   onSave,
 }: EditModuleModalProps) {
-  const formattedDuration =
-    editingModuleForm?.duration && Number(editingModuleForm.duration) >= 0
-      ? `${editingModuleForm.duration} min`
-      : "";
+  const formattedDuration = editingModuleForm?.duration
+    ? formatCentiseconds(parseDurationToCentiseconds(editingModuleForm.duration) ?? undefined)
+    : "";
 
   return (
     <dialog className={`modal ${isOpen ? "modal-open" : ""}`}>

@@ -1,3 +1,5 @@
+import { formatCentiseconds } from "@/lib/time";
+
 type ModuleBadgeData = {
   category: string;
   subcategory?: string;
@@ -6,8 +8,7 @@ type ModuleBadgeData = {
   weight?: number | null;
 };
 
-const formatDuration = (duration?: number | null) =>
-  duration !== undefined && duration !== null ? `${duration} min` : "";
+const formatDuration = (duration?: number | null) => formatCentiseconds(duration);
 
 type ModuleBadgesProps = {
   module: ModuleBadgeData;

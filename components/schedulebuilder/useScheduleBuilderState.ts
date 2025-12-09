@@ -18,6 +18,7 @@ import {
   type Module,
   type ModuleForm,
 } from "./types";
+import { formatCentiseconds, parseDurationToCentiseconds } from "@/lib/time";
 
 const createInitialFormState = (): ModuleForm => ({
   title: "",
@@ -376,6 +377,10 @@ export const useScheduleBuilderState = ({
       const rawValue = formState[type].trim();
       if (!rawValue) return null;
 
+      if (type === "duration") {
+        return parseDurationToCentiseconds(rawValue);
+      }
+
       const parsed = Number.parseFloat(rawValue);
       return Number.isFinite(parsed) ? parsed : undefined;
     };
@@ -480,7 +485,8 @@ export const useScheduleBuilderState = ({
       category: module.category,
       subcategory: module.subcategory ?? "",
       distance: module.distance !== undefined ? String(module.distance) : "",
-      duration: module.duration !== undefined ? String(module.duration) : "",
+      duration:
+        module.duration !== undefined ? formatCentiseconds(module.duration) : "",
       weight: module.weight !== undefined ? String(module.weight) : "",
       comment: module.comment ?? "",
       feeling: module.feeling !== undefined ? String(module.feeling) : "",

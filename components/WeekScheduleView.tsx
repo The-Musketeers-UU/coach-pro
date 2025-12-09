@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 
 import { upsertScheduleModuleFeedback } from "@/lib/supabase/training-modules";
+import { formatCentiseconds, parseDurationToCentiseconds } from "@/lib/time";
 
 import { ModuleBadges } from "@/components/ModuleBadges";
 
@@ -68,7 +69,10 @@ type FeedbackFieldKey =
 
 type FeedbackFormState = Record<FeedbackFieldKey, { active: boolean; value: string }>;
 
-const FEEDBACK_FIELDS: Record<FeedbackFieldKey, { label: string; placeholder: string; type: string; step?: number; min?: number; max?: number }>= {
+const FEEDBACK_FIELDS: Record<
+  FeedbackFieldKey,
+  { label: string; placeholder: string; type: string; step?: number; min?: number; max?: number }
+> = {
   distance: {
     label: "Distans",
     placeholder: "Lägg till distans (m)",
@@ -78,10 +82,8 @@ const FEEDBACK_FIELDS: Record<FeedbackFieldKey, { label: string; placeholder: st
   },
   duration: {
     label: "Tid",
-    placeholder: "Lägg till tid (min)",
-    type: "number",
-    step: 5,
-    min: 0,
+    placeholder: "Lägg till tid (mm:ss.hh)",
+    type: "text",
   },
   weight: {
     label: "Vikt",
@@ -142,10 +144,21 @@ export function WeekScheduleView({
     if (!selectedModule) return null;
 
     const { module } = selectedModule;
-    const buildValue = (value: number | string | null | undefined) =>
-      value === null || value === undefined ? "" : String(value);
+    const buildValue = (
+      field: FeedbackFieldKey,
+      value: number | string | null | undefined,
+    ) => {
+      if (value === null || value === undefined) return "";
+
+      if (field === "duration") {
+        return formatCentiseconds(Number(value));
+      }
+
+      return String(value);
+    };
 
     const toFieldState = (
+      field: FeedbackFieldKey,
       templateValue: unknown,
       feedbackValue: unknown,
     ): { active: boolean; value: string } => {
@@ -154,17 +167,17 @@ export function WeekScheduleView({
 
       return {
         active: templateValue !== undefined || feedbackValue !== undefined,
-        value: buildValue(resolvedValue),
+        value: buildValue(field, resolvedValue as number | string | null),
       };
     };
 
     return {
-      distance: toFieldState(module.distance, module.feedback?.distance),
-      duration: toFieldState(module.duration, module.feedback?.duration),
-      weight: toFieldState(module.weight, module.feedback?.weight),
-      comment: toFieldState(module.comment, module.feedback?.comment),
-      feeling: toFieldState(module.feeling, module.feedback?.feeling),
-      sleepHours: toFieldState(module.sleepHours, module.feedback?.sleepHours),
+      distance: toFieldState("distance", module.distance, module.feedback?.distance),
+      duration: toFieldState("duration", module.duration, module.feedback?.duration),
+      weight: toFieldState("weight", module.weight, module.feedback?.weight),
+      comment: toFieldState("comment", module.comment, module.feedback?.comment),
+      feeling: toFieldState("feeling", module.feeling, module.feedback?.feeling),
+      sleepHours: toFieldState("sleepHours", module.sleepHours, module.feedback?.sleepHours),
     } satisfies FeedbackFormState;
   }, [selectedModule]);
 
@@ -199,11 +212,18 @@ export function WeekScheduleView({
       return Number.isFinite(parsed) ? parsed : null;
     };
 
+    const toDuration = (value: string) => {
+      const parsed = parseDurationToCentiseconds(value);
+      return parsed === undefined ? null : parsed;
+    };
+
     return {
       moduleId: selectedModule.module.id,
       scheduleDayId: selectedModule.module.scheduleDayId,
       distance: feedbackForm.distance.active ? toNumber(feedbackForm.distance.value) : null,
-      duration: feedbackForm.duration.active ? toNumber(feedbackForm.duration.value) : null,
+      duration: feedbackForm.duration.active
+        ? toDuration(feedbackForm.duration.value)
+        : null,
       weight: feedbackForm.weight.active ? toNumber(feedbackForm.weight.value) : null,
       comment: feedbackForm.comment.active
         ? feedbackForm.comment.value.trim() || null
