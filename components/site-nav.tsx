@@ -25,18 +25,18 @@ export function SiteNav() {
   };
 
   useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
+    const handlePointerDown = (event: PointerEvent) => {
       if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
         setIsDropdownOpen(false);
       }
     };
 
     if (isDropdownOpen) {
-      document.addEventListener("mousedown", handleClickOutside);
+      document.addEventListener("pointerdown", handlePointerDown);
     }
 
     return () => {
-      document.removeEventListener("mousedown", handleClickOutside);
+      document.removeEventListener("pointerdown", handlePointerDown);
     };
   }, [isDropdownOpen]);
 
@@ -76,6 +76,11 @@ export function SiteNav() {
             <div
               className={`dropdown dropdown-end ${isDropdownOpen ? "dropdown-open" : ""}`}
               ref={dropdownRef}
+              onPointerDownCapture={(event) => {
+                if (dropdownRef.current?.contains(event.target as Node)) {
+                  event.stopPropagation();
+                }
+              }}
             >
               <button
                 className="btn btn-sm btn-primary btn-circle"
