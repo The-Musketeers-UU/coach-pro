@@ -56,6 +56,7 @@ export default function AthleteSchedulePage() {
   );
   const activeWeek = viewWeeks[safeWeekIndex];
   const weekNumber = rawWeeks[safeWeekIndex]?.week ?? currentWeekNumber;
+  const weekKey = activeWeek?.id ?? "empty-week";
 
   const goToPreviousWeek = () =>
     setWeekIndex((prev) => Math.max(0, Math.min(prev, viewWeeks.length - 1) - 1));
@@ -128,6 +129,7 @@ export default function AthleteSchedulePage() {
 
         {viewWeeks.length === 0 ? (
           <WeekScheduleView
+            key="empty-week"
             week={undefined}
             weekNumber={weekNumber}
             emptyWeekTitle="Inget program"
@@ -135,6 +137,7 @@ export default function AthleteSchedulePage() {
           />
         ) : (
           <WeekScheduleView
+            key={weekKey}
             week={activeWeek}
             weekNumber={weekNumber}
             emptyWeekTitle="Inget program"

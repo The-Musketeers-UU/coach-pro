@@ -62,12 +62,17 @@ export function WeekScheduleView({
   emptyWeekTitle = "Inget program",
   emptyWeekDescription = "Ingen data för veckan.",
 }: WeekScheduleViewProps) {
+  const [days, setDays] = useState<ProgramDay[]>(week?.days ?? []);
   const [selectedModule, setSelectedModule] = useState<ProgramModule | null>(
     null
   );
+  const [selectedModulePosition, setSelectedModulePosition] = useState<
+    { dayId: string; index: number } | null
+  >(null);
   const [selectedDayId, setSelectedDayId] = useState<string | null>(
     week?.days[0]?.id ?? null
   );
+
   const heading =
     title ??
     (week
@@ -75,11 +80,52 @@ export function WeekScheduleView({
       : emptyWeekTitle || `Vecka ${weekNumber}`);
 
   const selectedDay = useMemo(() => {
-    const matchingDay = week?.days.find((day) => day.id === selectedDayId);
-    return matchingDay ?? week?.days[0];
-  }, [selectedDayId, week?.days]);
+    const matchingDay = days.find((day) => day.id === selectedDayId);
+    return matchingDay ?? days[0];
+  }, [days, selectedDayId]);
 
   const activeDayId = selectedDay?.id ?? null;
+
+  const handleModuleSelect = (dayId: string, index: number) => {
+    const day = days.find((entry) => entry.id === dayId);
+    const selectedModuleEntry = day?.modules[index] ?? null;
+
+    setSelectedModule(selectedModuleEntry);
+    setSelectedModulePosition(selectedModuleEntry ? { dayId, index } : null);
+  };
+
+  const handleMoveModule = (direction: "up" | "down") => {
+    if (!selectedModulePosition) return;
+
+    const { dayId, index } = selectedModulePosition;
+
+    setDays((previousDays) =>
+      previousDays.map((day) => {
+        if (day.id !== dayId) return day;
+
+        const modules = [...day.modules];
+        const delta = direction === "up" ? -1 : 1;
+        const newIndex = index + delta;
+
+        if (newIndex < 0 || newIndex >= modules.length) {
+          return day;
+        }
+
+        [modules[index], modules[newIndex]] = [modules[newIndex], modules[index]];
+
+        const updatedModule = modules[newIndex];
+        setSelectedModule(updatedModule);
+        setSelectedModulePosition({ dayId, index: newIndex });
+
+        return { ...day, modules };
+      })
+    );
+  };
+
+  const handleCloseModule = () => {
+    setSelectedModule(null);
+    setSelectedModulePosition(null);
+  };
 
   const renderDayContent = (day: ProgramDay) => (
     <article
@@ -99,7 +145,7 @@ export function WeekScheduleView({
           <button
             key={`${day.id}-${index}-${module.title}`}
             type="button"
-            onClick={() => setSelectedModule(module)}
+            onClick={() => handleModuleSelect(day.id, index)}
             className="group w-full text-left"
           >
             <div className="space-y-2 rounded-xl border border-base-200 bg-base-100 p-3 transition hover:border-primary focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary">
@@ -141,10 +187,10 @@ export function WeekScheduleView({
 
         {week ? (
           <div className="space-y-4">
-            {week.days.length > 0 && (
+            {days.length > 0 && (
               <div className="md:hidden -mx-4 sm:-mx-6">
                 <div className="flex w-full items-center overflow-x-auto border border-base-300 bg-base-100">
-                  {week.days.map((day) => (
+                  {days.map((day) => (
                   <button
                     key={day.id}
                     type="button"
@@ -170,7 +216,7 @@ export function WeekScheduleView({
             )}
 
             <div className="hidden grid-cols-1 gap-1 md:grid md:grid-cols-2 xl:grid-cols-7">
-              {week.days.map((day) => renderDayContent(day))}
+              {days.map((day) => renderDayContent(day))}
             </div>
           </div>
         ) : (
@@ -194,9 +240,34 @@ export function WeekScheduleView({
               </div>
               <button
                 className="btn btn-circle btn-ghost btn-sm"
-                onClick={() => setSelectedModule(null)}
+                onClick={handleCloseModule}
               >
                 ✕
+              </button>
+            </div>
+
+            <div className="flex items-center gap-2 md:hidden">
+              <button
+                className="btn btn-outline btn-sm flex-1"
+                type="button"
+                onClick={() => handleMoveModule("up")}
+                disabled={selectedModulePosition?.index === 0}
+              >
+                Flytta upp
+              </button>
+              <button
+                className="btn btn-outline btn-sm flex-1"
+                type="button"
+                onClick={() => handleMoveModule("down")}
+                disabled={
+                  selectedModulePosition === null ||
+                  selectedModulePosition.index ===
+                    (days.find((day) => day.id === selectedModulePosition?.dayId)
+                      ?.modules.length ?? 0) -
+                      1
+                }
+              >
+                Flytta ner
               </button>
             </div>
 
@@ -272,7 +343,7 @@ export function WeekScheduleView({
           </div>
 
           <form method="dialog" className="modal-backdrop">
-            <button onClick={() => setSelectedModule(null)}>close</button>
+            <button onClick={handleCloseModule}>close</button>
           </form>
         </dialog>
       )}
