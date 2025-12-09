@@ -25,7 +25,7 @@ export function CreateModuleModal({
   onUpdate,
 }: CreateModuleModalProps) {
   return (
-    <dialog className={`modal ${isOpen ? "modal-open" : ""} z-[60]`}>
+    <dialog className={`modal ${isOpen ? "modal-open" : ""} z-[1100]`}>
       <div className="modal-box max-w-md space-y-4">
         <div className="flex items-start justify-between gap-4">
           <div>
