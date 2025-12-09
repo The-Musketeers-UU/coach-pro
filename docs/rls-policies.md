@@ -47,6 +47,7 @@ alter table public."scheduleModuleFeedback" enable row level security;
 drop policy if exists "Users can read directory" on public."user";
 drop policy if exists "Users manage own row" on public."user";
 drop policy if exists "Modules readable by owner" on public."module";
+drop policy if exists "Modules readable to participants" on public."module";
 drop policy if exists "Modules writable by owner" on public."module";
 drop policy if exists "Weeks visible to participants" on public."scheduleWeek";
 drop policy if exists "Weeks writable by owner" on public."scheduleWeek";
@@ -81,7 +82,7 @@ create policy "Users manage own row"
 
 ### `module`
 
-Modules are coach-owned. All CRUD is tied to `owner = auth.uid()`.
+Modules are coach-owned, but athletes need read access for the modules that are scheduled for them. CRUD stays tied to `owner = auth.uid()`, while select allows either the owner or an athlete assigned to a week containing the module.
 
 ```sql
 create policy "Modules readable by owner"
@@ -89,6 +90,22 @@ create policy "Modules readable by owner"
   for select
   to authenticated
   using (owner = auth.uid());
+
+create policy "Modules readable to participants"
+  on public."module"
+  for select
+  to authenticated
+  using (
+    -- allow athletes to read modules that are scheduled for their weeks
+    owner = auth.uid()
+    or exists (
+      select 1
+      from public."_ModuleToScheduleDay" msd
+      join public."scheduleDay" sd on sd.id = msd."B"
+      join public."scheduleWeek" sw on sw.id = sd."weekId"
+      where msd."A" = id and sw.athlete = auth.uid()
+    )
+  );
 
 create policy "Modules writable by owner"
   on public."module"
