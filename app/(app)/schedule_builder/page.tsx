@@ -626,17 +626,6 @@ function ScheduleBuilderPage() {
           />
         </div>
 
-        <CreateModuleModal
-          isOpen={libraryControls.isCreateModuleModalOpen}
-          newModule={libraryControls.newModule}
-          formError={libraryControls.formError}
-          isSubmitting={libraryControls.isSavingModule}
-          onClose={libraryControls.closeCreateModal}
-          onSubmit={libraryControls.handleAddModule}
-          onReset={libraryControls.resetModuleForm}
-          onUpdate={libraryControls.setNewModule}
-        />
-
         <ReusableBlocksModal
           isOpen={Boolean(mobileLibraryDayId)}
           dayLabel={mobileLibraryDayLabel}
@@ -651,6 +640,17 @@ function ScheduleBuilderPage() {
           resetModuleForm={libraryControls.resetModuleForm}
           openCreateModal={libraryControls.openCreateModal}
           onClose={closeMobileLibrary}
+        />
+
+        <CreateModuleModal
+          isOpen={libraryControls.isCreateModuleModalOpen}
+          newModule={libraryControls.newModule}
+          formError={libraryControls.formError}
+          isSubmitting={libraryControls.isSavingModule}
+          onClose={libraryControls.closeCreateModal}
+          onSubmit={libraryControls.handleAddModule}
+          onReset={libraryControls.resetModuleForm}
+          onUpdate={libraryControls.setNewModule}
         />
 
         <AssignScheduleModal
