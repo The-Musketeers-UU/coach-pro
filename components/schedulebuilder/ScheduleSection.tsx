@@ -1,8 +1,10 @@
-import type {
-  Dispatch,
-  DragEvent,
-  MutableRefObject,
-  SetStateAction,
+import {
+  useMemo,
+  useState,
+  type Dispatch,
+  type DragEvent,
+  type MutableRefObject,
+  type SetStateAction,
 } from "react";
 
 import type {
@@ -71,6 +73,17 @@ export function ScheduleSection({
   onScheduleTitleChange,
   onOpenMobileLibrary,
 }: ScheduleSectionProps) {
+  const [selectedDayId, setSelectedDayId] = useState<string | null>(
+    days[0]?.id ?? null,
+  );
+
+  const selectedDay = useMemo(
+    () => days.find((day) => day.id === selectedDayId) ?? days[0],
+    [days, selectedDayId],
+  );
+
+  const activeDayId = selectedDay?.id ?? null;
+
   return (
     <section className="w-full max-w-full self-center space-y-6">
       <div className="card bg-base-200 border border-base-300 shadow-md">
@@ -121,7 +134,56 @@ export function ScheduleSection({
             </div>
           </div>
 
-          <div className="grid grid-cols-1 gap-1 md:grid-cols-2 xl:grid-cols-7">
+          {days.length > 0 && (
+            <div className="md:hidden -mx-4 sm:-mx-6">
+              <div className="flex w-full items-center overflow-x-auto border border-base-300 bg-base-100">
+                {days.map((day) => (
+                  <button
+                    key={day.id}
+                    type="button"
+                    onClick={() => setSelectedDayId(day.id)}
+                    className={`btn btn-sm w-full flex-1 whitespace-nowrap ${
+                      activeDayId === day.id
+                        ? "btn-primary btn-soft"
+                        : "btn-ghost"
+                    }`}
+                  >
+                    <span aria-hidden>{day.label.slice(0, 1)}</span>
+                    <span className="sr-only">{day.label}</span>
+                  </button>
+                ))}
+              </div>
+
+              {selectedDay && (
+                <div className="mt-2 w-full sm:px-6">
+                  <DayColumn
+                    day={selectedDay}
+                    modules={schedule[selectedDay.id]}
+                    allowDrop={allowDrop}
+                    handleDayDragOver={handleDayDragOver}
+                    handleDrop={handleDrop}
+                    isPreviewLocation={isPreviewLocation}
+                    updateDropPreviewFromDragTop={updateDropPreviewFromDragTop}
+                    dragPointerOffsetYRef={dragPointerOffsetYRef}
+                    setActiveDrag={setActiveDrag}
+                    startEditingModule={startEditingModule}
+                    handleRemoveModule={handleRemoveModule}
+                    registerScheduleCardRef={registerScheduleCardRef}
+                    setDropPreview={setDropPreview}
+                    selectedScheduleModuleIds={selectedScheduleModuleIds}
+                    expandedScheduleModuleIds={expandedScheduleModuleIds}
+                    onSelectScheduledModule={onSelectScheduledModule}
+                    onToggleScheduledModuleExpansion={
+                      onToggleScheduledModuleExpansion
+                    }
+                    onOpenMobileLibrary={onOpenMobileLibrary}
+                  />
+                </div>
+              )}
+            </div>
+          )}
+
+          <div className="hidden grid-cols-1 gap-1 md:grid md:grid-cols-2 xl:grid-cols-7">
             {days.map((day) => (
               <DayColumn
                 key={day.id}
@@ -130,21 +192,21 @@ export function ScheduleSection({
                 allowDrop={allowDrop}
                 handleDayDragOver={handleDayDragOver}
                 handleDrop={handleDrop}
-              isPreviewLocation={isPreviewLocation}
-              updateDropPreviewFromDragTop={updateDropPreviewFromDragTop}
-              dragPointerOffsetYRef={dragPointerOffsetYRef}
-              setActiveDrag={setActiveDrag}
-              startEditingModule={startEditingModule}
-              handleRemoveModule={handleRemoveModule}
-              registerScheduleCardRef={registerScheduleCardRef}
-              setDropPreview={setDropPreview}
-              selectedScheduleModuleIds={selectedScheduleModuleIds}
-              expandedScheduleModuleIds={expandedScheduleModuleIds}
-              onSelectScheduledModule={onSelectScheduledModule}
-              onToggleScheduledModuleExpansion={onToggleScheduledModuleExpansion}
-              onOpenMobileLibrary={onOpenMobileLibrary}
-            />
-          ))}
+                isPreviewLocation={isPreviewLocation}
+                updateDropPreviewFromDragTop={updateDropPreviewFromDragTop}
+                dragPointerOffsetYRef={dragPointerOffsetYRef}
+                setActiveDrag={setActiveDrag}
+                startEditingModule={startEditingModule}
+                handleRemoveModule={handleRemoveModule}
+                registerScheduleCardRef={registerScheduleCardRef}
+                setDropPreview={setDropPreview}
+                selectedScheduleModuleIds={selectedScheduleModuleIds}
+                expandedScheduleModuleIds={expandedScheduleModuleIds}
+                onSelectScheduledModule={onSelectScheduledModule}
+                onToggleScheduledModuleExpansion={onToggleScheduledModuleExpansion}
+                onOpenMobileLibrary={onOpenMobileLibrary}
+              />
+            ))}
           </div>
         </div>
       </div>

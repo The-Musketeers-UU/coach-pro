@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState, type ReactNode } from "react";
+import { useMemo, useState, type ReactNode } from "react";
 
 import { ModuleBadges } from "@/components/ModuleBadges";
 
@@ -74,14 +74,12 @@ export function WeekScheduleView({
       ? week.label || `Vecka ${weekNumber}`
       : emptyWeekTitle || `Vecka ${weekNumber}`);
 
-  useEffect(() => {
-    setSelectedDayId(week?.days[0]?.id ?? null);
-  }, [week?.id, week?.days]);
+  const selectedDay = useMemo(() => {
+    const matchingDay = week?.days.find((day) => day.id === selectedDayId);
+    return matchingDay ?? week?.days[0];
+  }, [selectedDayId, week?.days]);
 
-  const selectedDay = useMemo(
-    () => week?.days.find((day) => day.id === selectedDayId),
-    [selectedDayId, week?.days]
-  );
+  const activeDayId = selectedDay?.id ?? null;
 
   const renderDayContent = (day: ProgramDay) => (
     <article
@@ -147,15 +145,15 @@ export function WeekScheduleView({
               <div className="md:hidden -mx-4 sm:-mx-6">
                 <div className="flex w-full items-center overflow-x-auto border border-base-300 bg-base-100">
                   {week.days.map((day) => (
-                    <button
-                      key={day.id}
-                      type="button"
-                      onClick={() => setSelectedDayId(day.id)}
-                      className={`btn btn-sm w-full flex-1 whitespace-nowrap ${
-                        selectedDay?.id === day.id
-                          ? "btn-primary btn-soft"
-                          : "btn-ghost"
-                      }`}
+                  <button
+                    key={day.id}
+                    type="button"
+                    onClick={() => setSelectedDayId(day.id)}
+                    className={`btn btn-sm w-full flex-1 whitespace-nowrap ${
+                      activeDayId === day.id
+                        ? "btn-primary btn-soft"
+                        : "btn-ghost"
+                    }`}
                     >
                       <span aria-hidden>{day.label.slice(0, 1)}</span>
                       <span className="sr-only">{day.label}</span>
@@ -176,8 +174,11 @@ export function WeekScheduleView({
             </div>
           </div>
         ) : (
-          <div className="rounded-2xl border border-dashed border-base-300 bg-base-100/60 p-6 text-center text-sm text-base-content/70">
-            Tom vecka.
+          <div className="rounded-2xl border border-dashed border-base-300 bg-base-100/60 p-6 text-center text-sm text-base-content/70 space-y-1">
+            <p className="font-semibold text-base-content">
+              {emptyWeekTitle || `Vecka ${weekNumber}`}
+            </p>
+            <p>{emptyWeekDescription}</p>
           </div>
         )}
       </div>
