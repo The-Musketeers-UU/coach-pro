@@ -45,7 +45,8 @@ model Module {
   feeling     Int?
   sleepHours  Int?
 
-  scheduleDays ScheduleDay[]
+  scheduleDays            ScheduleDay[]
+  scheduleModuleFeedbacks ScheduleModuleFeedback[]
 
   @@map("module")
 }
