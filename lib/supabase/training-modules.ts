@@ -393,11 +393,12 @@ const getScheduleDaysWithModules = async (
     }
 
     const moduleIds = Array.from(new Set(links.map((link) => link.moduleId)));
+    const moduleIdsForQuery = toDbNumericIds(moduleIds);
 
     const { data: modules, error: modulesError } = await supabase
       .from("module")
       .select(moduleSelectColumns)
-      .in("id", moduleIds);
+      .in("id", moduleIdsForQuery);
 
     if (modulesError) {
       console.error("Error fetching modules for schedule days:", modulesError);
@@ -533,12 +534,14 @@ export const getScheduleWeeksWithModules = async (
 
   const modulesList: ModuleRow[] = [];
   if (moduleIds.length > 0) {
+    const moduleIdsForQuery = toDbNumericIds(moduleIds);
+
     const { data: modules, error: modulesError } = await supabase
       .from("module")
       .select(
         "id,owner,name,category,subCategory,distance,duration,weight,description,comment,feeling,sleepHours",
       )
-      .in("id", moduleIds);
+      .in("id", moduleIdsForQuery);
 
     if (modulesError) {
       console.error("Error fetching modules for schedule days:", modulesError);
