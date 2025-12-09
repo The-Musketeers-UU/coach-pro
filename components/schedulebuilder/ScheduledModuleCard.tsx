@@ -59,10 +59,10 @@ export function ScheduledModuleCard({
   return (
     <div className="relative pt-6 pb-6 sm:pt-0 sm:pb-0">
       {isSelected && (
-        <div className="pointer-events-none absolute left-1/2 top-0 -translate-x-1/2 -translate-y-1/2 sm:hidden">
+        <div className="absolute left-1/2 top-0 z-20 -translate-x-1/2 -translate-y-full sm:hidden">
           <button
             type="button"
-            className="btn btn-circle btn-ghost btn-xs z-10 pointer-events-auto"
+            className="btn btn-circle btn-ghost btn-xs"
             onClick={(event) => {
               event.stopPropagation();
               onMoveUp();
@@ -151,10 +151,10 @@ export function ScheduledModuleCard({
       </div>
 
       {isSelected && (
-        <div className="pointer-events-none absolute left-1/2 bottom-0 -translate-x-1/2 translate-y-1/2 sm:hidden">
+        <div className="absolute left-1/2 bottom-0 z-20 -translate-x-1/2 translate-y-full sm:hidden">
           <button
             type="button"
-            className="btn btn-circle btn-ghost btn-xs z-10 pointer-events-auto"
+            className="btn btn-circle btn-ghost btn-xs"
             onClick={(event) => {
               event.stopPropagation();
               onMoveDown();
