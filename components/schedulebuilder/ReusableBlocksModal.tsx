@@ -98,7 +98,7 @@ export function ReusableBlocksModal({
                     isSelected ? "border-primary ring-2 ring-primary/40" : "border-base-200"
                   }`}
                 >
-                  <div className="card-body flex flex-col gap-2 p-3">
+                  <div className="card-body flex flex-col gap-2 p-3 bg-base-300">
                     <div className="flex items-start justify-between gap-3">
                       <p className="text-xs font-semibold">{module.title}</p>
                       <button
