@@ -39,7 +39,7 @@ export function ReusableBlocksModal({
 }: ReusableBlocksModalProps) {
   return (
     <dialog className={`modal ${isOpen ? "modal-open" : ""}`}>
-      <div className="modal-box flex h-[90vh] max-w-md flex-col space-y-4 p-0 md:h-auto">
+      <div className="modal-box flex h-[80vh] max-w-md flex-col space-y-4 p-0 md:h-auto">
         <div className="flex items-center justify-between border-b border-base-200 px-5 py-4">
           <div>
             <p className="text-xs font-semibold uppercase tracking-wide text-neutral">
