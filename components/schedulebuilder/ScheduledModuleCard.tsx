@@ -29,6 +29,10 @@ type ScheduledModuleCardProps = DropPreviewLocation & {
   isSelected: boolean;
   isExpanded: boolean;
   onSelect: (isMultiSelect: boolean) => void;
+  onMoveUp: () => void;
+  onMoveDown: () => void;
+  disableMoveUp: boolean;
+  disableMoveDown: boolean;
   onToggleExpand: () => void;
 };
 
@@ -46,6 +50,10 @@ export function ScheduledModuleCard({
   isSelected,
   isExpanded,
   onSelect,
+  onMoveUp,
+  onMoveDown,
+  disableMoveUp,
+  disableMoveDown,
   onToggleExpand,
 }: ScheduledModuleCardProps) {
   return (
@@ -114,6 +122,33 @@ export function ScheduledModuleCard({
           <ModuleBadges module={module} />
         </div>
       </div>
+
+      {isSelected && (
+        <div className="mt-3 grid grid-cols-2 gap-2 px-3 pb-2 sm:hidden">
+          <button
+            type="button"
+            className="btn btn-xs btn-outline"
+            onClick={(event) => {
+              event.stopPropagation();
+              onMoveUp();
+            }}
+            disabled={disableMoveUp}
+          >
+            Flytta upp
+          </button>
+          <button
+            type="button"
+            className="btn btn-xs btn-outline"
+            onClick={(event) => {
+              event.stopPropagation();
+              onMoveDown();
+            }}
+            disabled={disableMoveDown}
+          >
+            Flytta ned
+          </button>
+        </div>
+      )}
     </div>
   );
 }

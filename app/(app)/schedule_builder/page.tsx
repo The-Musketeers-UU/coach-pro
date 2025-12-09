@@ -234,6 +234,7 @@ function ScheduleBuilderPage() {
 
   const {
     setScheduleState,
+    moveScheduledModule,
     removeSelectedScheduleModules,
     clearSelectedScheduleModules,
     addLibraryModuleToDay,
@@ -611,6 +612,7 @@ function ScheduleBuilderPage() {
             selectedScheduleModuleIds={scheduleControls.selectedScheduleModuleIds}
             expandedScheduleModuleIds={scheduleControls.expandedScheduleModuleIds}
             onSelectScheduledModule={scheduleControls.handleSelectScheduledModule}
+            onMoveScheduledModule={moveScheduledModule}
             onToggleScheduledModuleExpansion={
               scheduleControls.toggleScheduledModuleExpansion
             }

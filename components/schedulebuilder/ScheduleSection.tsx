@@ -37,6 +37,11 @@ type ScheduleSectionProps = {
   selectedScheduleModuleIds: string[];
   expandedScheduleModuleIds: string[];
   onSelectScheduledModule: (moduleId: string, isMultiSelect: boolean) => void;
+  onMoveScheduledModule: (
+    dayId: string,
+    moduleId: string,
+    direction: "up" | "down",
+  ) => void;
   onToggleScheduledModuleExpansion: (moduleId: string) => void;
   onAssignClick: () => void;
   weekOptions: { value: string; label: string }[];
@@ -64,6 +69,7 @@ export function ScheduleSection({
   selectedScheduleModuleIds,
   expandedScheduleModuleIds,
   onSelectScheduledModule,
+  onMoveScheduledModule,
   onToggleScheduledModuleExpansion,
   onAssignClick,
   weekOptions,
@@ -173,6 +179,7 @@ export function ScheduleSection({
                     selectedScheduleModuleIds={selectedScheduleModuleIds}
                     expandedScheduleModuleIds={expandedScheduleModuleIds}
                     onSelectScheduledModule={onSelectScheduledModule}
+                    onMoveScheduledModule={onMoveScheduledModule}
                     onToggleScheduledModuleExpansion={
                       onToggleScheduledModuleExpansion
                     }
@@ -203,6 +210,7 @@ export function ScheduleSection({
                 selectedScheduleModuleIds={selectedScheduleModuleIds}
                 expandedScheduleModuleIds={expandedScheduleModuleIds}
                 onSelectScheduledModule={onSelectScheduledModule}
+                onMoveScheduledModule={onMoveScheduledModule}
                 onToggleScheduledModuleExpansion={onToggleScheduledModuleExpansion}
                 onOpenMobileLibrary={onOpenMobileLibrary}
               />

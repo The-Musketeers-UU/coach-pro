@@ -35,6 +35,11 @@ type DayColumnProps = {
   selectedScheduleModuleIds: string[];
   expandedScheduleModuleIds: string[];
   onSelectScheduledModule: (moduleId: string, isMultiSelect: boolean) => void;
+  onMoveScheduledModule: (
+    dayId: string,
+    moduleId: string,
+    direction: "up" | "down",
+  ) => void;
   onToggleScheduledModuleExpansion: (moduleId: string) => void;
   onOpenMobileLibrary: (dayId: string) => void;
 };
@@ -56,6 +61,7 @@ export function DayColumn({
   selectedScheduleModuleIds,
   expandedScheduleModuleIds,
   onSelectScheduledModule,
+  onMoveScheduledModule,
   onToggleScheduledModuleExpansion,
   onOpenMobileLibrary,
 }: DayColumnProps) {
@@ -141,6 +147,14 @@ export function DayColumn({
               onSelect={(isMultiSelect) =>
                 onSelectScheduledModule(module.id, isMultiSelect)
               }
+              onMoveUp={() =>
+                onMoveScheduledModule(day.id, module.id, "up")
+              }
+              onMoveDown={() =>
+                onMoveScheduledModule(day.id, module.id, "down")
+              }
+              disableMoveUp={index === 0}
+              disableMoveDown={index === modules.length - 1}
               onToggleExpand={() => onToggleScheduledModuleExpansion(module.id)}
             />
           </div>

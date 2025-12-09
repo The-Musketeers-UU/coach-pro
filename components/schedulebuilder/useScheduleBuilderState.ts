@@ -297,6 +297,35 @@ export const useScheduleBuilderState = ({
     }
   };
 
+  const moveScheduledModule = (
+    dayId: string,
+    moduleId: string,
+    direction: "up" | "down",
+  ) => {
+    setSchedule((prev) => {
+      const modulesForDay = prev[dayId] ?? [];
+      const currentIndex = modulesForDay.findIndex(
+        (module) => module.id === moduleId,
+      );
+
+      if (currentIndex === -1) return prev;
+
+      const targetIndex =
+        direction === "up" ? currentIndex - 1 : currentIndex + 1;
+
+      if (targetIndex < 0 || targetIndex >= modulesForDay.length) return prev;
+
+      const updatedModules = [...modulesForDay];
+      const [movingModule] = updatedModules.splice(currentIndex, 1);
+      updatedModules.splice(targetIndex, 0, movingModule);
+
+      return {
+        ...prev,
+        [dayId]: updatedModules,
+      };
+    });
+  };
+
   const handleSelectScheduledModule = (
     moduleId: string,
     isMultiSelect: boolean
@@ -594,6 +623,7 @@ export const useScheduleBuilderState = ({
       selectedScheduleModuleIds,
       expandedScheduleModuleIds,
       handleSelectScheduledModule,
+      moveScheduledModule,
       clearSelectedScheduleModules,
       removeSelectedScheduleModules,
       toggleScheduledModuleExpansion,
