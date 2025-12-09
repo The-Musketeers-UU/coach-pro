@@ -75,7 +75,7 @@ export function ScheduleSection({
     <section className="w-full max-w-full self-center space-y-6">
       <div className="card bg-base-200 border border-base-300 shadow-md">
         <div className="card-body gap-6">
-          <div className="grid grid-cols-3 items-center w-full">
+          <div className="grid w-full grid-cols-1 gap-3 sm:grid-cols-3 sm:items-center">
             <form
               className="form-control gap-2"
               onSubmit={(event) => event.preventDefault()}
@@ -94,29 +94,31 @@ export function ScheduleSection({
               </div>
             </form>
 
-            <div className="form-control max-w-40 justify-self-center">
-              <label className="label sr-only" htmlFor="week-select">
-                Välj vecka
-              </label>
-              <select
-                id="week-select"
-                className="select select-sm select-secondary w-full"
-                value={selectedWeek}
-                onChange={(event) => onWeekChange(event.target.value)}
+            <div className="grid grid-cols-2 items-center gap-3 sm:col-span-2 sm:grid-cols-2">
+              <div className="form-control max-w-40 justify-self-start sm:justify-self-center">
+                <label className="label sr-only" htmlFor="week-select">
+                  Välj vecka
+                </label>
+                <select
+                  id="week-select"
+                  className="select select-sm select-secondary w-full"
+                  value={selectedWeek}
+                  onChange={(event) => onWeekChange(event.target.value)}
+                >
+                  {weekOptions.map((week) => (
+                    <option key={week.value} value={week.value}>
+                      {week.label}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <button
+                className="btn btn-secondary btn-sm max-w-35 justify-self-end"
+                onClick={onAssignClick}
               >
-                {weekOptions.map((week) => (
-                  <option key={week.value} value={week.value}>
-                    {week.label}
-                  </option>
-                ))}
-              </select>
+                Tilldela schema
+              </button>
             </div>
-            <button
-              className="btn btn-secondary btn-sm max-w-35 justify-self-end"
-              onClick={onAssignClick}
-            >
-              Tilldela schema
-            </button>
           </div>
 
           <div className="grid grid-cols-1 gap-1 md:grid-cols-2 xl:grid-cols-7">
