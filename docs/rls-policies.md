@@ -278,6 +278,233 @@ create policy "Feedback writable by participants"
     )
   );
 ```
+
+## One-shot apply script
+
+Paste the block below into the Supabase SQL editor (connected as a service role) to apply the full policy set, including grants,
+RLS enablement, cleanup, and new rules in one run.
+
+```sql
+-- Baseline grants
+grant usage on schema public to authenticated;
+grant usage on schema public to anon;
+
+grant select, insert, update, delete on all tables in schema public to authenticated;
+grant select on all tables in schema public to anon;
+
+grant usage, select on all sequences in schema public to authenticated;
+grant usage, select on all sequences in schema public to anon;
+
+-- Enable RLS on relevant tables
+alter table public."user" enable row level security;
+alter table public."module" enable row level security;
+alter table public."scheduleWeek" enable row level security;
+alter table public."scheduleDay" enable row level security;
+alter table public."_ModuleToScheduleDay" enable row level security;
+alter table public."scheduleModuleFeedback" enable row level security;
+
+-- Drop existing policies with expected names
+drop policy if exists "Users can read directory" on public."user";
+drop policy if exists "Users manage own row" on public."user";
+drop policy if exists "Modules readable by owner" on public."module";
+drop policy if exists "Modules readable to participants" on public."module";
+drop policy if exists "Modules writable by owner" on public."module";
+drop policy if exists "Weeks visible to participants" on public."scheduleWeek";
+drop policy if exists "Weeks writable by owner" on public."scheduleWeek";
+drop policy if exists "Days visible to participants" on public."scheduleDay";
+drop policy if exists "Days insertable by owner" on public."scheduleDay";
+drop policy if exists "Days updatable by owner" on public."scheduleDay";
+drop policy if exists "Days deletable by owner" on public."scheduleDay";
+drop policy if exists "Links readable to participants" on public."_ModuleToScheduleDay";
+drop policy if exists "Links writable by owner" on public."_ModuleToScheduleDay";
+drop policy if exists "Feedback readable to participants" on public."scheduleModuleFeedback";
+drop policy if exists "Feedback writable by participants" on public."scheduleModuleFeedback";
+
+-- user policies
+create policy "Users can read directory"
+  on public."user"
+  for select
+  to authenticated
+  using (true);
+
+create policy "Users manage own row"
+  on public."user"
+  for all
+  to authenticated
+  using (id = auth.uid())
+  with check (id = auth.uid());
+
+-- module policies
+create policy "Modules readable by owner"
+  on public."module"
+  for select
+  to authenticated
+  using (owner = auth.uid());
+
+create policy "Modules readable to participants"
+  on public."module"
+  for select
+  to authenticated
+  using (
+    owner = auth.uid()
+    or exists (
+      select 1
+      from public."_ModuleToScheduleDay" msd
+      join public."scheduleDay" sd on sd.id = msd."B"
+      join public."scheduleWeek" sw on sw.id = sd."weekId"
+      where msd."A" = id and sw.athlete = auth.uid()
+    )
+  );
+
+create policy "Modules writable by owner"
+  on public."module"
+  for all
+  to authenticated
+  using (owner = auth.uid())
+  with check (owner = auth.uid());
+
+-- scheduleWeek policies
+create policy "Weeks visible to participants"
+  on public."scheduleWeek"
+  for select
+  to authenticated
+  using (owner = auth.uid() or athlete = auth.uid());
+
+create policy "Weeks writable by owner"
+  on public."scheduleWeek"
+  for all
+  to authenticated
+  using (owner = auth.uid())
+  with check (owner = auth.uid());
+
+-- scheduleDay policies
+create policy "Days visible to participants"
+  on public."scheduleDay"
+  for select
+  to authenticated
+  using (
+    exists (
+      select 1
+      from public."scheduleWeek" sw
+      where sw.id = "weekId" and (sw.owner = auth.uid() or sw.athlete = auth.uid())
+    )
+  );
+
+create policy "Days insertable by owner"
+  on public."scheduleDay"
+  for insert
+  to authenticated
+  with check (
+    exists (
+      select 1
+      from public."scheduleWeek" sw
+      where sw.id = "weekId" and sw.owner = auth.uid()
+    )
+  );
+
+create policy "Days updatable by owner"
+  on public."scheduleDay"
+  for update
+  to authenticated
+  using (
+    exists (
+      select 1
+      from public."scheduleWeek" sw
+      where sw.id = "weekId" and sw.owner = auth.uid()
+    )
+  )
+  with check (
+    exists (
+      select 1
+      from public."scheduleWeek" sw
+      where sw.id = "weekId" and sw.owner = auth.uid()
+    )
+  );
+
+create policy "Days deletable by owner"
+  on public."scheduleDay"
+  for delete
+  to authenticated
+  using (
+    exists (
+      select 1
+      from public."scheduleWeek" sw
+      where sw.id = "weekId" and sw.owner = auth.uid()
+    )
+  );
+
+-- _ModuleToScheduleDay policies
+create policy "Links readable to participants"
+  on public."_ModuleToScheduleDay"
+  for select
+  to authenticated
+  using (
+    exists (
+      select 1
+      from public."scheduleDay" sd
+      join public."scheduleWeek" sw on sw.id = sd."weekId"
+      where sd.id = "_ModuleToScheduleDay"."B"
+        and (sw.owner = auth.uid() or sw.athlete = auth.uid())
+    )
+  );
+
+create policy "Links writable by owner"
+  on public."_ModuleToScheduleDay"
+  for all
+  to authenticated
+  using (
+    exists (
+      select 1
+      from public."scheduleDay" sd
+      join public."scheduleWeek" sw on sw.id = sd."weekId"
+      where sd.id = "_ModuleToScheduleDay"."B"
+        and sw.owner = auth.uid()
+    )
+  )
+  with check (
+    exists (
+      select 1
+      from public."scheduleDay" sd
+      join public."scheduleWeek" sw on sw.id = sd."weekId"
+      where sd.id = "_ModuleToScheduleDay"."B"
+        and sw.owner = auth.uid()
+    )
+  );
+
+-- scheduleModuleFeedback policies
+create policy "Feedback readable to participants"
+  on public."scheduleModuleFeedback"
+  for select
+  to authenticated
+  using (
+    exists (
+      select 1
+      from public."scheduleDay" sd
+      join public."scheduleWeek" sw on sw.id = sd."weekId"
+      where sd.id = "scheduleDayId" and (sw.owner = auth.uid() or sw.athlete = auth.uid())
+    )
+  );
+
+create policy "Feedback writable by participants"
+  on public."scheduleModuleFeedback"
+  for all
+  to authenticated
+  using (
+    exists (
+      select 1
+      from public."scheduleDay" sd
+      join public."scheduleWeek" sw on sw.id = sd."weekId"
+      where sd.id = "scheduleDayId" and (sw.owner = auth.uid() or sw.athlete = auth.uid())
+    )
+  )
+  with check (
+    exists (
+      select 1
+      from public."scheduleDay" sd
+      join public."scheduleWeek" sw on sw.id = sd."weekId"
+      where sd.id = "scheduleDayId" and (sw.owner = auth.uid() or sw.athlete = auth.uid())
+    )
+  );
 ```
 
 ## Verifying the new policies
