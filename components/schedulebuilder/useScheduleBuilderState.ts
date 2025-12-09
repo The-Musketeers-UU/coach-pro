@@ -374,7 +374,7 @@ export const useScheduleBuilderState = ({
       }
 
       const rawValue = formState[type].trim();
-      if (!rawValue) return undefined;
+      if (!rawValue) return null;
 
       const parsed = Number.parseFloat(rawValue);
       return Number.isFinite(parsed) ? parsed : undefined;
@@ -384,7 +384,7 @@ export const useScheduleBuilderState = ({
       if (!formState.activeFeedbackFields.includes(type)) return undefined;
 
       const trimmed = formState[type].trim();
-      return trimmed || undefined;
+      return trimmed || null;
     };
 
     return {

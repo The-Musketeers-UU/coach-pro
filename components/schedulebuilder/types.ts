@@ -6,12 +6,12 @@ export type Module = {
   description: string;
   category: Category;
   subcategory?: string;
-  distance?: number;
-  duration?: number;
-  weight?: number;
-  comment?: string;
-  feeling?: number;
-  sleepHours?: number;
+  distance?: number | null;
+  duration?: number | null;
+  weight?: number | null;
+  comment?: string | null;
+  feeling?: number | null;
+  sleepHours?: number | null;
   sourceModuleId?: string;
 };
 

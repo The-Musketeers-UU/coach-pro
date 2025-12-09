@@ -1,13 +1,13 @@
 type ModuleBadgeData = {
   category: string;
   subcategory?: string;
-  distance?: number;
-  duration?: number;
-  weight?: number;
+  distance?: number | null;
+  duration?: number | null;
+  weight?: number | null;
 };
 
-const formatDuration = (duration?: number) =>
-  duration !== undefined ? `${duration} min` : "";
+const formatDuration = (duration?: number | null) =>
+  duration !== undefined && duration !== null ? `${duration} min` : "";
 
 type ModuleBadgesProps = {
   module: ModuleBadgeData;
@@ -18,9 +18,9 @@ export function ModuleBadges({
   module,
   showPlaceholders = false,
 }: ModuleBadgesProps) {
-  const hasDistance = module.distance !== undefined;
-  const hasWeight = module.weight !== undefined;
-  const hasDuration = module.duration !== undefined;
+  const hasDistance = module.distance !== undefined && module.distance !== null;
+  const hasWeight = module.weight !== undefined && module.weight !== null;
+  const hasDuration = module.duration !== undefined && module.duration !== null;
 
   return (
     <div className="flex flex-wrap gap-1">

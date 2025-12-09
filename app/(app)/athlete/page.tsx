@@ -21,27 +21,27 @@ const dayLabels = [
 ];
 
 const toProgramWeek = (week: ScheduleWeekWithModules): ProgramWeek => ({
-  id: week.id,
-  label: week.title || `Vecka ${week.week}`,
-  focus: `Ägare: ${week.owner}`,
-  days: week.days.map((day) => ({
-    id: day.id,
-    label: dayLabels[day.day - 1] ?? `Dag ${day.day}`,
-    modules: day.modules.map((module) => ({
-      id: module.id,
-      title: module.name,
-      description: module.description ?? "",
-      category: module.category,
-      subcategory: module.subCategory ?? undefined,
-      distance: module.distance ?? undefined,
-      weight: module.weight ?? undefined,
-      duration: module.duration ?? undefined,
-      comment: module.comment ?? undefined,
-      feeling: module.feeling ?? undefined,
-      sleepHours: module.sleepHours ?? undefined,
+    id: week.id,
+    label: week.title || `Vecka ${week.week}`,
+    focus: `Ägare: ${week.owner}`,
+    days: week.days.map((day) => ({
+      id: day.id,
+      label: dayLabels[day.day - 1] ?? `Dag ${day.day}`,
+      modules: day.modules.map((module) => ({
+        id: module.id,
+        title: module.name,
+        description: module.description ?? "",
+        category: module.category,
+        subcategory: module.subCategory ?? undefined,
+        distance: module.distance,
+        weight: module.weight,
+        duration: module.duration,
+        comment: module.comment,
+        feeling: module.feeling,
+        sleepHours: module.sleepHours,
+      })),
     })),
-  })),
-});
+  });
 
 export default function AthleteSchedulePage() {
   const { user, profile, isLoading, isLoadingProfile } = useAuth();

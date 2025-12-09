@@ -141,12 +141,12 @@ const createScheduleFromWeek = (
         description: moduleRow.description ?? "",
         category: (moduleRow.category as Module["category"]) ?? "kondition",
         subcategory: moduleRow.subCategory ?? undefined,
-        distance: moduleRow.distance ?? undefined,
-        duration: moduleRow.duration ?? undefined,
-        weight: moduleRow.weight ?? undefined,
-        comment: moduleRow.comment ?? undefined,
-        feeling: moduleRow.feeling ?? undefined,
-        sleepHours: moduleRow.sleepHours ?? undefined,
+        distance: moduleRow.distance,
+        duration: moduleRow.duration,
+        weight: moduleRow.weight,
+        comment: moduleRow.comment,
+        feeling: moduleRow.feeling,
+        sleepHours: moduleRow.sleepHours,
         sourceModuleId: moduleRow.id,
       } satisfies Module;
     });

@@ -123,13 +123,13 @@ export type CreateModuleInput = {
   name: string;
   category: string;
   subCategory?: string;
-  distance?: number;
-  duration?: number;
-  weight?: number;
+  distance?: number | null;
+  duration?: number | null;
+  weight?: number | null;
   description?: string;
-  comment?: string;
-  feeling?: number;
-  sleepHours?: number;
+  comment?: string | null;
+  feeling?: number | null;
+  sleepHours?: number | null;
 };
 
 export type CreateScheduleWeekInput = {
@@ -137,6 +137,16 @@ export type CreateScheduleWeekInput = {
   athleteId: string;
   week: number;
   title: string;
+};
+
+export type UpdateModuleFeedbackInput = {
+  moduleId: string;
+  distance: number | null;
+  duration: number | null;
+  weight: number | null;
+  comment: string | null;
+  feeling: number | null;
+  sleepHours: number | null;
 };
 
 export type AddModuleToScheduleDayInput = {
@@ -150,7 +160,7 @@ export type GetScheduleWeekByWeekInput = {
   week: number;
 };
 
-const sanitizeNumber = (value: number | undefined) =>
+const sanitizeNumber = (value: number | null | undefined) =>
   Number.isFinite(value) ? Number(value) : undefined;
 
 const formatSupabaseError = (error: unknown) => {
@@ -215,6 +225,38 @@ export const getCoaches = async (): Promise<AthleteRow[]> => {
     return data ?? [];
   } catch (error) {
     console.error("Error retrieving coaches via SQL query:", error);
+    throw toReadableError(error);
+  }
+};
+
+export const updateModuleFeedback = async (
+  input: UpdateModuleFeedbackInput,
+): Promise<ModuleRow> => {
+  const payload = {
+    distance: sanitizeNumber(input.distance) ?? null,
+    duration: sanitizeNumber(input.duration) ?? null,
+    weight: sanitizeNumber(input.weight) ?? null,
+    comment: input.comment?.trim() || null,
+    feeling: sanitizeNumber(input.feeling) ?? null,
+    sleepHours: sanitizeNumber(input.sleepHours) ?? null,
+  } satisfies Omit<ModuleRow, "id" | "owner" | "name" | "category" | "subCategory">;
+
+  try {
+    const { data, error } = await supabase
+      .from("module")
+      .update(payload)
+      .eq("id", toDbNumericId(input.moduleId))
+      .select(moduleSelectColumns)
+      .single();
+
+    if (error) {
+      console.error("Error updating module feedback:", error);
+      throw toReadableError(error);
+    }
+
+    return coerceModuleRow(data);
+  } catch (error) {
+    console.error("Error persisting module feedback via SQL query:", error);
     throw toReadableError(error);
   }
 };
