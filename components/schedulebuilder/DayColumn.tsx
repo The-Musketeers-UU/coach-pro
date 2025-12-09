@@ -1,4 +1,9 @@
-import type { Dispatch, DragEvent, MutableRefObject, SetStateAction } from "react";
+import type {
+  Dispatch,
+  DragEvent,
+  MutableRefObject,
+  SetStateAction,
+} from "react";
 
 import type {
   ActiveDrag,
@@ -59,7 +64,11 @@ export function DayColumn({
       onDragOver={(event) => handleDayDragOver(event, day.id)}
       onDrop={() => handleDrop(day.id)}
       onDragLeave={(event) => {
-        if (!(event.currentTarget as HTMLElement).contains(event.relatedTarget as Node)) {
+        if (
+          !(event.currentTarget as HTMLElement).contains(
+            event.relatedTarget as Node
+          )
+        ) {
           setDropPreview(null);
         }
       }}
@@ -71,23 +80,33 @@ export function DayColumn({
             {day.label}
           </p>
         </div>
+      </div>
+
+      <div className="mt-3 flex-1 space-y-1">
+        {modules.length === 0 && (
+          <div className="flex h-full items-start justify-center rounded-xl border border-dashed border-base-200 bg-base-100/60 p-4">
+            <button
+              type="button"
+              className="btn btn-sm gap-2 sm:hidden w-full btn-border justify-self-start"
+              onClick={() => onOpenMobileLibrary(day.id)}
+            >
+              <span aria-hidden="true">＋</span>
+              Lägg till modul
+            </button>
+            <div className="hidden sm:block text-center text-xs text-base-content/60 self-center">
+              Dra en modul hit
+            </div>
+          </div>
+        )}
 
         <button
           type="button"
-          className="btn btn-primary btn-sm gap-2 sm:hidden"
+          className="btn btn-sm gap-2 sm:hidden w-full btn-border"
           onClick={() => onOpenMobileLibrary(day.id)}
         >
           <span aria-hidden="true">＋</span>
           Lägg till modul
         </button>
-      </div>
-
-      <div className="mt-3 flex-1 space-y-1">
-        {modules.length === 0 && (
-          <div className="flex h-full items-center justify-center rounded-xl border border-dashed border-base-200 bg-base-100/60 p-4 text-center text-xs text-base-content/60">
-            Dra en modul hit
-          </div>
-        )}
 
         {modules.map((module, index) => (
           <div key={`${module.id}-${index}`} className="space-y-2">
@@ -101,7 +120,8 @@ export function DayColumn({
               }}
               onDragEnter={(event) => {
                 event.stopPropagation();
-                const dragTop = event.clientY - (dragPointerOffsetYRef.current ?? 0);
+                const dragTop =
+                  event.clientY - (dragPointerOffsetYRef.current ?? 0);
                 updateDropPreviewFromDragTop(day.id, dragTop);
               }}
               onDragOver={allowDrop}
@@ -123,9 +143,7 @@ export function DayColumn({
               onSelect={(isMultiSelect) =>
                 onSelectScheduledModule(module.id, isMultiSelect)
               }
-              onToggleExpand={() =>
-                onToggleScheduledModuleExpansion(module.id)
-              }
+              onToggleExpand={() => onToggleScheduledModuleExpansion(module.id)}
             />
           </div>
         ))}
@@ -140,7 +158,8 @@ export function DayColumn({
           }}
           onDragEnter={(event) => {
             event.stopPropagation();
-            const dragTop = event.clientY - (dragPointerOffsetYRef.current ?? 0);
+            const dragTop =
+              event.clientY - (dragPointerOffsetYRef.current ?? 0);
             updateDropPreviewFromDragTop(day.id, dragTop);
           }}
           onDragOver={allowDrop}

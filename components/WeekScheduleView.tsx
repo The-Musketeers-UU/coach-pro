@@ -153,7 +153,7 @@ export function WeekScheduleView({
                       onClick={() => setSelectedDayId(day.id)}
                       className={`btn btn-sm w-full flex-1 whitespace-nowrap ${
                         selectedDay?.id === day.id
-                          ? "btn-primary"
+                          ? "btn-primary btn-soft"
                           : "btn-ghost"
                       }`}
                     >

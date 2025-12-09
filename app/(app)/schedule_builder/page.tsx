@@ -187,7 +187,7 @@ function ScheduleBuilderPage() {
   const { user, profile, isLoading, isLoadingProfile } = useAuth();
   const weekOptions = useMemo(() => createRollingWeekOptions(), []);
   const [selectedWeek, setSelectedWeek] = useState<string>(() => weekOptions[0]?.value ?? "");
-  const [scheduleTitle, setScheduleTitle] = useState("Träningsläger");
+  const [scheduleTitle, setScheduleTitle] = useState("");
   const [modules, setModules] = useState<Module[]>([]);
   const [athletes, setAthletes] = useState<Athlete[]>([]);
   const [dataError, setDataError] = useState<string | null>(null);

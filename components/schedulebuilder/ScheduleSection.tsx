@@ -84,7 +84,7 @@ export function ScheduleSection({
                 <input
                   id="schedule-title"
                   type="text-xl"
-                  className="input input-lg input-bordered max-w-xs"
+                  className="input input-md sm:input-lg input-bordered max-w-xs"
                   value={scheduleTitle}
                   onChange={(event) =>
                     onScheduleTitleChange(event.target.value)
