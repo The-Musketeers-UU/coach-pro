@@ -46,7 +46,9 @@ export function ReusableBlocksModal({
               Sparade moduler
             </p>
             {dayLabel && (
-              <p className="text-sm text-base-content/70">Lägg till i {dayLabel}</p>
+              <p className="text-sm text-base-content/70">
+                Lägg till i {dayLabel}
+              </p>
             )}
           </div>
           <button
@@ -58,30 +60,30 @@ export function ReusableBlocksModal({
           </button>
           </div>
 
-        <div className="flex-1 space-y-3 overflow-y-auto px-5">
-          <div className="flex flex-col gap-2">
-            <label className="input input-bordered input-sm flex items-center gap-2">
-              <input
-                type="search"
-                value={search}
-                onChange={(event) => setSearch(event.target.value)}
-                placeholder="Sök"
-                className="grow"
-              />
-            </label>
-            <button
-              type="button"
-              className="btn btn-secondary btn-sm self-start"
-              onClick={() => {
-                resetModuleForm();
-                openCreateModal();
-              }}
-            >
-              Skapa ny modul
-            </button>
-          </div>
+        <div className="flex flex-row gap-2 px-5 pb-5">
+          <label className="input input-bordered input-sm flex items-center gap-2">
+            <input
+              type="search"
+              value={search}
+              onChange={(event) => setSearch(event.target.value)}
+              placeholder="Sök"
+              className="grow"
+            />
+          </label>
+          <button
+            type="button"
+            className="btn btn-secondary btn-sm self-start"
+            onClick={() => {
+              resetModuleForm();
+              openCreateModal();
+            }}
+          >
+            Skapa modul
+          </button>
+        </div>
 
-          <div className="space-y-3 pr-1">
+        <div className="space-y-3 py-5 px-5 bg-base-300">
+          <div className="max-h-[50vh] space-y-3 overflow-y-auto pr-1">
             {filteredModules.map((module) => {
               const isSelected = selectedModuleId === module.id;
               return (
@@ -94,8 +96,10 @@ export function ReusableBlocksModal({
                       moduleId: module.id,
                     })
                   }
-                  className={`card cursor-pointer overflow-hidden border bg-base-100 transition hover:border-primary rounded-lg ${
-                    isSelected ? "border-primary ring-2 ring-primary/40" : "border-base-200"
+                  className={`card cursor-pointer overflow-hidden border border-base-300 bg-base-100 transition hover:border-primary rounded-lg ${
+                    isSelected
+                      ? "border-primary ring-2 ring-primary/40"
+                      : "border-base-200"
                   }`}
                 >
                   <div className="card-body flex flex-col gap-2 p-3">
@@ -134,7 +138,7 @@ export function ReusableBlocksModal({
           </div>
         </div>
 
-        <div className="flex items-center justify-end gap-2 border-t border-base-200 px-5 py-4">
+        <div className="flex items-center justify-between gap-2 border-t border-base-200 px-5 py-4">
           <button type="button" className="btn" onClick={onClose}>
             Avbryt
           </button>
@@ -144,7 +148,7 @@ export function ReusableBlocksModal({
             onClick={onAddModule}
             disabled={!selectedModuleId}
           >
-            Lägg
+            Lägg till i schema
           </button>
         </div>
       </div>
