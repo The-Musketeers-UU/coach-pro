@@ -1,4 +1,8 @@
-import type { SupabaseClient, User as SupabaseAuthUser } from "@supabase/supabase-js";
+import type {
+  PostgrestError,
+  SupabaseClient,
+  User as SupabaseAuthUser,
+} from "@supabase/supabase-js";
 
 import { supabase } from "@/lib/supabase";
 import { getSupabaseBrowserClient } from "@/lib/supabase/browser-client";
@@ -177,6 +181,7 @@ export type CreateUserInput = {
   name: string;
   email: string;
   isCoach?: boolean;
+  accessToken?: string;
 };
 
 export type CreateModuleInput = {
@@ -928,6 +933,48 @@ export const addModuleToScheduleDay = async (
   }
 };
 
+const isPostgrestError = (error: unknown): error is PostgrestError =>
+  Boolean(error) && typeof (error as PostgrestError).code === "string";
+
+const isRlsInsertError = (error: unknown) => {
+  if (!isPostgrestError(error)) return false;
+
+  return (
+    error.code === "42501" ||
+    error.message?.toLowerCase().includes("row-level security") ||
+    error.details?.toLowerCase().includes("row-level security")
+  );
+};
+
+const persistUserWithServiceRole = async (input: CreateUserInput): Promise<AthleteRow> => {
+  if (!input.accessToken) {
+    throw new Error(
+      "Unable to create user profile because no Supabase access token was provided to validate the request.",
+    );
+  }
+
+  const response = await fetch("/api/profiles", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      id: input.id,
+      email: input.email,
+      name: input.name,
+      isCoach: Boolean(input.isCoach),
+      accessToken: input.accessToken,
+    }),
+  });
+
+  if (!response.ok) {
+    const errorMessage = (await response.text()) || response.statusText;
+    throw new Error(errorMessage);
+  }
+
+  return (await response.json()) as AthleteRow;
+};
+
 export const createUser = async (
   input: CreateUserInput,
   client: SupabaseClient = supabase,
@@ -944,12 +991,22 @@ export const createUser = async (
 
     if (error) {
       console.error("Error creating user:", error);
+
+      if (isRlsInsertError(error)) {
+        return persistUserWithServiceRole(input);
+      }
+
       throw toReadableError(error);
     }
 
     return data;
   } catch (error) {
     console.error("Error persisting user via SQL query:", error);
+
+    if (isRlsInsertError(error)) {
+      return persistUserWithServiceRole(input);
+    }
+
     throw toReadableError(error);
   }
 };
@@ -989,6 +1046,8 @@ export const ensureUserForAuth = async (
   }
 
   const supabaseClient = getSupabaseBrowserClient();
+  const { data: sessionData } = await supabaseClient.auth.getSession();
+  const accessToken = sessionData.session?.access_token;
 
   const existingUser = await findUserByEmail(authUser.email, supabaseClient);
   if (existingUser) return existingUser;
@@ -1007,6 +1066,7 @@ export const ensureUserForAuth = async (
       email: authUser.email,
       name,
       isCoach,
+      accessToken,
     },
     supabaseClient,
   );
