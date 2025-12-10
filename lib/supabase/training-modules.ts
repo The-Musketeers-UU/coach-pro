@@ -173,6 +173,7 @@ export const getModulesByOwner = async (ownerId: string): Promise<ModuleRow[]> =
 };
 
 export type CreateUserInput = {
+  id: string;
   name: string;
   email: string;
   isCoach?: boolean;
@@ -932,10 +933,11 @@ export const createUser = async (
   client: SupabaseClient = supabase,
 ): Promise<AthleteRow> => {
   const payload = {
+    id: input.id,
     name: input.name.trim(),
     email: input.email.trim(),
     isCoach: Boolean(input.isCoach),
-  } satisfies Omit<AthleteRow, "id">;
+  } satisfies AthleteRow;
 
   try {
     const { data, error } = await client.from("user").insert(payload).select().single();
@@ -1001,6 +1003,7 @@ export const ensureUserForAuth = async (
 
   return createUser(
     {
+      id: authUser.id,
       email: authUser.email,
       name,
       isCoach,
