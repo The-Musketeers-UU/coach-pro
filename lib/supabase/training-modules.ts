@@ -1,6 +1,7 @@
-import type { User as SupabaseAuthUser } from "@supabase/supabase-js";
+import type { SupabaseClient, User as SupabaseAuthUser } from "@supabase/supabase-js";
 
 import { supabase } from "@/lib/supabase";
+import { getSupabaseBrowserClient } from "@/lib/supabase/browser-client";
 
 type DbModuleRow = {
   id: number | string;
@@ -926,7 +927,10 @@ export const addModuleToScheduleDay = async (
   }
 };
 
-export const createUser = async (input: CreateUserInput): Promise<AthleteRow> => {
+export const createUser = async (
+  input: CreateUserInput,
+  client: SupabaseClient = supabase,
+): Promise<AthleteRow> => {
   const payload = {
     name: input.name.trim(),
     email: input.email.trim(),
@@ -934,7 +938,7 @@ export const createUser = async (input: CreateUserInput): Promise<AthleteRow> =>
   } satisfies Omit<AthleteRow, "id">;
 
   try {
-    const { data, error } = await supabase.from("user").insert(payload).select().single();
+    const { data, error } = await client.from("user").insert(payload).select().single();
 
     if (error) {
       console.error("Error creating user:", error);
@@ -948,11 +952,14 @@ export const createUser = async (input: CreateUserInput): Promise<AthleteRow> =>
   }
 };
 
-export const findUserByEmail = async (email: string): Promise<AthleteRow | null> => {
+export const findUserByEmail = async (
+  email: string,
+  client: SupabaseClient = supabase,
+): Promise<AthleteRow | null> => {
   console.log("Finding user by email:", email);
 
   try {
-    const { data: user, error } = await supabase
+    const { data: user, error } = await client
       .from("user")
       .select("id,name,email,isCoach")
       .eq("email", email)
@@ -979,7 +986,9 @@ export const ensureUserForAuth = async (
     throw new Error("Authenticated user is missing an email.");
   }
 
-  const existingUser = await findUserByEmail(authUser.email);
+  const supabaseClient = getSupabaseBrowserClient();
+
+  const existingUser = await findUserByEmail(authUser.email, supabaseClient);
   if (existingUser) return existingUser;
 
   const nameFromMetadata =
@@ -990,9 +999,12 @@ export const ensureUserForAuth = async (
   const name = nameFromMetadata || authUser.email;
   const isCoach = Boolean(authUser.user_metadata?.isCoach);
 
-  return createUser({
-    email: authUser.email,
-    name,
-    isCoach,
-  });
+  return createUser(
+    {
+      email: authUser.email,
+      name,
+      isCoach,
+    },
+    supabaseClient,
+  );
 };
