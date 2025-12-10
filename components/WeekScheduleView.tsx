@@ -52,6 +52,7 @@ type WeekScheduleViewProps = {
   week?: ProgramWeek;
   weekNumber: number;
   title?: string;
+  headerAction?: ReactNode;
   emptyWeekTitle?: string;
   emptyWeekDescription?: string;
   viewerRole?: "coach" | "athlete";
@@ -118,6 +119,7 @@ export function WeekScheduleView({
   week,
   weekNumber,
   title,
+  headerAction,
   emptyWeekTitle = "Inget program",
   emptyWeekDescription = "Ingen data for veckan.",
   viewerRole: _viewerRole,
@@ -300,13 +302,17 @@ export function WeekScheduleView({
   return (
     <div className="card bg-base-200 border border-base-300 shadow-md">
       <div className="card-body gap-6">
-        <div className="grid grid-cols-3 items-center w-full">
-          <div>
+        <div className="flex items-start justify-between gap-4">
+          <div className="space-y-1">
             <h2 className="text-xl font-semibold">{heading}</h2>
             {weekState?.focus && (
               <p className="text-sm text-base-content/70">{weekState.focus}</p>
             )}
           </div>
+
+          {headerAction && (
+            <div className="flex items-center justify-end">{headerAction}</div>
+          )}
         </div>
 
         {weekState ? (
@@ -348,19 +354,25 @@ export function WeekScheduleView({
                       </div>
                     </button>
                   ))}
-
-                  {day.modules.length === 0 && (
-                    <p className="flex min-h-[120px] items-center justify-center rounded-xl border border-dashed border-base-200 bg-base-100/60 p-4 text-center text-xs text-base-content/60">
-                      Inga pass schemalagda.
-                    </p>
-                  )}
                 </div>
-              </article>
-            ))}
+
+                {selectedDay && (
+                  <div className="mt-2 w-full sm:px-6">
+                    {renderDayContent(selectedDay)}
+                  </div>
+                )}
+              </div>
+            )}
+
+            <div className="hidden grid-cols-1 gap-1 md:grid md:grid-cols-2 xl:grid-cols-7">
+              {week.days.map((day) => renderDayContent(day))}
+            </div>
           </div>
         ) : (
-          <div className="rounded-2xl border border-dashed border-base-300 bg-base-100/60 p-6 text-center text-sm text-base-content/70">
-            <p className="font-semibold text-base-content">{heading}</p>
+          <div className="rounded-2xl border border-dashed border-base-300 bg-base-100/60 p-6 text-center text-sm text-base-content/70 space-y-1">
+            <p className="font-semibold text-base-content">
+              {emptyWeekTitle || `Vecka ${weekNumber}`}
+            </p>
             <p>{emptyWeekDescription}</p>
           </div>
         )}

@@ -9,7 +9,7 @@ export function DrawerToggle({ targetId, onOpen }: DrawerToggleProps) {
       <button
         type="button"
         aria-controls={targetId}
-        className="btn btn-primary btn-sm lg:hidden"
+        className="btn btn-primary btn-sm hidden sm:inline-flex lg:hidden"
         onClick={onOpen}
       >
         Visa reusable blocks

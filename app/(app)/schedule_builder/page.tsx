@@ -14,6 +14,7 @@ import {
   DrawerToggle,
   EditModuleModal,
   ReusableBlocksDrawer,
+  ReusableBlocksModal,
   ScheduleSection,
   type DaySchedule,
   useScheduleBuilderState,
@@ -190,7 +191,7 @@ function ScheduleBuilderPage() {
   const { user, profile, isLoading, isLoadingProfile } = useAuth();
   const weekOptions = useMemo(() => createRollingWeekOptions(), []);
   const [selectedWeek, setSelectedWeek] = useState<string>(() => weekOptions[0]?.value ?? "");
-  const [scheduleTitle, setScheduleTitle] = useState("Träningsläger");
+  const [scheduleTitle, setScheduleTitle] = useState("");
   const [modules, setModules] = useState<Module[]>([]);
   const [athletes, setAthletes] = useState<Athlete[]>([]);
   const [dataError, setDataError] = useState<string | null>(null);
@@ -239,11 +240,42 @@ function ScheduleBuilderPage() {
 
   const {
     setScheduleState,
+    moveScheduledModule,
     removeSelectedScheduleModules,
     clearSelectedScheduleModules,
+    addLibraryModuleToDay,
   } = scheduleControls;
 
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
+  const [mobileLibraryDayId, setMobileLibraryDayId] = useState<string | null>(
+    null
+  );
+  const [selectedMobileModuleId, setSelectedMobileModuleId] = useState<
+    string | null
+  >(null);
+
+  const mobileLibraryDayLabel = useMemo(
+    () => days.find((day) => day.id === mobileLibraryDayId)?.label,
+    [mobileLibraryDayId]
+  );
+
+  const openMobileLibrary = (dayId: string) => {
+    setSelectedMobileModuleId(null);
+    setMobileLibraryDayId(dayId);
+    setIsDrawerOpen(false);
+  };
+
+  const closeMobileLibrary = () => {
+    setMobileLibraryDayId(null);
+    setSelectedMobileModuleId(null);
+  };
+
+  const handleAddMobileModule = () => {
+    if (!mobileLibraryDayId || !selectedMobileModuleId) return;
+
+    addLibraryModuleToDay(mobileLibraryDayId, selectedMobileModuleId);
+    closeMobileLibrary();
+  };
 
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
@@ -586,6 +618,7 @@ function ScheduleBuilderPage() {
             selectedScheduleModuleIds={scheduleControls.selectedScheduleModuleIds}
             expandedScheduleModuleIds={scheduleControls.expandedScheduleModuleIds}
             onSelectScheduledModule={scheduleControls.handleSelectScheduledModule}
+            onMoveScheduledModule={moveScheduledModule}
             onToggleScheduledModuleExpansion={
               scheduleControls.toggleScheduledModuleExpansion
             }
@@ -595,8 +628,25 @@ function ScheduleBuilderPage() {
             onWeekChange={setSelectedWeek}
             scheduleTitle={scheduleTitle}
             onScheduleTitleChange={setScheduleTitle}
+            onOpenMobileLibrary={openMobileLibrary}
           />
         </div>
+
+        <ReusableBlocksModal
+          isOpen={Boolean(mobileLibraryDayId)}
+          dayLabel={mobileLibraryDayLabel}
+          search={libraryControls.search}
+          setSearch={libraryControls.setSearch}
+          filteredModules={libraryControls.filteredModules}
+          selectedModuleId={selectedMobileModuleId}
+          onSelectModule={setSelectedMobileModuleId}
+          onAddModule={handleAddMobileModule}
+          startEditingModule={editingControls.startEditingModule}
+          handleRemoveLibraryModule={libraryControls.handleRemoveLibraryModule}
+          resetModuleForm={libraryControls.resetModuleForm}
+          openCreateModal={libraryControls.openCreateModal}
+          onClose={closeMobileLibrary}
+        />
 
         <CreateModuleModal
           isOpen={libraryControls.isCreateModuleModalOpen}

@@ -7,6 +7,7 @@ export { DropPreviewBar } from "./DropPreviewBar";
 export { EditModuleModal } from "./EditModuleModal";
 export { ModuleBadges } from "../ModuleBadges";
 export { ModuleFormFields } from "./ModuleFormFields";
+export { ReusableBlocksModal } from "./ReusableBlocksModal";
 export { ReusableBlocksDrawer } from "./ReusableBlocksDrawer";
 export { ScheduleSection } from "./ScheduleSection";
 export { ScheduledModuleCard } from "./ScheduledModuleCard";
