@@ -6,6 +6,7 @@ import { FormEvent, Suspense, useEffect, useState } from "react";
 
 import { useAuth } from "@/components/auth-provider";
 import { getSupabaseBrowserClient } from "@/lib/supabase/browser-client";
+import { ensureUserForAuth } from "@/lib/supabase/training-modules";
 
 export default function RegisterPage() {
   return (
@@ -42,7 +43,7 @@ function RegisterContent() {
     setError(null);
 
     try {
-      const { error: signUpError } = await supabase.auth.signUp({
+      const { data, error: signUpError } = await supabase.auth.signUp({
         email,
         password,
         options: {
@@ -54,6 +55,12 @@ function RegisterContent() {
       });
 
       if (signUpError) throw signUpError;
+      const sessionUser =
+        data.session?.user ?? (await supabase.auth.getSession()).data.session?.user;
+
+      if (sessionUser) {
+        await ensureUserForAuth(sessionUser);
+      }
       router.replace(redirectTo);
     } catch (authError) {
       setError(authError instanceof Error ? authError.message : String(authError));
