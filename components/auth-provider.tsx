@@ -37,6 +37,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     const getInitialSession = async () => {
       const { data, error } = await supabaseBrowserClient.auth.getSession();
+
       if (!error) {
         setSession(data.session);
       }
@@ -64,6 +65,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setIsLoadingProfile(true);
       try {
         const userProfile = await ensureUserForAuth(session.user);
+
         setProfile(userProfile);
       } catch (profileError) {
         console.error("Failed to sync profile", profileError);

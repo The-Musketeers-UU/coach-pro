@@ -6,10 +6,12 @@ export type Module = {
   description: string;
   category: Category;
   subcategory?: string;
-  distanceMeters?: number;
-  durationMinutes?: number;
-  durationSeconds?: number;
-  weightKg?: number;
+  distance?: number | null;
+  duration?: number | null;
+  weight?: number | null;
+  comment?: string | null;
+  feeling?: number | null;
+  sleepHours?: number | null;
   sourceModuleId?: string;
 };
 
@@ -31,11 +33,22 @@ export type ModuleForm = {
   description: string;
   category: string;
   subcategory: string;
-  distanceMeters: string;
-  durationMinutes: string;
-  durationSeconds: string;
-  weightKg: string;
+  distance: string;
+  duration: string;
+  weight: string;
+  comment: string;
+  feeling: string;
+  sleepHours: string;
+  activeFeedbackFields: FeedbackFieldType[];
 };
+
+export type FeedbackFieldType =
+  | "distance"
+  | "duration"
+  | "weight"
+  | "comment"
+  | "feeling"
+  | "sleepHours";
 
 export type Athlete = {
   id: string;

@@ -142,10 +142,12 @@ const createScheduleFromWeek = (
         description: moduleRow.description ?? "",
         category: (moduleRow.category as Module["category"]) ?? "kondition",
         subcategory: moduleRow.subCategory ?? undefined,
-        distanceMeters: moduleRow.distance ?? undefined,
-        durationMinutes: moduleRow.durationMinutes ?? undefined,
-        durationSeconds: moduleRow.durationSeconds ?? undefined,
-        weightKg: moduleRow.weight ?? undefined,
+        distance: moduleRow.distance,
+        duration: moduleRow.duration,
+        weight: moduleRow.weight,
+        comment: moduleRow.comment,
+        feeling: moduleRow.feeling,
+        sleepHours: moduleRow.sleepHours,
         sourceModuleId: moduleRow.id,
       } satisfies Module;
     });
@@ -168,10 +170,12 @@ const mapModuleRow = (row: ModuleRow): Module => ({
   description: row.description ?? "",
   category: (row.category as Module["category"]) ?? "kondition",
   subcategory: row.subCategory ?? undefined,
-  distanceMeters: row.distance ?? undefined,
-  durationMinutes: row.durationMinutes ?? undefined,
-  durationSeconds: row.durationSeconds ?? undefined,
-  weightKg: row.weight ?? undefined,
+  distance: row.distance ?? undefined,
+  duration: row.duration ?? undefined,
+  weight: row.weight ?? undefined,
+  comment: row.comment ?? undefined,
+  feeling: row.feeling ?? undefined,
+  sleepHours: row.sleepHours ?? undefined,
   sourceModuleId: row.id,
 });
 
@@ -209,11 +213,13 @@ function ScheduleBuilderPage() {
       name: module.title,
       category: module.category,
       subCategory: module.subcategory,
-      distance: module.distanceMeters,
-      durationMinutes: module.durationMinutes,
-      durationSeconds: module.durationSeconds,
-      weight: module.weightKg,
+      distance: module.distance,
+      duration: module.duration,
+      weight: module.weight,
       description: module.description,
+      comment: module.comment,
+      feeling: module.feeling,
+      sleepHours: module.sleepHours,
     });
 
     return mapModuleRow(created);
