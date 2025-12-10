@@ -100,9 +100,6 @@ export default function AthleteSchedulePage() {
   return (
     <div className="min-h-screen">
       <div className="mx-auto max-w-full space-y-5 px-5 py-5">
-        <div className="grid grid-cols-3">
-          <h1 className="text-xl font-semibold pl-5">Mina scheman</h1>
-
           <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between justify-self-center">
             <div className="flex items-center gap-3">
               <button
@@ -113,8 +110,8 @@ export default function AthleteSchedulePage() {
               >
                 &lt;
               </button>
-              <p className="badge-md badge badge-outline badge-secondary font-semibold uppercase tracking-wide">
-                Vecka {weekNumber}
+              <p className="badge-md badge badge-outline badge-secondary font-semibold uppercase tracking-wide min-w-[100px]">
+                Vecka {weekNumber} 
               </p>
               <button
                 className="btn btn-outline btn-xs btn-primary"
@@ -125,7 +122,6 @@ export default function AthleteSchedulePage() {
                 &gt;
               </button>
             </div>
-          </div>
         </div>
 
         {error && <div className="alert alert-error">{error}</div>}

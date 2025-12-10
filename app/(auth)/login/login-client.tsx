@@ -48,7 +48,7 @@ export default function LoginClient() {
 
   return (
     <main className="flex items-center justify-center bg-base-200">
-      <div className="card w-md bg-base-100 shadow-xl">
+      <div className="card sm:w-md w:[80vw] bg-base-100 shadow-xl">
         <div className="card-body space-y-4">
           <div className="space-y-1 text-center">
             <h1 className="text-2xl font-bold">Logga in</h1>

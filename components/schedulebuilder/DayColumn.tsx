@@ -1,4 +1,9 @@
-import type { Dispatch, DragEvent, MutableRefObject, SetStateAction } from "react";
+import type {
+  Dispatch,
+  DragEvent,
+  MutableRefObject,
+  SetStateAction,
+} from "react";
 
 import type {
   ActiveDrag,
@@ -30,7 +35,13 @@ type DayColumnProps = {
   selectedScheduleModuleIds: string[];
   expandedScheduleModuleIds: string[];
   onSelectScheduledModule: (moduleId: string, isMultiSelect: boolean) => void;
+  onMoveScheduledModule: (
+    dayId: string,
+    moduleId: string,
+    direction: "up" | "down",
+  ) => void;
   onToggleScheduledModuleExpansion: (moduleId: string) => void;
+  onOpenMobileLibrary: (dayId: string) => void;
 };
 
 export function DayColumn({
@@ -50,14 +61,20 @@ export function DayColumn({
   selectedScheduleModuleIds,
   expandedScheduleModuleIds,
   onSelectScheduledModule,
+  onMoveScheduledModule,
   onToggleScheduledModuleExpansion,
+  onOpenMobileLibrary,
 }: DayColumnProps) {
   return (
     <div
       onDragOver={(event) => handleDayDragOver(event, day.id)}
       onDrop={() => handleDrop(day.id)}
       onDragLeave={(event) => {
-        if (!(event.currentTarget as HTMLElement).contains(event.relatedTarget as Node)) {
+        if (
+          !(event.currentTarget as HTMLElement).contains(
+            event.relatedTarget as Node
+          )
+        ) {
           setDropPreview(null);
         }
       }}
@@ -73,10 +90,27 @@ export function DayColumn({
 
       <div className="mt-3 flex-1 space-y-1">
         {modules.length === 0 && (
-          <div className="flex h-full items-center justify-center rounded-xl border border-dashed border-base-200 bg-base-100/60 p-4 text-center text-xs text-base-content/60">
+<div className="hidden sm:block h-full rounded-xl border border-dashed border-base-200 bg-base-100/60 p-4">
+    {/* Lägg till Flexbox-klasser på den yttre DIV:en */}
+    <div className="h-full flex items-center justify-center"> 
+        
+        {/* Ta bort text-center härifrån om du vill centrera hela textblocket */
+           /* Om du vill ha flera rader text: behåll text-center här */ }
+        <div className="text-center text-xs text-base-content/60">
             Dra en modul hit
-          </div>
+        </div>
+    </div>
+</div>
         )}
+
+        <button
+          type="button"
+          className="btn btn-sm gap-2 sm:hidden w-full btn-border"
+          onClick={() => onOpenMobileLibrary(day.id)}
+        >
+          <span aria-hidden="true">＋</span>
+          Lägg till modul
+        </button>
 
         {modules.map((module, index) => (
           <div key={`${module.id}-${index}`} className="space-y-2">
@@ -90,7 +124,8 @@ export function DayColumn({
               }}
               onDragEnter={(event) => {
                 event.stopPropagation();
-                const dragTop = event.clientY - (dragPointerOffsetYRef.current ?? 0);
+                const dragTop =
+                  event.clientY - (dragPointerOffsetYRef.current ?? 0);
                 updateDropPreviewFromDragTop(day.id, dragTop);
               }}
               onDragOver={allowDrop}
@@ -112,9 +147,15 @@ export function DayColumn({
               onSelect={(isMultiSelect) =>
                 onSelectScheduledModule(module.id, isMultiSelect)
               }
-              onToggleExpand={() =>
-                onToggleScheduledModuleExpansion(module.id)
+              onMoveUp={() =>
+                onMoveScheduledModule(day.id, module.id, "up")
               }
+              onMoveDown={() =>
+                onMoveScheduledModule(day.id, module.id, "down")
+              }
+              disableMoveUp={index === 0}
+              disableMoveDown={index === modules.length - 1}
+              onToggleExpand={() => onToggleScheduledModuleExpansion(module.id)}
             />
           </div>
         ))}
@@ -129,7 +170,8 @@ export function DayColumn({
           }}
           onDragEnter={(event) => {
             event.stopPropagation();
-            const dragTop = event.clientY - (dragPointerOffsetYRef.current ?? 0);
+            const dragTop =
+              event.clientY - (dragPointerOffsetYRef.current ?? 0);
             updateDropPreviewFromDragTop(day.id, dragTop);
           }}
           onDragOver={allowDrop}

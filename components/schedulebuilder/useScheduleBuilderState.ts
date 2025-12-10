@@ -135,6 +135,16 @@ export const useScheduleBuilderState = ({
     event.preventDefault();
   };
 
+  const addLibraryModuleToDay = (dayId: string, moduleId: string) => {
+    const moduleToAdd = moduleLibrary.find((module) => module.id === moduleId);
+    if (!moduleToAdd) return;
+
+    setSchedule((prev) => ({
+      ...prev,
+      [dayId]: [cloneModuleForSchedule(moduleToAdd), ...(prev[dayId] ?? [])],
+    }));
+  };
+
   const registerScheduleCardRef = (
     dayId: string,
     index: number,
@@ -285,6 +295,35 @@ export const useScheduleBuilderState = ({
         prev.filter((moduleId) => moduleId !== moduleIdToRemove)
       );
     }
+  };
+
+  const moveScheduledModule = (
+    dayId: string,
+    moduleId: string,
+    direction: "up" | "down",
+  ) => {
+    setSchedule((prev) => {
+      const modulesForDay = prev[dayId] ?? [];
+      const currentIndex = modulesForDay.findIndex(
+        (module) => module.id === moduleId,
+      );
+
+      if (currentIndex === -1) return prev;
+
+      const targetIndex =
+        direction === "up" ? currentIndex - 1 : currentIndex + 1;
+
+      if (targetIndex < 0 || targetIndex >= modulesForDay.length) return prev;
+
+      const updatedModules = [...modulesForDay];
+      const [movingModule] = updatedModules.splice(currentIndex, 1);
+      updatedModules.splice(targetIndex, 0, movingModule);
+
+      return {
+        ...prev,
+        [dayId]: updatedModules,
+      };
+    });
   };
 
   const handleSelectScheduledModule = (
@@ -577,12 +616,14 @@ export const useScheduleBuilderState = ({
       handleDayDragOver,
       handleDrop,
       allowDrop,
+      addLibraryModuleToDay,
       isPreviewLocation,
       handleRemoveModule,
       registerScheduleCardRef,
       selectedScheduleModuleIds,
       expandedScheduleModuleIds,
       handleSelectScheduledModule,
+      moveScheduledModule,
       clearSelectedScheduleModules,
       removeSelectedScheduleModules,
       toggleScheduledModuleExpansion,

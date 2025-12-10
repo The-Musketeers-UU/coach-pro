@@ -153,33 +153,13 @@ export default function AthleteSchedulePage() {
   return (
     <div className="min-h-screen">
       <div className="mx-auto max-w-full space-y-5 px-5 py-5">
-        <div className="grid grid-cols-3">
-          <div className="flex gap-12">
-            <h1 className="text-xl font-semibold pl-5">Träningsöversikt</h1>
+        <div className="flex gap-4 flex-row items-center justify-between">
+          <h1 className="hidden pl-5 text-xl font-semibold sm:block w-[26vw]">
+            Träningsöversikt
+          </h1>
 
-            <div className="flex w-full max-w-sm items-center gap-3">
-              <span className="text-sm whitespace-nowrap">Välj atlet</span>
-
-              <select
-                className="select select-bordered select-sm flex-1"
-                value={selectedAthlete}
-                onChange={(event) => setSelectedAthlete(event.target.value)}
-                disabled={athletes.length === 0}
-              >
-                <option value="" disabled>
-                  {athletes.length === 0 ? "Inga atleter" : "Välj en atlet"}
-                </option>
-                {athletes.map((athlete) => (
-                  <option key={athlete.id} value={athlete.id}>
-                    {athlete.name} ({athlete.email})
-                  </option>
-                ))}
-              </select>
-            </div>
-          </div>
-
-          <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between justify-self-center">
-            <div className="flex items-center gap-3">
+          <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-end">
+            <div className="flex items-center gap-2">
               <button
                 className="btn btn-outline btn-xs btn-primary"
                 onClick={goToPreviousWeek}
@@ -188,7 +168,7 @@ export default function AthleteSchedulePage() {
               >
                 &lt;
               </button>
-              <p className="badge-md badge badge-outline badge-secondary font-semibold uppercase tracking-wide">
+              <p className="badge-md w-[100px] badge badge-outline badge-secondary font-semibold uppercase tracking-wide">
                 Vecka {weekNumber}
               </p>
               <button
@@ -204,14 +184,24 @@ export default function AthleteSchedulePage() {
             </div>
           </div>
 
-          <div className="flex items-center justify-end">
-            <button
-              className="btn btn-primary btn-sm"
-              onClick={handleModifyWeek}
-              disabled={!activeWeekId}
+          <div className="flex w-full max-w-sm items-center gap-2">
+            <span className="whitespace-nowrap text-sm">Atlet:</span>
+
+            <select
+              className="select select-bordered select-sm flex-1"
+              value={selectedAthlete}
+              onChange={(event) => setSelectedAthlete(event.target.value)}
+              disabled={athletes.length === 0}
             >
-              Redigera vecka
-            </button>
+              <option value="" disabled>
+                {athletes.length === 0 ? "Inga atleter" : "Välj en atlet"}
+              </option>
+              {athletes.map((athlete) => (
+                <option key={athlete.id} value={athlete.id}>
+                  {athlete.name} ({athlete.email})
+                </option>
+              ))}
+            </select>
           </div>
         </div>
 
@@ -230,6 +220,26 @@ export default function AthleteSchedulePage() {
             weekNumber={weekNumber}
             emptyWeekTitle="Inget program"
             emptyWeekDescription="Ingen data för veckan."
+            headerAction={
+              <button
+                className="btn btn-primary btn-soft btn-sm"
+                onClick={handleModifyWeek}
+                disabled={!activeWeekId}
+              >
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  viewBox="0 0 24 24"
+                  fill="currentColor"
+                  className="h-4 w-4 text-primary sm:hidden"
+                  aria-hidden
+                >
+                  <path d="M12.8995 6.85453L17.1421 11.0972L7.24264 20.9967H3V16.754L12.8995 6.85453ZM14.3137 5.44032L16.435 3.319C16.8256 2.92848 17.4587 2.92848 17.8492 3.319L20.6777 6.14743C21.0682 6.53795 21.0682 7.17112 20.6777 7.56164L18.5563 9.68296L14.3137 5.44032Z"></path>
+                </svg>
+                <span className="sr-only sm:not-sr-only sm:inline">
+                  Redigera schema
+                </span>
+              </button>
+            }
           />
         )}
       </div>
