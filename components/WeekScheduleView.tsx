@@ -355,18 +355,8 @@ export function WeekScheduleView({
                     </button>
                   ))}
                 </div>
-
-                {selectedDay && (
-                  <div className="mt-2 w-full sm:px-6">
-                    {renderDayContent(selectedDay)}
-                  </div>
-                )}
               </article>
             ))}
-
-            <div className="hidden grid-cols-1 gap-1 md:grid md:grid-cols-2 xl:grid-cols-7">
-              {week.days.map((day) => renderDayContent(day))}
-            </div>
           </div>
         ) : (
           <div className="rounded-2xl border border-dashed border-base-300 bg-base-100/60 p-6 text-center text-sm text-base-content/70 space-y-1">
