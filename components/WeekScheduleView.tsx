@@ -303,12 +303,12 @@ export function WeekScheduleView({
     <div className="card bg-base-200 border border-base-300 shadow-md">
       <div className="card-body gap-6">
         <div className="flex items-start justify-between gap-4">
-          <div className="space-y-1">
-            <h2 className="text-xl font-semibold">{heading}</h2>
-            {weekState?.focus && (
-              <p className="text-sm text-base-content/70">{weekState.focus}</p>
-            )}
-          </div>
+            <div className="space-y-1">
+              <h2 className="text-xl font-semibold">{heading}</h2>
+              {weekState?.focus && (
+                <p className="text-sm text-base-content/70">{weekState.focus}</p>
+              )}
+            </div>
 
           {headerAction && (
             <div className="flex items-center justify-end">{headerAction}</div>
@@ -361,8 +361,8 @@ export function WeekScheduleView({
                     {renderDayContent(selectedDay)}
                   </div>
                 )}
-              </div>
-            )}
+              </article>
+            ))}
 
             <div className="hidden grid-cols-1 gap-1 md:grid md:grid-cols-2 xl:grid-cols-7">
               {week.days.map((day) => renderDayContent(day))}
