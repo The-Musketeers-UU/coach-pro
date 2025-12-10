@@ -2,6 +2,7 @@ import type { Dispatch, FormEvent, SetStateAction } from "react";
 
 import type { EditingContext, ModuleForm } from "@/components/schedulebuilder/types";
 import { ModuleFormFields } from "@/components/schedulebuilder/ModuleFormFields";
+import { formatCentiseconds, parseDurationToCentiseconds } from "@/lib/time";
 
 type EditModuleModalProps = {
   isOpen: boolean;
@@ -26,17 +27,9 @@ export function EditModuleModal({
   onClose,
   onSave,
 }: EditModuleModalProps) {
-  const formattedDuration = (() => {
-    if (!editingModuleForm) return "";
-
-    const parts = [] as string[];
-    if (editingModuleForm.durationMinutes)
-      parts.push(`${editingModuleForm.durationMinutes} min`);
-    if (editingModuleForm.durationSeconds)
-      parts.push(`${editingModuleForm.durationSeconds} s`);
-
-    return parts.join(" ");
-  })();
+  const formattedDuration = editingModuleForm?.duration
+    ? formatCentiseconds(parseDurationToCentiseconds(editingModuleForm.duration) ?? undefined)
+    : "";
 
   return (
     <dialog className={`modal ${isOpen ? "modal-open" : ""}`}>
@@ -88,13 +81,13 @@ export function EditModuleModal({
                 </div>
               )}
 
-              {editingModuleForm.distanceMeters && (
+              {editingModuleForm.distance && (
                 <div>
                   <dt className="text-xs uppercase tracking-wide text-base-content/60">
-                    Distans 
+                    Distans
                   </dt>
                   <dd className="font-medium text-base-content">
-                    {editingModuleForm.distanceMeters} m
+                    {editingModuleForm.distance} m
                   </dd>
                 </div>
               )}
@@ -108,13 +101,46 @@ export function EditModuleModal({
                 </div>
               )}
 
-              {editingModuleForm.weightKg && (
+              {editingModuleForm.weight && (
                 <div>
                   <dt className="text-xs uppercase tracking-wide text-base-content/60">
                     Vikt
                   </dt>
                   <dd className="font-medium text-base-content">
-                    {editingModuleForm.weightKg} kg
+                    {editingModuleForm.weight} kg
+                  </dd>
+                </div>
+              )}
+
+              {editingModuleForm.comment && (
+                <div className="sm:col-span-2">
+                  <dt className="text-xs uppercase tracking-wide text-base-content/60">
+                    Kommentar
+                  </dt>
+                  <dd className="font-medium text-base-content whitespace-pre-wrap">
+                    {editingModuleForm.comment}
+                  </dd>
+                </div>
+              )}
+
+              {editingModuleForm.feeling && (
+                <div>
+                  <dt className="text-xs uppercase tracking-wide text-base-content/60">
+                    Känsla
+                  </dt>
+                  <dd className="font-medium text-base-content">
+                    {editingModuleForm.feeling}
+                  </dd>
+                </div>
+              )}
+
+              {editingModuleForm.sleepHours && (
+                <div>
+                  <dt className="text-xs uppercase tracking-wide text-base-content/60">
+                    Sömn (timmar)
+                  </dt>
+                  <dd className="font-medium text-base-content">
+                    {editingModuleForm.sleepHours}
                   </dd>
                 </div>
               )}

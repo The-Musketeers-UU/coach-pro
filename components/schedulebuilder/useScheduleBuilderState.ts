@@ -18,16 +18,20 @@ import {
   type Module,
   type ModuleForm,
 } from "./types";
+import { formatCentiseconds, parseDurationToCentiseconds } from "@/lib/time";
 
 const createInitialFormState = (): ModuleForm => ({
   title: "",
   description: "",
   category: "",
   subcategory: "",
-  distanceMeters: "",
-  durationMinutes: "",
-  durationSeconds: "",
-  weightKg: "",
+  distance: "",
+  duration: "",
+  weight: "",
+  comment: "",
+  feeling: "",
+  sleepHours: "",
+  activeFeedbackFields: [],
 });
 
 const createEmptySchedule = (days: Day[]): DaySchedule =>
@@ -123,10 +127,12 @@ export const useScheduleBuilderState = ({
       description: module.description,
       category: module.category,
       subcategory: module.subcategory,
-      distanceMeters: module.distanceMeters,
-      durationMinutes: module.durationMinutes,
-      durationSeconds: module.durationSeconds,
-      weightKg: module.weightKg,
+      distance: module.distance,
+      duration: module.duration,
+      weight: module.weight,
+      comment: module.comment,
+      feeling: module.feeling,
+      sleepHours: module.sleepHours,
       sourceModuleId: module.sourceModuleId ?? module.id,
     };
   };
@@ -387,20 +393,6 @@ export const useScheduleBuilderState = ({
     setFormError(null);
   };
 
-  const parseOptionalNumber = (value: string, label: string) => {
-    const trimmed = value.trim();
-    if (!trimmed) return { value: undefined as number | undefined } as const;
-
-    const parsed = Number(trimmed);
-    if (Number.isNaN(parsed) || parsed < 0) {
-      return {
-        error: `${label} måste vara ett icke-negativt tal.`,
-      } as const;
-    }
-
-    return { value: parsed } as const;
-  };
-
   const prepareModuleToSave = (
     formState: ModuleForm,
     moduleId?: string
@@ -416,35 +408,28 @@ export const useScheduleBuilderState = ({
       };
     }
 
-    const distanceResult = parseOptionalNumber(
-      formState.distanceMeters,
-      "Distans"
-    );
-    if ("error" in distanceResult) return { error: distanceResult.error };
+    const toNumberIfActive = (type: typeof formState.activeFeedbackFields[number]) => {
+      if (!formState.activeFeedbackFields.includes(type)) {
+        return undefined;
+      }
 
-    const durationMinutesResult = parseOptionalNumber(
-      formState.durationMinutes,
-      "Minuter"
-    );
-    if ("error" in durationMinutesResult)
-      return { error: durationMinutesResult.error };
+      const rawValue = formState[type].trim();
+      if (!rawValue) return null;
 
-    const durationSecondsResult = parseOptionalNumber(
-      formState.durationSeconds,
-      "Sekunder"
-    );
-    if ("error" in durationSecondsResult)
-      return { error: durationSecondsResult.error };
+      if (type === "duration") {
+        return parseDurationToCentiseconds(rawValue);
+      }
 
-    if (
-      durationSecondsResult.value !== undefined &&
-      durationSecondsResult.value >= 60
-    ) {
-      return { error: "Sekunder måste vara under 60." };
-    }
+      const parsed = Number.parseFloat(rawValue);
+      return Number.isFinite(parsed) ? parsed : undefined;
+    };
 
-    const weightResult = parseOptionalNumber(formState.weightKg, "Vikt");
-    if ("error" in weightResult) return { error: weightResult.error };
+    const toTextIfActive = (type: "comment") => {
+      if (!formState.activeFeedbackFields.includes(type)) return undefined;
+
+      const trimmed = formState[type].trim();
+      return trimmed || null;
+    };
 
     return {
       module: {
@@ -453,10 +438,12 @@ export const useScheduleBuilderState = ({
         description: trimmedDescription,
         category: selectedCategory,
         subcategory: trimmedSubcategory || undefined,
-        distanceMeters: distanceResult.value,
-        durationMinutes: durationMinutesResult.value,
-        durationSeconds: durationSecondsResult.value,
-        weightKg: weightResult.value,
+        distance: toNumberIfActive("distance"),
+        duration: toNumberIfActive("duration"),
+        weight: toNumberIfActive("weight"),
+        feeling: toNumberIfActive("feeling"),
+        sleepHours: toNumberIfActive("sleepHours"),
+        comment: toTextIfActive("comment"),
         sourceModuleId: moduleId,
       },
     };
@@ -505,18 +492,46 @@ export const useScheduleBuilderState = ({
     setEditFormError(null);
     setIsEditMode(false);
     setEditingContext(context);
+    const activeFeedbackFields: ModuleForm["activeFeedbackFields"] = [];
+
+    if (module.distance !== undefined) {
+      activeFeedbackFields.push("distance");
+    }
+
+    if (module.duration !== undefined) {
+      activeFeedbackFields.push("duration");
+    }
+
+    if (module.weight !== undefined) {
+      activeFeedbackFields.push("weight");
+    }
+
+    if (module.comment) {
+      activeFeedbackFields.push("comment");
+    }
+
+    if (module.feeling !== undefined) {
+      activeFeedbackFields.push("feeling");
+    }
+
+    if (module.sleepHours !== undefined) {
+      activeFeedbackFields.push("sleepHours");
+    }
+
     setEditingModuleForm({
       title: module.title,
       description: module.description,
       category: module.category,
       subcategory: module.subcategory ?? "",
-      distanceMeters:
-        module.distanceMeters !== undefined ? String(module.distanceMeters) : "",
-      durationMinutes:
-        module.durationMinutes !== undefined ? String(module.durationMinutes) : "",
-      durationSeconds:
-        module.durationSeconds !== undefined ? String(module.durationSeconds) : "",
-      weightKg: module.weightKg !== undefined ? String(module.weightKg) : "",
+      distance: module.distance !== undefined ? String(module.distance) : "",
+      duration:
+        module.duration !== undefined ? formatCentiseconds(module.duration) : "",
+      weight: module.weight !== undefined ? String(module.weight) : "",
+      comment: module.comment ?? "",
+      feeling: module.feeling !== undefined ? String(module.feeling) : "",
+      sleepHours:
+        module.sleepHours !== undefined ? String(module.sleepHours) : "",
+      activeFeedbackFields,
     });
   };
 
