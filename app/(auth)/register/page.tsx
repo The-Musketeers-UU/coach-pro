@@ -55,11 +55,13 @@ function RegisterContent() {
       });
 
       if (signUpError) throw signUpError;
+
       const sessionUser =
         data.session?.user ?? (await supabase.auth.getSession()).data.session?.user;
+      const authUser = data.user ?? sessionUser;
 
-      if (sessionUser) {
-        await ensureUserForAuth(sessionUser);
+      if (authUser) {
+        await ensureUserForAuth(authUser);
       }
       router.replace(redirectTo);
     } catch (authError) {

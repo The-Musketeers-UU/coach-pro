@@ -6,6 +6,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 
 import { useAuth } from "@/components/auth-provider";
 import { getSupabaseBrowserClient } from "@/lib/supabase/browser-client";
+import { ensureUserForAuth } from "@/lib/supabase/training-modules";
 
 export default function LoginClient() {
   const router = useRouter();
@@ -32,12 +33,18 @@ export default function LoginClient() {
     setError(null);
 
     try {
-      const { error: signInError } = await supabase.auth.signInWithPassword({
+      const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({
         email,
         password,
       });
 
       if (signInError) throw signInError;
+      const user =
+        signInData.session?.user ?? (await supabase.auth.getSession()).data.session?.user;
+
+      if (user) {
+        await ensureUserForAuth(user);
+      }
       router.replace(redirectTo);
     } catch (authError) {
       setError(authError instanceof Error ? authError.message : String(authError));
