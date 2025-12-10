@@ -30,14 +30,15 @@ const toProgramWeek = (week: ScheduleWeekWithModules): ProgramWeek => ({
   id: week.id,
   label: week.title || `Vecka ${week.week}`,
   focus: `Ägare: ${week.owner}`,
-  days: week.days.map((day) => ({
-    id: day.id,
-    label: dayLabels[day.day - 1] ?? `Dag ${day.day}`,
-    modules: day.modules.map((module) => ({
-      title: module.name,
-      description: module.description ?? "",
-      category: module.category,
-      subcategory: module.subCategory ?? undefined,
+    days: week.days.map((day) => ({
+      id: day.id,
+      label: dayLabels[day.day - 1] ?? `Dag ${day.day}`,
+      modules: day.modules.map((module) => ({
+        id: module.id,
+        title: module.name,
+        description: module.description ?? "",
+        category: module.category,
+        subcategory: module.subCategory ?? undefined,
       distanceMeters: module.distance ?? undefined,
       weightKg: module.weight ?? undefined,
       durationMinutes: module.durationMinutes ?? undefined,
@@ -79,11 +80,15 @@ export default function AthleteSchedulePage() {
 
     if (!user) {
       router.replace("/login?redirectTo=/dashboard");
+      console.log("No user !")
       return;
     }
 
     if (!profile?.isCoach) {
       router.replace("/athlete");
+      console.log("user is athlete")
+    }else{
+     console.log("User is a coach")
     }
   }, [isLoading, isLoadingProfile, profile?.isCoach, router, user]);
 
@@ -223,6 +228,9 @@ export default function AthleteSchedulePage() {
             weekNumber={weekNumber}
             emptyWeekTitle="Inget program"
             emptyWeekDescription="Ingen data hittades i Supabase."
+            viewerRole="coach"
+            athleteId={selectedAthlete}
+            coachId={profile?.id}
           />
         ) : (
           <WeekScheduleView
@@ -230,6 +238,9 @@ export default function AthleteSchedulePage() {
             weekNumber={weekNumber}
             emptyWeekTitle="Inget program"
             emptyWeekDescription="Ingen data för veckan."
+            viewerRole="coach"
+            athleteId={selectedAthlete}
+            coachId={profile?.id}
           />
         )}
       </div>

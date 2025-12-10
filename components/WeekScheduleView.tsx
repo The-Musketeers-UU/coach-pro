@@ -1,10 +1,17 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 import { ModuleBadges } from "@/components/ModuleBadges";
+import {
+  createModuleComment,
+  getCommentsForModule,
+  updateModuleComment,
+  type ModuleCommentRow,
+} from "@/lib/supabase/comments";
 
 export type ProgramModule = {
+  id?: string;
   title: string;
   description: string;
   category: string;
@@ -28,12 +35,20 @@ export type ProgramWeek = {
   days: ProgramDay[];
 };
 
+type SelectedModuleState = {
+  module: ProgramModule;
+  key: string;
+};
+
 type WeekScheduleViewProps = {
   week?: ProgramWeek;
   weekNumber: number;
   title?: string;
   emptyWeekTitle?: string;
   emptyWeekDescription?: string;
+  viewerRole?: "coach" | "athlete";
+  athleteId?: string;
+  coachId?: string;
 };
 
 const formatDuration = (minutes?: number, seconds?: number) => {
@@ -58,16 +73,149 @@ export function WeekScheduleView({
   weekNumber,
   title,
   emptyWeekTitle = "Inget program",
-  emptyWeekDescription = "Ingen data för veckan.",
+  emptyWeekDescription = "Ingen data for veckan.",
+  viewerRole = "coach",
+  athleteId,
+  coachId,
 }: WeekScheduleViewProps) {
-  const [selectedModule, setSelectedModule] = useState<ProgramModule | null>(
-    null
+  const [selectedModule, setSelectedModule] = useState<SelectedModuleState | null>(
+    null,
   );
+  const [commentDraft, setCommentDraft] = useState("");
+  const [commentsByModule, setCommentsByModule] = useState<
+    Record<string, ModuleCommentRow[]>
+  >({});
+  const [loadingCommentsForKey, setLoadingCommentsForKey] = useState<
+    Record<string, boolean>
+  >({});
+  const [commentError, setCommentError] = useState<string | null>(null);
+  const [editingCommentId, setEditingCommentId] = useState<string | null>(null);
+  const [editDrafts, setEditDrafts] = useState<Record<string, string>>({});
+
+  const isCoach = viewerRole === "coach";
+
   const heading =
     title ??
     (week
       ? week.label || `Vecka ${weekNumber}`
       : emptyWeekTitle || `Vecka ${weekNumber}`);
+
+  const selectedComments = selectedModule
+    ? commentsByModule[selectedModule.key] ?? []
+    : [];
+  const isLoadingComments = selectedModule
+    ? Boolean(loadingCommentsForKey[selectedModule.key])
+    : false;
+  const canSubmitComment =
+    isCoach && Boolean(selectedModule?.module.id && athleteId && coachId);
+
+  const handleAddComment = () => {
+    void handlePersistComment();
+  };
+
+  const handlePersistComment = async () => {
+    if (!selectedModule) return;
+    const moduleId = selectedModule.module.id;
+    if (!moduleId) {
+      setCommentError("Kan inte spara kommentar: modul saknar id.");
+      return;
+    }
+    if (!athleteId) {
+      setCommentError("Kan inte spara kommentar: atlet-id saknas.");
+      return;
+    }
+    if (!coachId) {
+      setCommentError("Kan inte spara kommentar: coach-id saknas.");
+      return;
+    }
+
+    const body = commentDraft.trim();
+    if (!body) return;
+
+    try {
+      setCommentError(null);
+      const created = await createModuleComment({
+        moduleId,
+        athleteId,
+        coachId,
+        body,
+      });
+
+      setCommentsByModule((prev) => {
+        const existing = prev[selectedModule.key] ?? [];
+        return {
+          ...prev,
+          [selectedModule.key]: [...existing, created],
+        };
+      });
+      setCommentDraft("");
+    } catch (error) {
+      setCommentError(
+        error instanceof Error ? error.message : "Kunde inte spara kommentaren.",
+      );
+    }
+  };
+
+  const handleUpdateCommentBody = async (commentId: string) => {
+    if (!selectedModule) return;
+    const draftBody = editDrafts[commentId]?.trim();
+    if (!draftBody) return;
+
+    try {
+      setCommentError(null);
+      const updated = await updateModuleComment(commentId, { body: draftBody });
+      setCommentsByModule((prev) => {
+        const existing = prev[selectedModule.key] ?? [];
+        return {
+          ...prev,
+          [selectedModule.key]: existing.map((item) =>
+            item.id === commentId ? updated : item,
+          ),
+        };
+      });
+      setEditingCommentId(null);
+    } catch (error) {
+      setCommentError(
+        error instanceof Error ? error.message : "Kunde inte uppdatera kommentaren.",
+      );
+    }
+  };
+
+  useEffect(() => {
+    if (!selectedModule) return;
+    const moduleId = selectedModule.module.id;
+    if (!moduleId || !athleteId) return;
+
+    const moduleKey = selectedModule.key;
+    let isActive = true;
+
+    const fetchComments = async () => {
+      setLoadingCommentsForKey((prev) => ({ ...prev, [moduleKey]: true }));
+      setCommentError(null);
+      try {
+        const comments = await getCommentsForModule({ moduleId, athleteId });
+        if (!isActive) return;
+        setCommentsByModule((prev) => ({ ...prev, [moduleKey]: comments }));
+      } catch (error) {
+        if (!isActive) return;
+        setCommentError(
+          error instanceof Error
+            ? error.message
+            : "Kunde inte hamta kommentarer fran databasen.",
+        );
+      } finally {
+        if (isActive) {
+          setLoadingCommentsForKey((prev) => ({ ...prev, [moduleKey]: false }));
+        }
+      }
+    };
+
+    void fetchComments();
+
+    return () => {
+      isActive = false;
+    };
+  }, [athleteId, selectedModule]);
 
   return (
     <div className="card bg-base-200 border border-base-300 shadow-md">
@@ -101,7 +249,13 @@ export function WeekScheduleView({
                     <button
                       key={`${day.id}-${index}-${module.title}`}
                       type="button"
-                      onClick={() => setSelectedModule(module)}
+                      onClick={() => {
+                        const moduleKey = module.id ?? `${day.id}-${index}`;
+                        setSelectedModule({ module, key: moduleKey });
+                        setCommentDraft("");
+                        setEditingCommentId(null);
+                        setCommentError(null);
+                      }}
                       className="group w-full text-left"
                     >
                       <div className="space-y-2 rounded-xl border border-base-200 bg-base-100 p-3 transition hover:border-primary focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary">
@@ -113,7 +267,7 @@ export function WeekScheduleView({
                         <p className="text-xs text-base-content/70">
                           {module.description}
                         </p>
-                        <ModuleBadges module={module}/>
+                        <ModuleBadges module={module} />
                       </div>
                     </button>
                   ))}
@@ -129,7 +283,7 @@ export function WeekScheduleView({
           </div>
         ) : (
           <div className="rounded-2xl border border-dashed border-base-300 bg-base-100/60 p-6 text-center text-sm text-base-content/70">
-            Tom vecka.
+            {emptyWeekDescription || "Tom vecka."}
           </div>
         )}
       </div>
@@ -140,14 +294,14 @@ export function WeekScheduleView({
             <div className="flex items-start justify-between gap-4">
               <div>
                 <h3 className="text-xl font-semibold">
-                  {selectedModule.title}
+                  {selectedModule.module.title}
                 </h3>
               </div>
               <button
                 className="btn btn-circle btn-ghost btn-sm"
                 onClick={() => setSelectedModule(null)}
               >
-                ✕
+                x
               </button>
             </div>
 
@@ -157,7 +311,7 @@ export function WeekScheduleView({
                   Titel
                 </p>
                 <p className="text-base font-semibold text-base-content">
-                  {selectedModule.title}
+                  {selectedModule.module.title}
                 </p>
               </div>
 
@@ -166,7 +320,7 @@ export function WeekScheduleView({
                   Beskrivning
                 </p>
                 <p className="text-sm leading-relaxed text-base-content/80">
-                  {selectedModule.description}
+                  {selectedModule.module.description}
                 </p>
               </div>
 
@@ -176,7 +330,7 @@ export function WeekScheduleView({
                     Kategori
                   </p>
                   <p className="badge badge-outline capitalize">
-                    {selectedModule.category || "-"}
+                    {selectedModule.module.category || "-"}
                   </p>
                 </div>
 
@@ -185,7 +339,7 @@ export function WeekScheduleView({
                     Underkategori
                   </p>
                   <p className="text-sm text-base-content/80">
-                    {selectedModule.subcategory || "-"}
+                    {selectedModule.module.subcategory || "-"}
                   </p>
                 </div>
 
@@ -194,7 +348,7 @@ export function WeekScheduleView({
                     Distans
                   </p>
                   <p className="text-sm text-base-content/80">
-                    {formatDistance(selectedModule.distanceMeters)}
+                    {formatDistance(selectedModule.module.distanceMeters)}
                   </p>
                 </div>
 
@@ -203,7 +357,7 @@ export function WeekScheduleView({
                     Vikt
                   </p>
                   <p className="text-sm text-base-content/80">
-                    {formatWeight(selectedModule.weightKg)}
+                    {formatWeight(selectedModule.module.weightKg)}
                   </p>
                 </div>
 
@@ -213,12 +367,120 @@ export function WeekScheduleView({
                   </p>
                   <p className="text-sm text-base-content/80">
                     {formatDuration(
-                      selectedModule.durationMinutes,
-                      selectedModule.durationSeconds
+                      selectedModule.module.durationMinutes,
+                      selectedModule.module.durationSeconds,
                     ) || "-"}
                   </p>
                 </div>
               </div>
+            </div>
+
+            <div className="space-y-3 rounded-2xl border border-base-300 bg-base-100 p-4">
+              <div className="flex items-center justify-between gap-2">
+                <div>
+                  <p className="text-xs uppercase tracking-wide text-neutral">
+                    Kommentarer
+                  </p>
+                  <p className="text-xs text-base-content/70">
+                    Sparas i databasen per atlet och modul.
+                  </p>
+                </div>
+              </div>
+
+              {commentError && (
+                <div className="alert alert-warning py-2 text-xs">{commentError}</div>
+              )}
+
+              <div className="space-y-2 max-h-48 overflow-y-auto">
+                {isLoadingComments ? (
+                  <p className="text-xs text-base-content/60">Laddar kommentarer...</p>
+                ) : selectedComments.length === 0 ? (
+                  <p className="text-xs text-base-content/60">
+                    Inga kommentarer ännu.
+                  </p>
+                ) : (
+                  selectedComments.map((comment) => (
+                    <div
+                      key={comment.id}
+                      className="rounded-lg border border-base-200 bg-base-100/80 p-2 text-sm"
+                    >
+                      <p className="text-xs text-base-content/60">
+                        {new Date(comment.createdAt).toLocaleString()}
+                      </p>
+                      {editingCommentId === comment.id ? (
+                        <div className="space-y-2">
+                          <textarea
+                            className="textarea textarea-bordered textarea-sm w-full"
+                            value={editDrafts[comment.id] ?? comment.body}
+                            onChange={(event) =>
+                              setEditDrafts((prev) => ({
+                                ...prev,
+                                [comment.id]: event.target.value,
+                              }))
+                            }
+                            rows={3}
+                          />
+                          <div className="flex items-center gap-2">
+                            <button
+                              className="btn btn-primary btn-xs"
+                              onClick={() => void handleUpdateCommentBody(comment.id)}
+                              disabled={!editDrafts[comment.id]?.trim()}
+                            >
+                              Spara
+                            </button>
+                            <button
+                              className="btn btn-ghost btn-xs"
+                              onClick={() => setEditingCommentId(null)}
+                            >
+                              Avbryt
+                            </button>
+                          </div>
+                        </div>
+                      ) : (
+                        <div className="flex items-start justify-between gap-2">
+                          <p className="text-sm text-base-content/90 whitespace-pre-wrap">
+                            {comment.body}
+                          </p>
+                          {isCoach && (
+                            <button
+                              className="btn btn-ghost btn-xs"
+                              onClick={() => {
+                                setEditingCommentId(comment.id);
+                                setEditDrafts((prev) => ({
+                                  ...prev,
+                                  [comment.id]: comment.body,
+                                }));
+                              }}
+                            >
+                              Redigera
+                            </button>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  ))
+                )}
+              </div>
+
+              {isCoach && (
+                <div className="form-control space-y-2">
+                  <textarea
+                    className="textarea textarea-bordered"
+                    placeholder="Lamna en kommentar om passet"
+                    value={commentDraft}
+                    onChange={(event) => setCommentDraft(event.target.value)}
+                    rows={3}
+                    disabled={!canSubmitComment}
+                  />
+                  <button
+                    className="btn btn-primary btn-sm self-end"
+                    onClick={handleAddComment}
+                    disabled={!canSubmitComment || !commentDraft.trim()}
+                  >
+                    Skicka kommentar
+                  </button>
+                </div>
+              )}
             </div>
           </div>
 

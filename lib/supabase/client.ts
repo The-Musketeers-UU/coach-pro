@@ -7,6 +7,7 @@ type SupabaseRequestOptions = {
   body?: unknown;
   searchParams?: Record<string, string>;
   prefer?: string;
+  accessToken?: string;
 };
 
 const buildRestUrl = (path: string, searchParams?: Record<string, string>) => {
@@ -27,18 +28,23 @@ export const supabaseRequest = async <T>(
   path: string,
   options: SupabaseRequestOptions,
 ): Promise<T> => {
-  if (!SUPABASE_KEY) {
+  if (!SUPABASE_KEY && !options.accessToken) {
     throw new Error(
       "Missing SUPABASE_SERVICE_ROLE_KEY or NEXT_PUBLIC_SUPABASE_ANON_KEY environment variable.",
     );
+  }
+
+  const authToken = options.accessToken ?? SUPABASE_KEY;
+  if (!authToken) {
+    throw new Error("No Supabase auth token available for request.");
   }
 
   const url = buildRestUrl(path, options.searchParams);
   const response = await fetch(url, {
     method: options.method ?? "GET",
     headers: {
-      apikey: SUPABASE_KEY,
-      Authorization: `Bearer ${SUPABASE_KEY}`,
+      apikey: SUPABASE_KEY ?? authToken,
+      Authorization: `Bearer ${authToken}`,
       ...(options.body ? { "Content-Type": "application/json" } : {}),
       ...(options.prefer ? { Prefer: options.prefer } : {}),
     },
