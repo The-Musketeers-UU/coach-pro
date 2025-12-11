@@ -1066,7 +1066,7 @@ export const ensureUserForAuth = async (
   }
 
   const supabaseClient = getSupabaseBrowserClient();
-  const accessToken = accessTokenOverride ?? (await resolveAccessToken(supabaseClient));
+  const accessToken = accessTokenOverride ?? (await resolveAccessToken(supabaseClient)) ?? undefined;
 
   const existingUser = await findUserByEmail(authUser.email, supabaseClient);
   if (existingUser) return existingUser;
