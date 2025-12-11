@@ -1,4 +1,8 @@
-import type { SupabaseClient, User as SupabaseAuthUser } from "@supabase/supabase-js";
+import type {
+  PostgrestError,
+  SupabaseClient,
+  User as SupabaseAuthUser,
+} from "@supabase/supabase-js";
 
 import { supabase } from "@/lib/supabase";
 import { getSupabaseBrowserClient } from "@/lib/supabase/browser-client";
@@ -173,9 +177,11 @@ export const getModulesByOwner = async (ownerId: string): Promise<ModuleRow[]> =
 };
 
 export type CreateUserInput = {
+  id: string;
   name: string;
   email: string;
   isCoach?: boolean;
+  accessToken?: string;
 };
 
 export type CreateModuleInput = {
@@ -927,27 +933,99 @@ export const addModuleToScheduleDay = async (
   }
 };
 
+const isPostgrestError = (error: unknown): error is PostgrestError =>
+  Boolean(error) && typeof (error as PostgrestError).code === "string";
+
+const isRlsInsertError = (error: unknown) => {
+  if (!isPostgrestError(error)) return false;
+
+  return (
+    error.code === "42501" ||
+    error.message?.toLowerCase().includes("row-level security") ||
+    error.details?.toLowerCase().includes("row-level security")
+  );
+};
+
+const resolveAccessToken = async (client: SupabaseClient = getSupabaseBrowserClient()) => {
+  const { data: sessionData, error: sessionError } = await client.auth.getSession();
+
+  if (!sessionError && sessionData.session?.access_token) {
+    return sessionData.session.access_token;
+  }
+
+  const { data: refreshedSession, error: refreshError } = await client.auth.refreshSession();
+
+  if (refreshError) {
+    console.error("Failed to refresh Supabase session for access token", refreshError);
+    return null;
+  }
+
+  return refreshedSession.session?.access_token ?? null;
+};
+
+const persistUserWithServiceRole = async (input: CreateUserInput): Promise<AthleteRow> => {
+  const accessToken = input.accessToken ?? (await resolveAccessToken());
+
+  if (!accessToken) {
+    throw new Error(
+      "Unable to create user profile because no Supabase access token was provided to validate the request.",
+    );
+  }
+
+  const response = await fetch("/api/profiles", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      id: input.id,
+      email: input.email,
+      name: input.name,
+      isCoach: Boolean(input.isCoach),
+      accessToken,
+    }),
+  });
+
+  if (!response.ok) {
+    const errorMessage = (await response.text()) || response.statusText;
+    throw new Error(errorMessage);
+  }
+
+  return (await response.json()) as AthleteRow;
+};
+
 export const createUser = async (
   input: CreateUserInput,
   client: SupabaseClient = supabase,
 ): Promise<AthleteRow> => {
   const payload = {
+    id: input.id,
     name: input.name.trim(),
     email: input.email.trim(),
     isCoach: Boolean(input.isCoach),
-  } satisfies Omit<AthleteRow, "id">;
+  } satisfies AthleteRow;
 
   try {
     const { data, error } = await client.from("user").insert(payload).select().single();
 
     if (error) {
       console.error("Error creating user:", error);
+
+      if (isRlsInsertError(error)) {
+        return persistUserWithServiceRole(input);
+      }
+
       throw toReadableError(error);
     }
 
     return data;
   } catch (error) {
     console.error("Error persisting user via SQL query:", error);
+
+    if (isRlsInsertError(error)) {
+      return persistUserWithServiceRole(input);
+    }
+
     throw toReadableError(error);
   }
 };
@@ -981,12 +1059,14 @@ export const findUserByEmail = async (
 
 export const ensureUserForAuth = async (
   authUser: SupabaseAuthUser,
+  accessTokenOverride?: string | null,
 ): Promise<AthleteRow> => {
   if (!authUser.email) {
     throw new Error("Authenticated user is missing an email.");
   }
 
   const supabaseClient = getSupabaseBrowserClient();
+  const accessToken = accessTokenOverride ?? (await resolveAccessToken(supabaseClient));
 
   const existingUser = await findUserByEmail(authUser.email, supabaseClient);
   if (existingUser) return existingUser;
@@ -1001,9 +1081,11 @@ export const ensureUserForAuth = async (
 
   return createUser(
     {
+      id: authUser.id,
       email: authUser.email,
       name,
       isCoach,
+      accessToken,
     },
     supabaseClient,
   );

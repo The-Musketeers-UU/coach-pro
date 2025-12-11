@@ -64,7 +64,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const syncProfile = async () => {
       setIsLoadingProfile(true);
       try {
-        const userProfile = await ensureUserForAuth(session.user);
+        const userProfile = await ensureUserForAuth(session.user, session.access_token);
 
         setProfile(userProfile);
       } catch (profileError) {
