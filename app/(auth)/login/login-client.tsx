@@ -12,6 +12,7 @@ export default function LoginClient() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const redirectTo = searchParams.get("redirectTo") ?? "/";
+  const verificationPending = searchParams.get("verificationPending") === "1";
 
   const { user, isLoading } = useAuth();
   const supabase = getSupabaseBrowserClient();
@@ -62,6 +63,15 @@ export default function LoginClient() {
             <h1 className="text-2xl font-bold">Logga in</h1>
             <p className="text-sm text-base-content/70">Välkommen tillbaka 👋</p>
           </div>
+
+          {verificationPending && (
+            <div className="alert alert-info">
+              <span>
+                Ditt konto är skapat. Kontrollera din e-post för att bekräfta ditt konto innan du
+                loggar in.
+              </span>
+            </div>
+          )}
 
           {error && <div className="alert alert-error">{error}</div>}
 

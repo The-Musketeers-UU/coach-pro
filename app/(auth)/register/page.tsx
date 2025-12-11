@@ -61,6 +61,13 @@ function RegisterContent() {
       const accessToken = data.session?.access_token ?? sessionResponse.data.session?.access_token;
       const authUser = data.user ?? sessionUser;
 
+      const requiresEmailVerification = !data.session && !sessionResponse.data.session;
+
+      if (requiresEmailVerification) {
+        router.replace(`/login?verificationPending=1&redirectTo=${encodeURIComponent(redirectTo)}`);
+        return;
+      }
+
       if (authUser) {
         await ensureUserForAuth(authUser, accessToken);
       }
