@@ -56,12 +56,13 @@ function RegisterContent() {
 
       if (signUpError) throw signUpError;
 
-      const sessionUser =
-        data.session?.user ?? (await supabase.auth.getSession()).data.session?.user;
+      const sessionResponse = await supabase.auth.getSession();
+      const sessionUser = data.session?.user ?? sessionResponse.data.session?.user;
+      const accessToken = data.session?.access_token ?? sessionResponse.data.session?.access_token;
       const authUser = data.user ?? sessionUser;
 
       if (authUser) {
-        await ensureUserForAuth(authUser);
+        await ensureUserForAuth(authUser, accessToken);
       }
       router.replace(redirectTo);
     } catch (authError) {

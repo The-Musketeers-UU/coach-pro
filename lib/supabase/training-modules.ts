@@ -1059,13 +1059,14 @@ export const findUserByEmail = async (
 
 export const ensureUserForAuth = async (
   authUser: SupabaseAuthUser,
+  accessTokenOverride?: string | null,
 ): Promise<AthleteRow> => {
   if (!authUser.email) {
     throw new Error("Authenticated user is missing an email.");
   }
 
   const supabaseClient = getSupabaseBrowserClient();
-  const accessToken = await resolveAccessToken(supabaseClient);
+  const accessToken = accessTokenOverride ?? (await resolveAccessToken(supabaseClient));
 
   const existingUser = await findUserByEmail(authUser.email, supabaseClient);
   if (existingUser) return existingUser;

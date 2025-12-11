@@ -39,11 +39,12 @@ export default function LoginClient() {
       });
 
       if (signInError) throw signInError;
-      const user =
-        signInData.session?.user ?? (await supabase.auth.getSession()).data.session?.user;
+      const sessionResponse = await supabase.auth.getSession();
+      const user = signInData.session?.user ?? sessionResponse.data.session?.user;
+      const accessToken = signInData.session?.access_token ?? sessionResponse.data.session?.access_token;
 
       if (user) {
-        await ensureUserForAuth(user);
+        await ensureUserForAuth(user, accessToken);
       }
       router.replace(redirectTo);
     } catch (authError) {
