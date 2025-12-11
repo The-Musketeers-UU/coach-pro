@@ -946,8 +946,27 @@ const isRlsInsertError = (error: unknown) => {
   );
 };
 
+const resolveAccessToken = async (client: SupabaseClient = getSupabaseBrowserClient()) => {
+  const { data: sessionData, error: sessionError } = await client.auth.getSession();
+
+  if (!sessionError && sessionData.session?.access_token) {
+    return sessionData.session.access_token;
+  }
+
+  const { data: refreshedSession, error: refreshError } = await client.auth.refreshSession();
+
+  if (refreshError) {
+    console.error("Failed to refresh Supabase session for access token", refreshError);
+    return null;
+  }
+
+  return refreshedSession.session?.access_token ?? null;
+};
+
 const persistUserWithServiceRole = async (input: CreateUserInput): Promise<AthleteRow> => {
-  if (!input.accessToken) {
+  const accessToken = input.accessToken ?? (await resolveAccessToken());
+
+  if (!accessToken) {
     throw new Error(
       "Unable to create user profile because no Supabase access token was provided to validate the request.",
     );
@@ -963,7 +982,7 @@ const persistUserWithServiceRole = async (input: CreateUserInput): Promise<Athle
       email: input.email,
       name: input.name,
       isCoach: Boolean(input.isCoach),
-      accessToken: input.accessToken,
+      accessToken,
     }),
   });
 
@@ -1046,8 +1065,7 @@ export const ensureUserForAuth = async (
   }
 
   const supabaseClient = getSupabaseBrowserClient();
-  const { data: sessionData } = await supabaseClient.auth.getSession();
-  const accessToken = sessionData.session?.access_token;
+  const accessToken = await resolveAccessToken(supabaseClient);
 
   const existingUser = await findUserByEmail(authUser.email, supabaseClient);
   if (existingUser) return existingUser;
