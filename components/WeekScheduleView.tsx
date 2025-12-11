@@ -133,6 +133,9 @@ export function WeekScheduleView({
   const [feedbackForm, setFeedbackForm] = useState<FeedbackFormState | null>(null);
   const [isSavingFeedback, setIsSavingFeedback] = useState(false);
   const [feedbackError, setFeedbackError] = useState<string | null>(null);
+  const [selectedDayId, setSelectedDayId] = useState<string | null>(
+    week?.days[0]?.id ?? null,
+  );
 
   void _viewerRole;
   void _athleteId;
@@ -141,6 +144,21 @@ export function WeekScheduleView({
   useEffect(() => {
     setWeekState(week);
   }, [week]);
+
+  useEffect(() => {
+    if (!weekState || weekState.days.length === 0) {
+      setSelectedDayId(null);
+      return;
+    }
+
+    setSelectedDayId((current) => {
+      if (weekState.days.some((day) => day.id === current)) {
+        return current;
+      }
+
+      return weekState.days[0]?.id ?? null;
+    });
+  }, [weekState]);
 
   const feedbackDefaults = useMemo(() => {
     if (!selectedModule) return null;
@@ -194,6 +212,48 @@ export function WeekScheduleView({
     (weekState
       ? weekState.label || `Vecka ${weekNumber}`
       : emptyWeekTitle || `Vecka ${weekNumber}`);
+
+  const selectedDay =
+    weekState?.days.find((day) => day.id === selectedDayId) ?? weekState?.days[0];
+
+  const renderDayColumn = (day: ProgramDay) => (
+    <article
+      key={day.id}
+      className="flex min-h-[600px] flex-col rounded-2xl border border-dashed border-base-200 bg-base-300 p-2"
+    >
+      <div className="flex items-center justify-between">
+        <div>
+          <p className="text-xs font-semibold uppercase tracking-wide text-neutral">
+            {day.label}
+          </p>
+        </div>
+      </div>
+
+      <div className="mt-3 flex-1 space-y-1">
+        {day.modules.map((module, index) => (
+          <button
+            key={`${day.id}-${index}-${module.title}`}
+            type="button"
+            onClick={() => {
+              const moduleKey = module.id ?? `${day.id}-${index}`;
+              setSelectedModule({ module, key: moduleKey });
+            }}
+            className="group w-full text-left"
+          >
+            <div className="space-y-2 rounded-xl border border-base-200 bg-base-100 p-3 transition hover:border-primary focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary">
+              <div className="flex items-start justify-between gap-2">
+                <p className="text-sm font-semibold text-base-content">
+                  {module.title}
+                </p>
+              </div>
+              <p className="text-xs text-base-content/70">{module.description}</p>
+              <ModuleBadges module={module} />
+            </div>
+          </button>
+        ))}
+      </div>
+    </article>
+  );
 
   const handleFeedbackChange = (
     field: FeedbackFieldKey,
@@ -316,48 +376,35 @@ export function WeekScheduleView({
         </div>
 
         {weekState ? (
-          <div className="grid grid-cols-1 gap-1 md:grid-cols-2 xl:grid-cols-7">
-            {weekState.days.map((day) => (
-              <article
-                key={day.id}
-                className="flex min-h-[600px] flex-col rounded-2xl border border-dashed border-base-200 bg-base-300 p-2"
-              >
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-xs font-semibold uppercase tracking-wide text-neutral">
-                      {day.label}
-                    </p>
-                  </div>
-                </div>
+          <>
+            <div className="md:hidden -mx-4 sm:-mx-6">
+              <div className="flex w-full items-center overflow-x-auto border border-base-300 bg-base-100">
+                {weekState.days.map((day) => (
+                  <button
+                    key={day.id}
+                    type="button"
+                    onClick={() => setSelectedDayId(day.id)}
+                    className={`btn btn-sm w-full flex-1 whitespace-nowrap ${
+                      selectedDay?.id === day.id
+                        ? "btn-primary btn-soft"
+                        : "btn-ghost"
+                    }`}
+                  >
+                    <span aria-hidden>{day.label.slice(0, 1)}</span>
+                    <span className="sr-only">{day.label}</span>
+                  </button>
+                ))}
+              </div>
 
-                <div className="mt-3 flex-1 space-y-1">
-                  {day.modules.map((module, index) => (
-                    <button
-                      key={`${day.id}-${index}-${module.title}`}
-                      type="button"
-                      onClick={() => {
-                        const moduleKey = module.id ?? `${day.id}-${index}`;
-                        setSelectedModule({ module, key: moduleKey });
-                      }}
-                      className="group w-full text-left"
-                    >
-                      <div className="space-y-2 rounded-xl border border-base-200 bg-base-100 p-3 transition hover:border-primary focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary">
-                        <div className="flex items-start justify-between gap-2">
-                          <p className="text-sm font-semibold text-base-content">
-                            {module.title}
-                          </p>
-                        </div>
-                        <p className="text-xs text-base-content/70">
-                          {module.description}
-                        </p>
-                        <ModuleBadges module={module} />
-                      </div>
-                    </button>
-                  ))}
-                </div>
-              </article>
-            ))}
-          </div>
+              {selectedDay && (
+                <div className="mt-2 w-full sm:px-6">{renderDayColumn(selectedDay)}</div>
+              )}
+            </div>
+
+            <div className="hidden grid-cols-1 gap-1 md:grid md:grid-cols-2 xl:grid-cols-7">
+              {weekState.days.map((day) => renderDayColumn(day))}
+            </div>
+          </>
         ) : (
           <div className="rounded-2xl border border-dashed border-base-300 bg-base-100/60 p-6 text-center text-sm text-base-content/70 space-y-1">
             <p className="font-semibold text-base-content">
