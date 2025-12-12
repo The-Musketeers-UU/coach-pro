@@ -50,9 +50,6 @@ export function SiteNav() {
           >
             Coach Pro
           </Link>
-          <div className="hidden sm:block">
-            <ThemeToggle />
-          </div>
         </div>
 
         <nav className="flex flex-wrap items-center gap-3">
@@ -112,10 +109,10 @@ export function SiteNav() {
                   </div>
                   <div className="text-xs text-base-content/70">{user.email}</div>
                   <div className="text-xs">Kontotyp: {profile?.isCoach ? "Coach" : "Atlet"}</div>
-                  <div className="sm:hidden">
+                  <div>
                     <div className="divider my-1" />
                     <div className="flex items-center justify-between text-xs">
-                      <ThemeToggle/>
+                      <ThemeToggle compact />
                     </div>
                   </div>
                   <button
