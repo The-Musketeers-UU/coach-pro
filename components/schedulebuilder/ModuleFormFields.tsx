@@ -48,73 +48,75 @@ export function ModuleFormFields({ formState, onChange }: ModuleFormFieldsProps)
   const feelingOptions = Array.from({ length: 10 }, (_, index) => index + 1);
 
   return (
-    <div className="flex flex-col gap-4">
-      <label className="form-control flex flex-col gap-1">
-        <span className="label-text text-sm">Titel:</span>
-        <input
-          type="text"
-          value={formState.title}
-          onChange={(event) =>
-            onChange((prev) => ({
-              ...prev,
-              title: event.target.value,
-            }))
-          }
-          className="input input-sm input-bordered w-full"
-          placeholder="t.ex. Explosiv acceleration"
-        />
-      </label>
+    <div className="grid gap-6 sm:grid-cols-[minmax(0,1.1fr)_minmax(280px,1fr)]">
+      <div className="flex flex-col gap-4">
+        <label className="form-control flex flex-col gap-1">
+          <span className="label-text text-sm">Titel:</span>
+          <input
+            type="text"
+            value={formState.title}
+            onChange={(event) =>
+              onChange((prev) => ({
+                ...prev,
+                title: event.target.value,
+              }))
+            }
+            className="input input-sm input-bordered w-full"
+            placeholder="t.ex. Explosiv acceleration"
+          />
+        </label>
 
-      <label className="form-control flex-col flex gap-1">
-        <span className="label-text text-sm">Beskrivning:</span>
-        <textarea
-          className="textarea textarea-bordered w-full"
-          rows={3}
-          placeholder="Vad är syftet med blocket?"
-          value={formState.description}
-          onChange={(event) =>
-            onChange((prev) => ({
-              ...prev,
-              description: event.target.value,
-            }))
-          }
-        />
-      </label>
+        <label className="form-control flex-col flex gap-1">
+          <span className="label-text text-sm">Beskrivning:</span>
+          <textarea
+            className="textarea textarea-bordered w-full"
+            rows={3}
+            placeholder="Vad är syftet med blocket?"
+            value={formState.description}
+            onChange={(event) =>
+              onChange((prev) => ({
+                ...prev,
+                description: event.target.value,
+              }))
+            }
+          />
+        </label>
 
-      <label className="form-control flex flex-col gap-1">
-        <span className="label-text text-sm">Kategori:</span>
-        <input
-          type="text"
-          className="input input-sm input-bordered w-full"
-          value={formState.category}
-          onChange={(event) =>
-            onChange((prev) => ({
-              ...prev,
-              category: event.target.value,
-            }))
-          }
-          placeholder="t.ex. Kondition"
-          required
-        />
-      </label>
+        <label className="form-control flex flex-col gap-1">
+          <span className="label-text text-sm">Kategori:</span>
+          <input
+            type="text"
+            className="input input-sm input-bordered w-full"
+            value={formState.category}
+            onChange={(event) =>
+              onChange((prev) => ({
+                ...prev,
+                category: event.target.value,
+              }))
+            }
+            placeholder="t.ex. Kondition"
+            required
+          />
+        </label>
 
-      <label className="form-control flex flex-col gap-1">
-        <span className="label-text text-sm">Underkategori:</span>
-        <input
-          type="text"
-          className="input input-sm input-bordered"
-          value={formState.subcategory}
-          onChange={(event) =>
-            onChange((prev) => ({
-              ...prev,
-              subcategory: event.target.value,
-            }))
-          }
-          placeholder="t.ex. Intervaller, baslyft"
-        />
-      </label>
+        <label className="form-control flex flex-col gap-1">
+          <span className="label-text text-sm">Underkategori:</span>
+          <input
+            type="text"
+            className="input input-sm input-bordered"
+            value={formState.subcategory}
+            onChange={(event) =>
+              onChange((prev) => ({
+                ...prev,
+                subcategory: event.target.value,
+              }))
+            }
+            placeholder="t.ex. Intervaller, baslyft"
+          />
+        </label>
+      </div>
 
-      <div className="rounded-lg border border-base-300 p-3">
+      <div className="rounded-lg border border-base-300 p-3 sm:h-fit">
         <div>
           <p className="font-medium">Valfria feedbackfält</p>
           <p className="text-sm text-base-content/70">
