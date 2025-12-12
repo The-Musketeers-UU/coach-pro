@@ -227,8 +227,8 @@ export default function AthleteSchedulePage() {
           <WeekScheduleView
             week={undefined}
             weekNumber={weekNumber}
-            emptyWeekTitle="Inget program"
-            emptyWeekDescription="Ingen data hittades i Supabase."
+            emptyWeekTitle="Inget schema"
+            emptyWeekDescription="Det finns inget schema för den här veckan."
             viewerRole="coach"
             athleteId={selectedAthlete}
             coachId={profile?.id}

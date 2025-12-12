@@ -115,7 +115,7 @@ export function SiteNav() {
                   <div className="sm:hidden">
                     <div className="divider my-1" />
                     <div className="flex items-center justify-between text-xs">
-                      <ThemeToggle compact />
+                      <ThemeToggle/>
                     </div>
                   </div>
                   <button
