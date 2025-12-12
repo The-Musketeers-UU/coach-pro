@@ -35,6 +35,8 @@ const optionalFields: FeedbackFieldType[] = [
 ];
 
 export function ModuleFormFields({ formState, onChange }: ModuleFormFieldsProps) {
+  const feedbackInputsDisabled = true;
+
   const addFeedbackField = (type: FeedbackFieldType) => {
     if (formState.activeFeedbackFields.includes(type)) return;
 
@@ -71,6 +73,8 @@ export function ModuleFormFields({ formState, onChange }: ModuleFormFieldsProps)
           rows={2}
           value={formState.comment}
           onChange={(event) => handleFieldValueChange(type, event.target.value)}
+          disabled={feedbackInputsDisabled}
+          readOnly
           placeholder={placeholder}
         />
       );
@@ -92,6 +96,8 @@ export function ModuleFormFields({ formState, onChange }: ModuleFormFieldsProps)
         {...inputProps[type]}
         value={value}
         onChange={(event) => handleFieldValueChange(type, event.target.value)}
+        disabled={feedbackInputsDisabled}
+        readOnly
         placeholder={placeholder}
       />
     );
@@ -171,6 +177,9 @@ export function ModuleFormFields({ formState, onChange }: ModuleFormFieldsProps)
             <p className="text-sm text-base-content/70">
               Lägg bara till de uppföljningsfrågor du vill samla in för passet.
               Avmarkera ett fält om du inte vill be om det.
+            </p>
+            <p className="text-xs text-base-content/70">
+              Feedbacken fylls i av atleten efter passet. Här väljer du bara vilka fält som ska vara med.
             </p>
           </div>
           <div className="flex flex-wrap gap-1">

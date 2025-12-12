@@ -137,7 +137,9 @@ export function WeekScheduleView({
     week?.days[0]?.id ?? null,
   );
 
-  void _viewerRole;
+  const viewerRole = _viewerRole ?? "coach";
+  const canEditFeedbackValues = viewerRole !== "coach";
+  const canToggleFeedbackFields = viewerRole !== "athlete";
   void _athleteId;
   void _coachId;
 
@@ -498,13 +500,16 @@ export function WeekScheduleView({
                                 type="checkbox"
                                 className="checkbox checkbox-sm"
                                 checked={fieldState.active}
-                                onChange={(event) =>
+                                disabled={!canToggleFeedbackFields}
+                                onChange={(event) => {
+                                  if (!canToggleFeedbackFields) return;
+
                                   handleFeedbackChange(field, (current) => ({
                                     ...current,
                                     active: event.target.checked,
                                     value: event.target.checked ? current.value : "",
-                                  }))
-                                }
+                                  }));
+                                }}
                               />
                               <span className="text-sm font-semibold">
                                 {fieldMeta.label}
@@ -522,12 +527,16 @@ export function WeekScheduleView({
                                   className="textarea textarea-bordered w-full"
                                   placeholder={fieldMeta.placeholder}
                                   value={fieldState.value}
-                                  onChange={(event) =>
+                                  disabled={!canEditFeedbackValues}
+                                  readOnly={!canEditFeedbackValues}
+                                  onChange={(event) => {
+                                    if (!canEditFeedbackValues) return;
+
                                     handleFeedbackChange(field, (current) => ({
                                       ...current,
                                       value: event.target.value,
-                                    }))
-                                  }
+                                    }));
+                                  }}
                                   rows={2}
                                 />
                               ) : (
@@ -539,13 +548,24 @@ export function WeekScheduleView({
                                   max={fieldMeta.max}
                                   placeholder={fieldMeta.placeholder}
                                   value={fieldState.value}
-                                  onChange={(event) =>
+                                  disabled={!canEditFeedbackValues}
+                                  readOnly={!canEditFeedbackValues}
+                                  onChange={(event) => {
+                                    if (!canEditFeedbackValues) return;
+
                                     handleFeedbackChange(field, (current) => ({
                                       ...current,
                                       value: event.target.value,
-                                    }))
-                                  }
+                                    }));
+                                  }}
                                 />
+                              )}
+                              {!canEditFeedbackValues && (
+                                <p className="mt-1 text-xs text-base-content/70">
+                                  {fieldState.value
+                                    ? "Atleten har lämnat feedback."
+                                    : "Ingen feedback lämnad ännu."}
+                                </p>
                               )}
                             </div>
                           )}
