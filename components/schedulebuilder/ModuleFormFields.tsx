@@ -1,6 +1,9 @@
 import type { Dispatch, SetStateAction } from "react";
 
-import type { FeedbackFieldType, ModuleForm } from "@/components/schedulebuilder/types";
+import type {
+  FeedbackFieldType,
+  ModuleForm,
+} from "@/components/schedulebuilder/types";
 
 const feedbackFieldLabels: Record<FeedbackFieldType, string> = {
   distance: "Distans (m)",
@@ -12,8 +15,8 @@ const feedbackFieldLabels: Record<FeedbackFieldType, string> = {
 };
 
 const feedbackFieldDescriptions: Record<FeedbackFieldType, string> = {
-  distance: "Hur långt blev passet?",
-  duration: "Ange tid som mm:ss eller mm:ss.hh",
+  distance: "Vilken distans sprang du?",
+  duration: "Vilken tid sprang du på?",
   weight: "Vilken vikt använde du?",
   comment: "Lämna en kommentar om passet",
   feeling: "Atleten väljer en känsla på en skala 1–10.",
@@ -34,7 +37,10 @@ const optionalFields: FeedbackFieldType[] = [
   "sleepHours",
 ];
 
-export function ModuleFormFields({ formState, onChange }: ModuleFormFieldsProps) {
+export function ModuleFormFields({
+  formState,
+  onChange,
+}: ModuleFormFieldsProps) {
   const toggleFeedbackField = (type: FeedbackFieldType, isActive: boolean) => {
     onChange((prev) => ({
       ...prev,
@@ -48,10 +54,13 @@ export function ModuleFormFields({ formState, onChange }: ModuleFormFieldsProps)
   const feelingOptions = Array.from({ length: 10 }, (_, index) => index + 1);
 
   return (
-    <div className="grid gap-6 sm:grid-cols-[minmax(0,1.1fr)_minmax(280px,1fr)]">
+    <div className="grid gap-6 sm:grid-cols-[minmax(0,1fr)_minmax(280px,1fr)]">
       <div className="flex flex-col gap-4">
         <label className="form-control flex flex-col gap-1">
-          <span className="label-text text-sm">Titel:</span>
+          <div className="flex flex-row">
+            <span className="label-text text-sm">Titel:</span>
+            <div className="text text-xs text-red-500">*</div>
+          </div>
           <input
             type="text"
             value={formState.title}
@@ -69,7 +78,7 @@ export function ModuleFormFields({ formState, onChange }: ModuleFormFieldsProps)
         <label className="form-control flex-col flex gap-1">
           <span className="label-text text-sm">Beskrivning:</span>
           <textarea
-            className="textarea textarea-bordered w-full"
+            className="textarea textarea-bordered w-full text-xs sm:h-60"
             rows={3}
             placeholder="Vad är syftet med blocket?"
             value={formState.description}
@@ -83,7 +92,10 @@ export function ModuleFormFields({ formState, onChange }: ModuleFormFieldsProps)
         </label>
 
         <label className="form-control flex flex-col gap-1">
-          <span className="label-text text-sm">Kategori:</span>
+          <div className="flex flex-row">
+            <span className="label-text text-sm">Kategori:</span>
+            <div className="text text-xs text-red-500">*</div>
+          </div>
           <input
             type="text"
             className="input input-sm input-bordered w-full"
@@ -103,7 +115,7 @@ export function ModuleFormFields({ formState, onChange }: ModuleFormFieldsProps)
           <span className="label-text text-sm">Underkategori:</span>
           <input
             type="text"
-            className="input input-sm input-bordered"
+            className="input input-sm input-bordered w-full"
             value={formState.subcategory}
             onChange={(event) =>
               onChange((prev) => ({
@@ -114,12 +126,16 @@ export function ModuleFormFields({ formState, onChange }: ModuleFormFieldsProps)
             placeholder="t.ex. Intervaller, baslyft"
           />
         </label>
+        <div className="flex flex-row">
+          <div className="text text-xs text-red-500">*</div>
+          <div className="text text-xs">Obligatoriska fält</div>
+        </div>
       </div>
 
       <div className="rounded-lg border border-base-300 p-3 sm:h-fit">
         <div>
-          <p className="font-medium">Valfria feedbackfält</p>
-          <p className="text-sm text-base-content/70">
+          <p className="text-sm">Valfria feedbackfält</p>
+          <p className="text-xs text-base-content/70">
             Bocka i vilka uppföljningsfrågor du vill att atleten ska svara på
             efter passet.
           </p>
@@ -144,29 +160,12 @@ export function ModuleFormFields({ formState, onChange }: ModuleFormFieldsProps)
                 />
 
                 <div className="flex flex-col gap-1">
-                  <div className="text-sm font-semibold">
+                  <div className="text-xs font-semibold">
                     {feedbackFieldLabels[type]}
                   </div>
                   <p className="text-xs text-base-content/70">
                     {feedbackFieldDescriptions[type]}
                   </p>
-
-                  {type === "feeling" && (
-                    <select
-                      className="select select-bordered select-xs max-w-[120px]"
-                      value=""
-                      disabled
-                    >
-                      <option value="" disabled>
-                        Känsla 1–10
-                      </option>
-                      {feelingOptions.map((option) => (
-                        <option key={option} value={option}>
-                          {option}
-                        </option>
-                      ))}
-                    </select>
-                  )}
                 </div>
               </label>
             );
