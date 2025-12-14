@@ -93,6 +93,12 @@ export const useScheduleBuilderState = ({
     libraryModuleCounter.current = initialModules.length;
   }, [initialModules]);
 
+  useEffect(() => {
+    if (!editingContext) {
+      setIsEditMode(false);
+    }
+  }, [editingContext]);
+
   const calculateScheduledModuleCount = useCallback(
     (nextSchedule: DaySchedule) =>
       Object.values(nextSchedule).reduce(
@@ -539,7 +545,6 @@ export const useScheduleBuilderState = ({
     setEditingContext(null);
     setEditingModuleForm(null);
     setEditFormError(null);
-    setIsEditMode(false);
   };
 
   const handleRemoveLibraryModule = (moduleId: string) => {
