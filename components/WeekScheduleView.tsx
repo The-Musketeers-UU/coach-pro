@@ -1,7 +1,8 @@
 "use client";
 
 import { ReactNode, useEffect, useMemo, useState } from "react";
-import { formatCentiseconds } from "@/lib/time";
+import { upsertScheduleModuleFeedback } from "@/lib/supabase/training-modules";
+import { formatCentiseconds, parseDurationToCentiseconds } from "@/lib/time";
 
 import { ModuleBadges } from "@/components/ModuleBadges";
 
@@ -120,7 +121,7 @@ export function WeekScheduleView({
   headerAction,
   emptyWeekTitle = "Inget program",
   emptyWeekDescription = "Ingen data for veckan.",
-  viewerRole: _viewerRole,
+  viewerRole,
   athleteId: _athleteId,
   coachId: _coachId,
 }: WeekScheduleViewProps) {
@@ -129,11 +130,13 @@ export function WeekScheduleView({
   );
   const [weekState, setWeekState] = useState<ProgramWeek | undefined>(week);
   const [feedbackForm, setFeedbackForm] = useState<FeedbackFormState | null>(null);
+  const [feedbackError, setFeedbackError] = useState<string | null>(null);
+  const [isSubmittingFeedback, setIsSubmittingFeedback] = useState(false);
   const [selectedDayId, setSelectedDayId] = useState<string | null>(
     week?.days[0]?.id ?? null,
   );
 
-  void _viewerRole;
+  const isAthlete = viewerRole === "athlete";
   void _athleteId;
   void _coachId;
 
@@ -201,7 +204,130 @@ export function WeekScheduleView({
     if (feedbackDefaults) {
       setFeedbackForm(feedbackDefaults);
     }
+    setFeedbackError(null);
+    setIsSubmittingFeedback(false);
   }, [feedbackDefaults]);
+
+  const updateFeedbackValue = (
+    field: FeedbackFieldKey,
+    value: string,
+  ) =>
+    setFeedbackForm((current) =>
+      current
+        ? {
+            ...current,
+            [field]: { ...current[field], value },
+          }
+        : current,
+    );
+
+  const prepareFeedbackPayload = () => {
+    if (!selectedModule || !feedbackForm) return null;
+
+    const parseNumberField = (field: FeedbackFieldKey) => {
+      const rawValue = feedbackForm[field].value.trim();
+      if (!rawValue) return null;
+
+      const parsed = Number.parseFloat(rawValue.replace(",", "."));
+      return Number.isFinite(parsed) ? parsed : undefined;
+    };
+
+    const distance = parseNumberField("distance");
+    if (distance === undefined) return { error: "Ogiltig distans." } as const;
+
+    const weight = parseNumberField("weight");
+    if (weight === undefined) return { error: "Ogiltig vikt." } as const;
+
+    const feeling = parseNumberField("feeling");
+    if (feeling === undefined) return { error: "Ogiltig känsla." } as const;
+
+    const sleepHours = parseNumberField("sleepHours");
+    if (sleepHours === undefined) return { error: "Ogiltig sömn." } as const;
+
+    const durationValue = feedbackForm.duration.value.trim();
+    const duration = durationValue
+      ? parseDurationToCentiseconds(durationValue)
+      : null;
+
+    if (duration === undefined) return { error: "Ogiltig tid." } as const;
+
+    return {
+      payload: {
+        moduleId: selectedModule.module.id ?? "",
+        scheduleDayId: selectedModule.module.scheduleDayId ?? "",
+        distance,
+        duration,
+        weight,
+        comment: feedbackForm.comment.value.trim() || null,
+        feeling,
+        sleepHours,
+      },
+    } as const;
+  };
+
+  const persistFeedback = async () => {
+    if (!isAthlete) return;
+
+    const prepared = prepareFeedbackPayload();
+    if (!prepared) return;
+
+    if (prepared.error) {
+      setFeedbackError(prepared.error);
+      return;
+    }
+
+    const { payload } = prepared;
+
+    if (!payload.moduleId || !payload.scheduleDayId) {
+      setFeedbackError("Saknar modul- eller dagreferens för feedback.");
+      return;
+    }
+
+    setFeedbackError(null);
+    setIsSubmittingFeedback(true);
+
+    try {
+      const updatedFeedback = await upsertScheduleModuleFeedback(payload);
+
+      setWeekState((current) => {
+        if (!current) return current;
+
+        return {
+          ...current,
+          days: current.days.map((day) =>
+            day.id === payload.scheduleDayId
+              ? {
+                  ...day,
+                  modules: day.modules.map((module) =>
+                    module.id === payload.moduleId
+                      ? {
+                          ...module,
+                          feedback: updatedFeedback,
+                        }
+                      : module,
+                  ),
+                }
+              : day,
+          ),
+        };
+      });
+
+      setSelectedModule((current) =>
+        current
+          ? {
+              ...current,
+              module: { ...current.module, feedback: updatedFeedback },
+            }
+          : current,
+      );
+    } catch (error) {
+      setFeedbackError(
+        error instanceof Error ? error.message : "Kunde inte spara feedback.",
+      );
+    } finally {
+      setIsSubmittingFeedback(false);
+    }
+  };
 
   const heading =
     title ??
@@ -426,28 +552,31 @@ export function WeekScheduleView({
 
                       if (!fieldState.active) return null;
 
-                      return (
-                        <div
-                          key={field}
-                          className="rounded-lg border border-base-200 px-3 py-2"
-                        >
-                          <label className="flex items-center justify-between gap-3 text-[11px] font-semibold uppercase tracking-wide text-neutral">
-                            <span>{fieldMeta.label}</span>
-                            <input
-                              className="input input-bordered input-sm w-32 text-right"
-                              type={fieldMeta.type === "textarea" ? "text" : fieldMeta.type}
-                              step={fieldMeta.step}
-                              min={fieldMeta.min}
-                              max={fieldMeta.max}
-                              placeholder={fieldMeta.placeholder}
-                              value={fieldState.value}
-                              readOnly
-                              disabled
-                            />
-                          </label>
-                        </div>
-                      );
-                    })}
+                          return (
+                            <div
+                              key={field}
+                              className="rounded-lg border border-base-200 px-3 py-2"
+                            >
+                              <label className="flex items-center justify-between gap-3 text-[11px] font-semibold uppercase tracking-wide text-neutral">
+                                <span>{fieldMeta.label}</span>
+                                <input
+                                  className="input input-bordered input-sm w-32 text-right"
+                                  type={fieldMeta.type === "textarea" ? "text" : fieldMeta.type}
+                                  step={fieldMeta.step}
+                                  min={fieldMeta.min}
+                                  max={fieldMeta.max}
+                                  placeholder={fieldMeta.placeholder}
+                                  value={fieldState.value}
+                                  readOnly={!isAthlete}
+                                  disabled={!isAthlete}
+                                  onChange={(event) =>
+                                    updateFeedbackValue(field, event.target.value)
+                                  }
+                                />
+                              </label>
+                            </div>
+                          );
+                        })}
 
                   {feedbackForm?.comment.active && (
                     <div className="space-y-2 rounded-lg border border-base-200 p-3">
@@ -458,8 +587,11 @@ export function WeekScheduleView({
                         className="textarea textarea-bordered w-full"
                         placeholder={FEEDBACK_FIELDS.comment.placeholder}
                         value={feedbackForm.comment.value}
-                        readOnly
-                        disabled
+                        readOnly={!isAthlete}
+                        disabled={!isAthlete}
+                        onChange={(event) =>
+                          updateFeedbackValue("comment", event.target.value)
+                        }
                         rows={3}
                       />
                     </div>
@@ -469,6 +601,23 @@ export function WeekScheduleView({
                     <p className="text-sm text-base-content/70">Ingen feedback tillgänglig.</p>
                   )}
                 </div>
+
+                {feedbackError && (
+                  <div className="alert alert-error py-2 text-sm">{feedbackError}</div>
+                )}
+
+                {isAthlete && (
+                  <div className="flex items-center justify-end">
+                    <button
+                      className="btn btn-primary btn-sm"
+                      onClick={persistFeedback}
+                      type="button"
+                      disabled={isSubmittingFeedback}
+                    >
+                      {isSubmittingFeedback ? "Sparar..." : "Lämna feedback"}
+                    </button>
+                  </div>
+                )}
 
                 <div className="flex items-center justify-end">
                   <button
