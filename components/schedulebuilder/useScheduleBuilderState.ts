@@ -504,7 +504,7 @@ export const useScheduleBuilderState = ({
       activeFeedbackFields.push("weight");
     }
 
-    if (module.comment) {
+    if (module.comment !== undefined) {
       activeFeedbackFields.push("comment");
     }
 
