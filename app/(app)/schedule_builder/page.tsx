@@ -676,8 +676,6 @@ function ScheduleBuilderPage() {
           editingContext={editingControls.editingContext}
           editingModuleForm={editingControls.editingModuleForm}
           editFormError={editingControls.editFormError}
-          isEditMode={editingControls.isEditMode}
-          setIsEditMode={editingControls.setIsEditMode}
           setEditingModuleForm={editingControls.setEditingModuleForm}
           onClose={editingControls.closeEditModal}
           onSave={editingControls.handleSaveEditedModule}

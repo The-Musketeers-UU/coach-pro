@@ -9,8 +9,6 @@ type EditModuleModalProps = {
   editingContext: EditingContext | null;
   editingModuleForm: ModuleForm | null;
   editFormError: string | null;
-  isEditMode: boolean;
-  setIsEditMode: Dispatch<SetStateAction<boolean>>;
   setEditingModuleForm: Dispatch<SetStateAction<ModuleForm | null>>;
   onClose: () => void;
   onSave: (event: FormEvent<HTMLFormElement>) => void;
@@ -21,8 +19,6 @@ export function EditModuleModal({
   editingContext,
   editingModuleForm,
   editFormError,
-  isEditMode,
-  setIsEditMode,
   setEditingModuleForm,
   onClose,
   onSave,
@@ -52,103 +48,7 @@ export function EditModuleModal({
 
         {editFormError && <div className="alert alert-error text-sm">{editFormError}</div>}
 
-        {!isEditMode && editingModuleForm && (
-          <div className="space-y-3 rounded-xl bg-base-200 p-4 text-sm">
-            {editingModuleForm.description && (
-              <p className="text-base-content/80">{editingModuleForm.description}</p>
-            )}
-
-            <dl className="grid grid-cols-2 gap-3">
-              {editingModuleForm.category && (
-                <div>
-                  <dt className="text-xs uppercase tracking-wide text-base-content/60">
-                    Kategori
-                  </dt>
-                  <dd className="font-medium text-base-content">
-                    {editingModuleForm.category}
-                  </dd>
-                </div>
-              )}
-
-              {editingModuleForm.subcategory && (
-                <div>
-                  <dt className="text-xs uppercase tracking-wide text-base-content/60">
-                    Underkategori
-                  </dt>
-                  <dd className="font-medium text-base-content">
-                    {editingModuleForm.subcategory}
-                  </dd>
-                </div>
-              )}
-
-              {editingModuleForm.distance && (
-                <div>
-                  <dt className="text-xs uppercase tracking-wide text-base-content/60">
-                    Distans
-                  </dt>
-                  <dd className="font-medium text-base-content">
-                    {editingModuleForm.distance} m
-                  </dd>
-                </div>
-              )}
-
-              {formattedDuration && (
-                <div>
-                  <dt className="text-xs uppercase tracking-wide text-base-content/60">
-                    Längd
-                  </dt>
-                  <dd className="font-medium text-base-content">{formattedDuration}</dd>
-                </div>
-              )}
-
-              {editingModuleForm.weight && (
-                <div>
-                  <dt className="text-xs uppercase tracking-wide text-base-content/60">
-                    Vikt
-                  </dt>
-                  <dd className="font-medium text-base-content">
-                    {editingModuleForm.weight} kg
-                  </dd>
-                </div>
-              )}
-
-              {editingModuleForm.comment && (
-                <div className="sm:col-span-2">
-                  <dt className="text-xs uppercase tracking-wide text-base-content/60">
-                    Kommentar
-                  </dt>
-                  <dd className="font-medium text-base-content whitespace-pre-wrap">
-                    {editingModuleForm.comment}
-                  </dd>
-                </div>
-              )}
-
-              {editingModuleForm.feeling && (
-                <div>
-                  <dt className="text-xs uppercase tracking-wide text-base-content/60">
-                    Känsla
-                  </dt>
-                  <dd className="font-medium text-base-content">
-                    {editingModuleForm.feeling}
-                  </dd>
-                </div>
-              )}
-
-              {editingModuleForm.sleepHours && (
-                <div>
-                  <dt className="text-xs uppercase tracking-wide text-base-content/60">
-                    Sömn (timmar)
-                  </dt>
-                  <dd className="font-medium text-base-content">
-                    {editingModuleForm.sleepHours}
-                  </dd>
-                </div>
-              )}
-            </dl>
-          </div>
-        )}
-
-        {isEditMode && editingModuleForm && (
+        {editingModuleForm && (
           <form className="space-y-3" onSubmit={onSave}>
             <ModuleFormFields
               formState={editingModuleForm}
@@ -164,21 +64,6 @@ export function EditModuleModal({
               </button>
             </div>
           </form>
-        )}
-
-        {!isEditMode && (
-          <div className="flex flex-row gap-2 sm:flex-row">
-            <button type="button" className="btn flex-1" onClick={onClose}>
-              Stäng
-            </button>
-            <button
-              type="button"
-              className="btn btn-secondary flex-1"
-              onClick={() => setIsEditMode(true)}
-            >
-              Redigera
-            </button>
-          </div>
         )}
       </div>
       <form method="dialog" className="modal-backdrop" onSubmit={onClose}>

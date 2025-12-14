@@ -77,7 +77,6 @@ export const useScheduleBuilderState = ({
     null
   );
   const [editFormError, setEditFormError] = useState<string | null>(null);
-  const [isEditMode, setIsEditMode] = useState(false);
   const [dropPreview, setDropPreview] = useState<DropPreviewLocation | null>(
     null
   );
@@ -92,12 +91,6 @@ export const useScheduleBuilderState = ({
     setModuleLibrary(initialModules);
     libraryModuleCounter.current = initialModules.length;
   }, [initialModules]);
-
-  useEffect(() => {
-    if (!editingContext) {
-      setIsEditMode(false);
-    }
-  }, [editingContext]);
 
   const calculateScheduledModuleCount = useCallback(
     (nextSchedule: DaySchedule) =>
@@ -496,7 +489,6 @@ export const useScheduleBuilderState = ({
 
   const startEditingModule = (module: Module, context: EditingContext) => {
     setEditFormError(null);
-    setIsEditMode(context.type === "schedule");
     setEditingContext(context);
     const activeFeedbackFields: ModuleForm["activeFeedbackFields"] = [];
 
@@ -652,8 +644,6 @@ export const useScheduleBuilderState = ({
       editingContext,
       editingModuleForm,
       editFormError,
-      isEditMode,
-      setIsEditMode,
       setEditingModuleForm,
       startEditingModule,
       handleSaveEditedModule,
