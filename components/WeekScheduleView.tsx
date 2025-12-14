@@ -71,7 +71,15 @@ type FeedbackFormState = Record<FeedbackFieldKey, { active: boolean; value: stri
 
 const FEEDBACK_FIELDS: Record<
   FeedbackFieldKey,
-  { label: string; placeholder: string; type: string; step?: number; min?: number; max?: number }
+  {
+    label: string;
+    placeholder: string;
+    type: string;
+    step?: number;
+    min?: number;
+    max?: number;
+    options?: { value: string; label: string }[];
+  }
 > = {
   distance: {
     label: "Distans",
@@ -100,10 +108,11 @@ const FEEDBACK_FIELDS: Record<
   feeling: {
     label: "Känsla",
     placeholder: "Bedöm känsla (1-10)",
-    type: "number",
-    step: 1,
-    min: 1,
-    max: 10,
+    type: "select",
+    options: Array.from({ length: 10 }, (_, index) => {
+      const value = `${index + 1}`;
+      return { value, label: value };
+    }),
   },
   sleepHours: {
     label: "Sömn (timmar)",
@@ -552,31 +561,49 @@ export function WeekScheduleView({
 
                       if (!fieldState.active) return null;
 
-                          return (
-                            <div
-                              key={field}
-                              className="rounded-lg border border-base-200 px-3 py-2"
-                            >
-                              <label className="flex items-center justify-between gap-3 text-[11px] font-semibold uppercase tracking-wide text-neutral">
-                                <span>{fieldMeta.label}</span>
-                                <input
-                                  className="input input-bordered input-sm w-32 text-right"
-                                  type={fieldMeta.type === "textarea" ? "text" : fieldMeta.type}
-                                  step={fieldMeta.step}
-                                  min={fieldMeta.min}
-                                  max={fieldMeta.max}
-                                  placeholder={fieldMeta.placeholder}
-                                  value={fieldState.value}
-                                  readOnly={!isAthlete}
-                                  disabled={!isAthlete}
-                                  onChange={(event) =>
-                                    updateFeedbackValue(field, event.target.value)
-                                  }
-                                />
-                              </label>
-                            </div>
-                          );
-                        })}
+                      return (
+                        <div
+                          key={field}
+                          className="rounded-lg border border-base-200 px-3 py-2"
+                        >
+                          <label className="flex items-center justify-between gap-3 text-[11px] font-semibold uppercase tracking-wide text-neutral">
+                            <span>{fieldMeta.label}</span>
+                            {fieldMeta.type === "select" ? (
+                              <select
+                                className="select select-bordered select-sm w-32 text-right"
+                                disabled={!isAthlete}
+                                value={fieldState.value}
+                                onChange={(event) =>
+                                  updateFeedbackValue(field, event.target.value)
+                                }
+                              >
+                                <option value="">-</option>
+                                {fieldMeta.options?.map((option) => (
+                                  <option key={option.value} value={option.value}>
+                                    {option.label}
+                                  </option>
+                                ))}
+                              </select>
+                            ) : (
+                              <input
+                                className="input input-bordered input-sm w-32 text-right"
+                                type={fieldMeta.type === "textarea" ? "text" : fieldMeta.type}
+                                step={fieldMeta.step}
+                                min={fieldMeta.min}
+                                max={fieldMeta.max}
+                                placeholder={fieldMeta.placeholder}
+                                value={fieldState.value}
+                                readOnly={!isAthlete}
+                                disabled={!isAthlete}
+                                onChange={(event) =>
+                                  updateFeedbackValue(field, event.target.value)
+                                }
+                              />
+                            )}
+                          </label>
+                        </div>
+                      );
+                    })}
 
                   {feedbackForm?.comment.active && (
                     <div className="space-y-2 rounded-lg border border-base-200 p-3">
