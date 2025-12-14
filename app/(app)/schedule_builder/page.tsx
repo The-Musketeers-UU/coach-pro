@@ -672,7 +672,9 @@ function ScheduleBuilderPage() {
         />
 
         <EditModuleModal
-          isOpen={Boolean(editingControls.editingContext)}
+          isOpen={Boolean(
+            editingControls.editingContext && editingControls.editingModuleForm,
+          )}
           editingContext={editingControls.editingContext}
           editingModuleForm={editingControls.editingModuleForm}
           editFormError={editingControls.editFormError}

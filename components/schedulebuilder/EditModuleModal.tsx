@@ -23,6 +23,8 @@ export function EditModuleModal({
   onClose,
   onSave,
 }: EditModuleModalProps) {
+  if (!isOpen || !editingModuleForm) return null;
+
   const formattedDuration = editingModuleForm?.duration
     ? formatCentiseconds(parseDurationToCentiseconds(editingModuleForm.duration) ?? undefined)
     : "";
@@ -33,7 +35,7 @@ export function EditModuleModal({
         <div className="flex items-start justify-between gap-4">
           <div>
             <h3 className="text-xl font-semibold">
-              {editingModuleForm?.title ?? editingContext?.moduleId ?? "Block"}
+              {editingModuleForm?.title || editingContext?.moduleId}
             </h3>
             {editingContext && (
               <p className="text-xs text-base-content/60">
