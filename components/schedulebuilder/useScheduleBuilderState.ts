@@ -77,7 +77,6 @@ export const useScheduleBuilderState = ({
     null
   );
   const [editFormError, setEditFormError] = useState<string | null>(null);
-  const [isEditMode, setIsEditMode] = useState(false);
   const [dropPreview, setDropPreview] = useState<DropPreviewLocation | null>(
     null
   );
@@ -490,7 +489,6 @@ export const useScheduleBuilderState = ({
 
   const startEditingModule = (module: Module, context: EditingContext) => {
     setEditFormError(null);
-    setIsEditMode(false);
     setEditingContext(context);
     const activeFeedbackFields: ModuleForm["activeFeedbackFields"] = [];
 
@@ -506,7 +504,7 @@ export const useScheduleBuilderState = ({
       activeFeedbackFields.push("weight");
     }
 
-    if (module.comment) {
+    if (module.comment !== undefined) {
       activeFeedbackFields.push("comment");
     }
 
@@ -539,7 +537,6 @@ export const useScheduleBuilderState = ({
     setEditingContext(null);
     setEditingModuleForm(null);
     setEditFormError(null);
-    setIsEditMode(false);
   };
 
   const handleRemoveLibraryModule = (moduleId: string) => {
@@ -647,8 +644,6 @@ export const useScheduleBuilderState = ({
       editingContext,
       editingModuleForm,
       editFormError,
-      isEditMode,
-      setIsEditMode,
       setEditingModuleForm,
       startEditingModule,
       handleSaveEditedModule,
