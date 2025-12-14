@@ -490,7 +490,7 @@ export const useScheduleBuilderState = ({
 
   const startEditingModule = (module: Module, context: EditingContext) => {
     setEditFormError(null);
-    setIsEditMode(false);
+    setIsEditMode(context.type === "schedule");
     setEditingContext(context);
     const activeFeedbackFields: ModuleForm["activeFeedbackFields"] = [];
 

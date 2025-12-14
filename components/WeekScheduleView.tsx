@@ -419,7 +419,7 @@ export function WeekScheduleView({
 
       {selectedModule && (
         <dialog className="modal modal-open">
-          <div className="modal-box max-w-md space-y-4">
+          <div className="modal-box max-w-5xl space-y-4">
             <div className="flex items-start justify-between gap-4">
               <div>
                 <h3 className="text-xl font-semibold">
@@ -434,46 +434,89 @@ export function WeekScheduleView({
               </button>
             </div>
 
-            <div className="space-y-3 rounded-2xl border border-base-300 bg-base-100 p-4">
-              <div className="space-y-1">
-                <p className="text-xs uppercase tracking-wide text-neutral">
-                  Titel
-                </p>
-                <p className="text-base font-semibold text-base-content">
-                  {selectedModule.module.title}
-                </p>
-              </div>
-
-              <div className="space-y-1">
-                <p className="text-xs uppercase tracking-wide text-neutral">
-                  Beskrivning
-                </p>
-                <p className="text-sm leading-relaxed text-base-content/80">
-                  {selectedModule.module.description}
-                </p>
-              </div>
-
-              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+            <div className="grid gap-4 md:grid-cols-[minmax(0,1fr)_minmax(320px,1fr)]">
+              <div className="space-y-4 rounded-2xl border border-base-300 bg-base-100 p-4">
                 <div className="space-y-1">
                   <p className="text-xs uppercase tracking-wide text-neutral">
-                    Kategori
+                    Titel
                   </p>
-                  <p className="badge badge-outline capitalize">
-                    {selectedModule.module.category || "-"}
+                  <p className="text-base font-semibold text-base-content">
+                    {selectedModule.module.title}
                   </p>
                 </div>
 
                 <div className="space-y-1">
                   <p className="text-xs uppercase tracking-wide text-neutral">
-                    Underkategori
+                    Beskrivning
                   </p>
-                  <p className="text-sm text-base-content/80">
-                    {selectedModule.module.subcategory || "-"}
+                  <p className="text-sm leading-relaxed text-base-content/80">
+                    {selectedModule.module.description}
                   </p>
                 </div>
+
+                <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                  <div className="space-y-1">
+                    <p className="text-xs uppercase tracking-wide text-neutral">
+                      Kategori
+                    </p>
+                    <p className="badge badge-outline capitalize">
+                      {selectedModule.module.category || "-"}
+                    </p>
+                  </div>
+
+                  <div className="space-y-1">
+                    <p className="text-xs uppercase tracking-wide text-neutral">
+                      Underkategori
+                    </p>
+                    <p className="text-sm text-base-content/80">
+                      {selectedModule.module.subcategory || "-"}
+                    </p>
+                  </div>
+                </div>
+
+                {(selectedModule.module.comment ||
+                  selectedModule.module.feeling ||
+                  selectedModule.module.sleepHours) && (
+                  <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                    {selectedModule.module.comment && (
+                      <div className="sm:col-span-2 space-y-1">
+                        <p className="text-xs uppercase tracking-wide text-neutral">
+                          Kommentar
+                        </p>
+                        <p className="whitespace-pre-wrap text-sm text-base-content/80">
+                          {selectedModule.module.comment}
+                        </p>
+                      </div>
+                    )}
+
+                    {selectedModule.module.feeling && (
+                      <div className="space-y-1">
+                        <p className="text-xs uppercase tracking-wide text-neutral">
+                          Känsla
+                        </p>
+                        <p className="text-sm text-base-content/80">
+                          {selectedModule.module.feeling}
+                        </p>
+                      </div>
+                    )}
+
+                    {selectedModule.module.sleepHours && (
+                      <div className="space-y-1">
+                        <p className="text-xs uppercase tracking-wide text-neutral">
+                          Sömn (timmar)
+                        </p>
+                        <p className="text-sm text-base-content/80">
+                          {selectedModule.module.sleepHours}
+                        </p>
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                <ModuleBadges module={selectedModule.module} />
               </div>
 
-              <div className="space-y-3">
+              <div className="space-y-3 rounded-2xl border border-base-300 bg-base-100 p-4">
                 <div className="flex items-center justify-between gap-2">
                   <p className="text-xs uppercase tracking-wide text-neutral">
                     Feedback
@@ -492,7 +535,7 @@ export function WeekScheduleView({
                       return (
                         <div
                           key={field}
-                          className="rounded-lg border border-base-200 p-3 space-y-2"
+                          className="space-y-2 rounded-lg border border-base-200 p-3"
                         >
                           <div className="flex items-center justify-between gap-3">
                             <div className="flex items-center gap-2">
