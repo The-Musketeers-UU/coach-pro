@@ -1,9 +1,7 @@
 "use client";
 
 import { ReactNode, useEffect, useMemo, useState } from "react";
-
-import { upsertScheduleModuleFeedback } from "@/lib/supabase/training-modules";
-import { formatCentiseconds, parseDurationToCentiseconds } from "@/lib/time";
+import { formatCentiseconds } from "@/lib/time";
 
 import { ModuleBadges } from "@/components/ModuleBadges";
 
@@ -131,15 +129,11 @@ export function WeekScheduleView({
   );
   const [weekState, setWeekState] = useState<ProgramWeek | undefined>(week);
   const [feedbackForm, setFeedbackForm] = useState<FeedbackFormState | null>(null);
-  const [isSavingFeedback, setIsSavingFeedback] = useState(false);
-  const [feedbackError, setFeedbackError] = useState<string | null>(null);
   const [selectedDayId, setSelectedDayId] = useState<string | null>(
     week?.days[0]?.id ?? null,
   );
 
-  const viewerRole = _viewerRole ?? "coach";
-  const canEditFeedbackValues = viewerRole !== "coach";
-  const canToggleFeedbackFields = viewerRole !== "athlete";
+  void _viewerRole;
   void _athleteId;
   void _coachId;
 
@@ -256,110 +250,6 @@ export function WeekScheduleView({
       </div>
     </article>
   );
-
-  const handleFeedbackChange = (
-    field: FeedbackFieldKey,
-    updater: (current: FeedbackFormState[FeedbackFieldKey]) => FeedbackFormState[FeedbackFieldKey],
-  ) => {
-    setFeedbackForm((prev) => {
-      if (!prev) return prev;
-      return { ...prev, [field]: updater(prev[field]) };
-    });
-  };
-
-  const formatSavePayload = () => {
-    if (!feedbackForm || !selectedModule?.module.id || !selectedModule.module.scheduleDayId)
-      return null;
-
-    const toNumber = (value: string) => {
-      const parsed = Number.parseFloat(value);
-      return Number.isFinite(parsed) ? parsed : null;
-    };
-
-    const toDuration = (value: string) => {
-      const parsed = parseDurationToCentiseconds(value);
-      return parsed === undefined ? null : parsed;
-    };
-
-    return {
-      moduleId: selectedModule.module.id,
-      scheduleDayId: selectedModule.module.scheduleDayId,
-      distance: feedbackForm.distance.active ? toNumber(feedbackForm.distance.value) : null,
-      duration: feedbackForm.duration.active
-        ? toDuration(feedbackForm.duration.value)
-        : null,
-      weight: feedbackForm.weight.active ? toNumber(feedbackForm.weight.value) : null,
-      comment: feedbackForm.comment.active
-        ? feedbackForm.comment.value.trim() || null
-        : null,
-      feeling: feedbackForm.feeling.active ? toNumber(feedbackForm.feeling.value) : null,
-      sleepHours: feedbackForm.sleepHours.active
-        ? toNumber(feedbackForm.sleepHours.value)
-        : null,
-    } as const;
-  };
-
-  const handleSaveFeedback = async () => {
-    const payload = formatSavePayload();
-    if (!payload) return;
-
-    setIsSavingFeedback(true);
-    setFeedbackError(null);
-
-    try {
-      const updated = await upsertScheduleModuleFeedback(payload);
-
-      setWeekState((prev) => {
-        if (!prev) return prev;
-
-        return {
-          ...prev,
-          days: prev.days.map((day) => ({
-            ...day,
-            modules: day.modules.map((module) =>
-              module.id === payload.moduleId &&
-              module.scheduleDayId === payload.scheduleDayId
-                ? {
-                    ...module,
-                    feedback: {
-                      distance: updated.distance,
-                      duration: updated.duration,
-                      weight: updated.weight,
-                      comment: updated.comment,
-                      feeling: updated.feeling,
-                      sleepHours: updated.sleepHours,
-                    },
-                  }
-                : module,
-            ),
-          })),
-        } satisfies ProgramWeek;
-      });
-
-      setSelectedModule((prev) =>
-        prev
-          ? {
-              ...prev,
-              module: {
-                ...prev.module,
-                feedback: {
-                  distance: updated.distance,
-                  duration: updated.duration,
-                  weight: updated.weight,
-                  comment: updated.comment,
-                  feeling: updated.feeling,
-                  sleepHours: updated.sleepHours,
-                },
-              },
-            }
-          : prev,
-      );
-    } catch (error) {
-      setFeedbackError(error instanceof Error ? error.message : String(error));
-    } finally {
-      setIsSavingFeedback(false);
-    }
-  };
 
   return (
     <div className="card bg-base-200 border border-base-300 shadow-md">
@@ -516,122 +406,77 @@ export function WeekScheduleView({
                 <ModuleBadges module={selectedModule.module} />
               </div>
 
-              <div className="space-y-3 rounded-2xl border border-base-300 bg-base-100 p-4">
-                <div className="flex items-center justify-between gap-2">
-                  <p className="text-xs uppercase tracking-wide text-neutral">
-                    Feedback
-                  </p>
-                  {feedbackError && (
-                    <span className="text-xs text-error">{feedbackError}</span>
-                  )}
-                </div>
 
-                <div className="space-y-3">
+              <div className="space-y-4 rounded-2xl border border-base-300 bg-base-100 p-4">
+                <p className="text-xs uppercase tracking-wide text-neutral">Feedback</p>
+
+                <div className="space-y-2">
                   {feedbackForm &&
-                    (Object.keys(FEEDBACK_FIELDS) as FeedbackFieldKey[]).map((field) => {
+                    (
+                      [
+                        "distance",
+                        "duration",
+                        "weight",
+                        "feeling",
+                        "sleepHours",
+                      ] as FeedbackFieldKey[]
+                    ).map((field) => {
                       const fieldState = feedbackForm[field];
                       const fieldMeta = FEEDBACK_FIELDS[field];
+
+                      if (!fieldState.active) return null;
 
                       return (
                         <div
                           key={field}
-                          className="space-y-2 rounded-lg border border-base-200 p-3"
+                          className="rounded-lg border border-base-200 px-3 py-2"
                         >
-                          <div className="flex items-center justify-between gap-3">
-                            <div className="flex items-center gap-2">
-                              <input
-                                type="checkbox"
-                                className="checkbox checkbox-sm"
-                                checked={fieldState.active}
-                                disabled={!canToggleFeedbackFields}
-                                onChange={(event) => {
-                                  if (!canToggleFeedbackFields) return;
-
-                                  handleFeedbackChange(field, (current) => ({
-                                    ...current,
-                                    active: event.target.checked,
-                                    value: event.target.checked ? current.value : "",
-                                  }));
-                                }}
-                              />
-                              <span className="text-sm font-semibold">
-                                {fieldMeta.label}
-                              </span>
-                            </div>
-                            <span className="text-xs text-base-content/70">
-                              {fieldState.active ? "Aktiverad" : "Av"}
-                            </span>
-                          </div>
-
-                          {fieldState.active && (
-                            <div>
-                              {fieldMeta.type === "textarea" ? (
-                                <textarea
-                                  className="textarea textarea-bordered w-full"
-                                  placeholder={fieldMeta.placeholder}
-                                  value={fieldState.value}
-                                  disabled={!canEditFeedbackValues}
-                                  readOnly={!canEditFeedbackValues}
-                                  onChange={(event) => {
-                                    if (!canEditFeedbackValues) return;
-
-                                    handleFeedbackChange(field, (current) => ({
-                                      ...current,
-                                      value: event.target.value,
-                                    }));
-                                  }}
-                                  rows={2}
-                                />
-                              ) : (
-                                <input
-                                  className="input input-bordered input-sm w-full"
-                                  type={fieldMeta.type}
-                                  step={fieldMeta.step}
-                                  min={fieldMeta.min}
-                                  max={fieldMeta.max}
-                                  placeholder={fieldMeta.placeholder}
-                                  value={fieldState.value}
-                                  disabled={!canEditFeedbackValues}
-                                  readOnly={!canEditFeedbackValues}
-                                  onChange={(event) => {
-                                    if (!canEditFeedbackValues) return;
-
-                                    handleFeedbackChange(field, (current) => ({
-                                      ...current,
-                                      value: event.target.value,
-                                    }));
-                                  }}
-                                />
-                              )}
-                              {!canEditFeedbackValues && (
-                                <p className="mt-1 text-xs text-base-content/70">
-                                  {fieldState.value
-                                    ? "Atleten har lämnat feedback."
-                                    : "Ingen feedback lämnad ännu."}
-                                </p>
-                              )}
-                            </div>
-                          )}
+                          <label className="flex items-center justify-between gap-3 text-[11px] font-semibold uppercase tracking-wide text-neutral">
+                            <span>{fieldMeta.label}</span>
+                            <input
+                              className="input input-bordered input-sm w-32 text-right"
+                              type={fieldMeta.type === "textarea" ? "text" : fieldMeta.type}
+                              step={fieldMeta.step}
+                              min={fieldMeta.min}
+                              max={fieldMeta.max}
+                              placeholder={fieldMeta.placeholder}
+                              value={fieldState.value}
+                              readOnly
+                              disabled
+                            />
+                          </label>
                         </div>
                       );
                     })}
+
+                  {feedbackForm?.comment.active && (
+                    <div className="space-y-2 rounded-lg border border-base-200 p-3">
+                      <p className="text-[11px] font-semibold uppercase tracking-wide text-neutral">
+                        Kommentar
+                      </p>
+                      <textarea
+                        className="textarea textarea-bordered w-full"
+                        placeholder={FEEDBACK_FIELDS.comment.placeholder}
+                        value={feedbackForm.comment.value}
+                        readOnly
+                        disabled
+                        rows={3}
+                      />
+                    </div>
+                  )}
+
+                  {!feedbackForm && (
+                    <p className="text-sm text-base-content/70">Ingen feedback tillgänglig.</p>
+                  )}
                 </div>
 
-                <div className="flex items-center justify-end gap-3">
+                <div className="flex items-center justify-end">
                   <button
                     className="btn btn-ghost btn-sm"
                     onClick={() => setSelectedModule(null)}
                     type="button"
                   >
                     Stäng
-                  </button>
-                  <button
-                    className="btn btn-primary btn-sm"
-                    type="button"
-                    onClick={handleSaveFeedback}
-                    disabled={isSavingFeedback}
-                  >
-                    {isSavingFeedback ? "Sparar..." : "Spara feedback"}
                   </button>
                 </div>
               </div>
