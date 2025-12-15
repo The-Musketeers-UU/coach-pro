@@ -13,6 +13,7 @@ export type Module = {
   feeling?: number | null;
   sleepHours?: number | null;
   sourceModuleId?: string;
+  activeFeedbackFields?: FeedbackFieldType[];
 };
 
 export type DaySchedule = Record<string, Module[]>;

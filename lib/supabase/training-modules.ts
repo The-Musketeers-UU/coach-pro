@@ -14,11 +14,13 @@ type DbModuleRow = {
   category: string;
   subCategory: string | null;
   description: string | null;
+  activeFeedbackFields: string[];
 };
 
 export type ModuleRow = DbModuleRow & { id: string };
 
-const moduleSelectColumns = "id,owner,name,category,subCategory,description";
+const moduleSelectColumns =
+  "id,owner,name,category,subCategory,description,activeFeedbackFields";
 
 type DbScheduleModuleFeedbackRow = {
   id: number | string;
@@ -95,6 +97,9 @@ const toDbNumericIds = (values: Array<number | string>) =>
 const coerceModuleRow = (row: DbModuleRow): ModuleRow => ({
   ...row,
   id: toId(row.id),
+  activeFeedbackFields: Array.isArray(row.activeFeedbackFields)
+    ? row.activeFeedbackFields
+    : [],
 });
 
 const coerceScheduleModuleFeedbackRow = (
@@ -183,6 +188,7 @@ export type CreateModuleInput = {
   category: string;
   subCategory?: string;
   description?: string;
+  activeFeedbackFields?: string[];
 };
 
 export type CreateScheduleWeekInput = {
@@ -758,6 +764,9 @@ export const createModule = async (input: CreateModuleInput): Promise<ModuleRow>
     category: input.category,
     subCategory: input.subCategory?.trim() || null,
     description: input.description?.trim() || null,
+    activeFeedbackFields: Array.isArray(input.activeFeedbackFields)
+      ? input.activeFeedbackFields
+      : [],
   } satisfies Omit<ModuleRow, "id">;
 
   try {

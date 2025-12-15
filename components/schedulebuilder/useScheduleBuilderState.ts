@@ -445,6 +445,7 @@ export const useScheduleBuilderState = ({
         sleepHours: toNumberIfActive("sleepHours"),
         comment: toTextIfActive("comment"),
         sourceModuleId: moduleId,
+        activeFeedbackFields: [...formState.activeFeedbackFields],
       },
     };
   };
@@ -492,31 +493,10 @@ export const useScheduleBuilderState = ({
     setEditFormError(null);
     setIsEditMode(false);
     setEditingContext(context);
-    const activeFeedbackFields: ModuleForm["activeFeedbackFields"] = [];
-
-    if (module.distance !== undefined) {
-      activeFeedbackFields.push("distance");
-    }
-
-    if (module.duration !== undefined) {
-      activeFeedbackFields.push("duration");
-    }
-
-    if (module.weight !== undefined) {
-      activeFeedbackFields.push("weight");
-    }
-
-    if (module.comment) {
-      activeFeedbackFields.push("comment");
-    }
-
-    if (module.feeling !== undefined) {
-      activeFeedbackFields.push("feeling");
-    }
-
-    if (module.sleepHours !== undefined) {
-      activeFeedbackFields.push("sleepHours");
-    }
+    const activeFeedbackFields: ModuleForm["activeFeedbackFields"] =
+      module.activeFeedbackFields && module.activeFeedbackFields.length > 0
+        ? [...module.activeFeedbackFields]
+        : [];
 
     setEditingModuleForm({
       title: module.title,

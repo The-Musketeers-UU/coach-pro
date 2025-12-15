@@ -143,6 +143,7 @@ const createScheduleFromWeek = (
         category: (moduleRow.category as Module["category"]) ?? "kondition",
         subcategory: moduleRow.subCategory ?? undefined,
         sourceModuleId: moduleRow.id,
+        activeFeedbackFields: moduleRow.activeFeedbackFields,
       } satisfies Module;
     });
   });
@@ -165,6 +166,7 @@ const mapModuleRow = (row: ModuleRow): Module => ({
   category: (row.category as Module["category"]) ?? "kondition",
   subcategory: row.subCategory ?? undefined,
   sourceModuleId: row.id,
+  activeFeedbackFields: row.activeFeedbackFields,
 });
 
 const mapAthleteRow = (row: AthleteRow): Athlete => ({
@@ -202,6 +204,7 @@ function ScheduleBuilderPage() {
       category: module.category,
       subCategory: module.subcategory,
       description: module.description,
+      activeFeedbackFields: module.activeFeedbackFields ?? [],
     });
 
     return mapModuleRow(created);

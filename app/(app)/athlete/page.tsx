@@ -24,42 +24,10 @@ const dayLabels = [
   "Söndag",
 ];
 
-const getActiveFeedbackFields = (
-  module: ScheduleWeekWithModules["days"][number]["modules"][number],
-) => {
-  const activeFields: FeedbackFieldKey[] = [];
-
-  if (module.feedback?.distance !== null && module.feedback?.distance !== undefined) {
-    activeFields.push("distance");
-  }
-
-  if (module.feedback?.duration !== null && module.feedback?.duration !== undefined) {
-    activeFields.push("duration");
-  }
-
-  if (module.feedback?.weight !== null && module.feedback?.weight !== undefined) {
-    activeFields.push("weight");
-  }
-
-  if (module.feedback?.comment !== null && module.feedback?.comment !== undefined) {
-    activeFields.push("comment");
-  }
-
-  if (module.feedback?.feeling !== null && module.feedback?.feeling !== undefined) {
-    activeFields.push("feeling");
-  }
-
-  if (module.feedback?.sleepHours !== null && module.feedback?.sleepHours !== undefined) {
-    activeFields.push("sleepHours");
-  }
-
-  return activeFields;
-};
-
 const toProgramWeek = (week: ScheduleWeekWithModules): ProgramWeek => ({
-    id: week.id,
-    label: week.title || `Vecka ${week.week}`,
-    focus: `Ägare: ${week.owner}`,
+  id: week.id,
+  label: week.title || `Vecka ${week.week}`,
+  focus: `Ägare: ${week.owner}`,
     days: week.days.map((day) => ({
       id: day.id,
       label: dayLabels[day.day - 1] ?? `Dag ${day.day}`,
@@ -76,7 +44,7 @@ const toProgramWeek = (week: ScheduleWeekWithModules): ProgramWeek => ({
       comment: module.feedback?.comment ?? null,
       feeling: module.feedback?.feeling ?? null,
       sleepHours: module.feedback?.sleepHours ?? null,
-      activeFeedbackFields: getActiveFeedbackFields(module),
+      activeFeedbackFields: (module.activeFeedbackFields ?? []) as FeedbackFieldKey[],
       feedback: module.feedback && {
         distance: module.feedback.distance,
         weight: module.feedback.weight,

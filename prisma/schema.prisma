@@ -38,6 +38,7 @@ model Module {
   category    String  @db.Text
   subCategory String? @db.Text
   description String? @db.Text
+  activeFeedbackFields String[] @default([]) @db.Text
 
   scheduleDays            ScheduleDay[]
   scheduleModuleFeedbacks ScheduleModuleFeedback[]
