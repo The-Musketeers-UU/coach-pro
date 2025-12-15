@@ -143,7 +143,7 @@ const createScheduleFromWeek = (
         category: (moduleRow.category as Module["category"]) ?? "kondition",
         subcategory: moduleRow.subCategory ?? undefined,
         sourceModuleId: moduleRow.id,
-        feedbackFields: moduleRow.activeFeedbackFields,
+        feedbackFields: mapFeedbackFields(moduleRow.activeFeedbackFields),
       } satisfies Module;
     });
   });
@@ -159,6 +159,12 @@ const parseWeekNumber = (value: string): number | null => {
   return Number.isNaN(week) ? null : week;
 };
 
+const mapFeedbackFields = (fields: ModuleRow["activeFeedbackFields"] = []) =>
+  fields.map(({ label, ...field }) => ({
+    ...field,
+    label: label ?? undefined,
+  }));
+
 const mapModuleRow = (row: ModuleRow): Module => ({
   id: row.id,
   title: row.name,
@@ -166,7 +172,7 @@ const mapModuleRow = (row: ModuleRow): Module => ({
   category: (row.category as Module["category"]) ?? "kondition",
   subcategory: row.subCategory ?? undefined,
   sourceModuleId: row.id,
-  feedbackFields: row.activeFeedbackFields,
+  feedbackFields: mapFeedbackFields(row.activeFeedbackFields),
 });
 
 const mapAthleteRow = (row: AthleteRow): Athlete => ({
