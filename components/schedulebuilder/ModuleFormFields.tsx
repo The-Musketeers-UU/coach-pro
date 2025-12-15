@@ -1,6 +1,10 @@
 import type { Dispatch, SetStateAction } from "react";
 
-import type { FeedbackFieldType, ModuleForm } from "@/components/schedulebuilder/types";
+import type {
+  FeedbackFieldDefinition,
+  FeedbackFieldType,
+  ModuleForm,
+} from "@/components/schedulebuilder/types";
 
 const feedbackFieldLabels: Record<FeedbackFieldType, string> = {
   distance: "Distans (m)",
@@ -34,67 +38,46 @@ const optionalFields: FeedbackFieldType[] = [
   "sleepHours",
 ];
 
+const createFeedbackField = (
+  type: FeedbackFieldType,
+  existing: FeedbackFieldDefinition[],
+): FeedbackFieldDefinition => {
+  const countOfType = existing.filter((field) => field.type === type).length;
+  const defaultLabel =
+    countOfType === 0
+      ? feedbackFieldLabels[type]
+      : `${feedbackFieldLabels[type]} #${countOfType + 1}`;
+
+  const id =
+    typeof crypto !== "undefined" && crypto.randomUUID
+      ? crypto.randomUUID()
+      : `${type}-${Date.now()}-${Math.random().toString(16).slice(2)}`;
+
+  return { id, type, label: defaultLabel };
+};
+
 export function ModuleFormFields({ formState, onChange }: ModuleFormFieldsProps) {
   const addFeedbackField = (type: FeedbackFieldType) => {
-    if (formState.activeFeedbackFields.includes(type)) return;
-
     onChange((prev) => ({
       ...prev,
-      activeFeedbackFields: [...prev.activeFeedbackFields, type],
+      feedbackFields: [...prev.feedbackFields, createFeedbackField(type, prev.feedbackFields)],
     }));
   };
 
-  const removeFeedbackField = (type: FeedbackFieldType) => {
+  const removeFeedbackField = (fieldId: string) => {
     onChange((prev) => ({
       ...prev,
-      activeFeedbackFields: prev.activeFeedbackFields.filter(
-        (fieldType) => fieldType !== type,
+      feedbackFields: prev.feedbackFields.filter((field) => field.id !== fieldId),
+    }));
+  };
+
+  const updateFeedbackLabel = (fieldId: string, label: string) => {
+    onChange((prev) => ({
+      ...prev,
+      feedbackFields: prev.feedbackFields.map((field) =>
+        field.id === fieldId ? { ...field, label } : field,
       ),
-      [type]: "",
     }));
-  };
-
-  const handleFieldValueChange = (type: FeedbackFieldType, value: string) => {
-    onChange((prev) => ({
-      ...prev,
-      [type]: value,
-    }));
-  };
-
-  const renderFeedbackFieldInput = (type: FeedbackFieldType) => {
-    const placeholder = feedbackFieldPlaceholders[type];
-
-    if (type === "comment") {
-      return (
-        <textarea
-          className="textarea textarea-bordered"
-          rows={2}
-          value={formState.comment}
-          onChange={(event) => handleFieldValueChange(type, event.target.value)}
-          placeholder={placeholder}
-        />
-      );
-    }
-
-    const inputProps = {
-      distance: { step: 10, min: 0, type: "number" },
-      duration: { type: "text", inputMode: "decimal", pattern: "[0-9:.,]*" },
-      weight: { step: 1, min: 0, type: "number" },
-      feeling: { step: 1, min: 1, max: 10, type: "number" },
-      sleepHours: { step: 0.5, min: 0, type: "number" },
-    } as const;
-
-    const value = formState[type];
-
-    return (
-      <input
-        className="input input-sm input-bordered"
-        {...inputProps[type]}
-        value={value}
-        onChange={(event) => handleFieldValueChange(type, event.target.value)}
-        placeholder={placeholder}
-      />
-    );
   };
 
   return (
@@ -165,63 +148,71 @@ export function ModuleFormFields({ formState, onChange }: ModuleFormFieldsProps)
       </label>
 
       <div className="rounded-lg border border-base-300 p-3">
-        <div className="flex items-start justify-between gap-4">
-          <div>
-            <p className="font-medium">Valfria feedbackfält</p>
-            <p className="text-sm text-base-content/70">
-              Lägg bara till de uppföljningsfrågor du vill samla in för passet.
-              Avmarkera ett fält om du inte vill be om det.
-            </p>
-          </div>
-          <div className="flex flex-wrap gap-1">
-            {optionalFields.map((type) => {
-              const isActive = formState.activeFeedbackFields.includes(type);
-
-              return (
-                <button
-                  key={type}
-                  type="button"
-                  className="btn btn-ghost btn-xs"
+          <div className="flex items-start justify-between gap-4">
+            <div>
+              <p className="font-medium">Valfria feedbackfält</p>
+              <p className="text-sm text-base-content/70">
+                Lägg bara till de uppföljningsfrågor du vill samla in för passet.
+                Avmarkera ett fält om du inte vill be om det.
+              </p>
+            </div>
+            <div className="flex flex-wrap gap-1">
+              {optionalFields.map((type) => {
+                return (
+                  <button
+                    key={type}
+                    type="button"
+                    className="btn btn-ghost btn-xs"
                   onClick={() => addFeedbackField(type)}
-                  disabled={isActive}
-                >
-                  + {feedbackFieldLabels[type]}
-                </button>
-              );
-            })}
+                  >
+                    + {feedbackFieldLabels[type]}
+                  </button>
+                );
+              })}
+            </div>
           </div>
-        </div>
 
-        <div className="mt-3 space-y-3">
-          {formState.activeFeedbackFields.length === 0 && (
+          <div className="mt-3 space-y-3">
+          {formState.feedbackFields.length === 0 && (
             <p className="text-sm text-base-content/70">
               Inga valfria fält tillagda ännu.
             </p>
           )}
 
-          {formState.activeFeedbackFields.map((type) => (
+          {formState.feedbackFields.map((field) => (
             <div
-              key={type}
+              key={field.id}
               className="flex flex-col gap-2 rounded-md border border-base-200 p-3"
             >
               <div className="flex items-center justify-between gap-2">
                 <div className="text-sm font-semibold">
-                  {feedbackFieldLabels[type]}
+                  {feedbackFieldLabels[field.type]}
                 </div>
                 <button
                   type="button"
                   className="btn btn-ghost btn-xs"
-                  onClick={() => removeFeedbackField(type)}
+                onClick={() => removeFeedbackField(field.id)}
                 >
                   Ta bort
                 </button>
               </div>
 
-              {renderFeedbackFieldInput(type)}
+              <label className="form-control gap-1">
+                <span className="label-text text-xs text-base-content/70">
+                  Egen etikett (valfritt)
+                </span>
+                <input
+                  className="input input-sm input-bordered"
+                  type="text"
+                  value={field.label ?? ""}
+                  onChange={(event) => updateFeedbackLabel(field.id, event.target.value)}
+                  placeholder={feedbackFieldPlaceholders[field.type]}
+                />
+              </label>
             </div>
           ))}
+          </div>
         </div>
-      </div>
     </div>
   );
 }

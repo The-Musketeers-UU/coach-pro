@@ -20,15 +20,8 @@ export type ProgramModule = {
   comment?: string | null;
   feeling?: number | null;
   sleepHours?: number | null;
-  activeFeedbackFields?: FeedbackFieldKey[];
-  feedback?: {
-    distance: number | null;
-    weight: number | null;
-    duration: number | null;
-    comment: string | null;
-    feeling: number | null;
-    sleepHours: number | null;
-  };
+  feedbackFields?: FeedbackFieldDefinition[];
+  feedbackResponses?: FeedbackResponse[];
 };
 
 export type ProgramDay = {
@@ -69,7 +62,22 @@ export type FeedbackFieldKey =
   | "feeling"
   | "sleepHours";
 
-type FeedbackFormState = Record<FeedbackFieldKey, { active: boolean; value: string }>;
+export type FeedbackFieldDefinition = {
+  id: string;
+  type: FeedbackFieldKey;
+  label?: string | null;
+};
+
+export type FeedbackResponse = {
+  fieldId: string;
+  type: FeedbackFieldKey;
+  value: number | string | null;
+};
+
+type FeedbackFormState = Record<
+  string,
+  { id: string; type: FeedbackFieldKey; label?: string | null; active: boolean; value: string }
+>;
 
 const FEEDBACK_FIELDS: Record<
   FeedbackFieldKey,
@@ -164,10 +172,11 @@ export function WeekScheduleView({
     if (!selectedModule) return null;
 
     const { module } = selectedModule;
-    const buildValue = (
-      field: FeedbackFieldKey,
-      value: number | string | null | undefined,
-    ) => {
+    const responsesById = new Map(
+      (module.feedbackResponses ?? []).map((response) => [response.fieldId, response]),
+    );
+
+    const formatValue = (field: FeedbackFieldKey, value: number | string | null | undefined) => {
       if (value === null || value === undefined) return "";
 
       if (field === "duration") {
@@ -177,55 +186,20 @@ export function WeekScheduleView({
       return String(value);
     };
 
-    const toFieldState = (
-      field: FeedbackFieldKey,
-      feedbackValue: unknown,
-      isSelected: boolean,
-    ): { active: boolean; value: string } => {
-      const hasFeedbackValue =
-        feedbackValue !== null && feedbackValue !== undefined;
+    const defaults: FeedbackFormState = {};
 
-      return {
-        active: isSelected || hasFeedbackValue,
-        value: buildValue(field, (hasFeedbackValue ? feedbackValue : null) as number | string | null),
+    (module.feedbackFields ?? []).forEach((field) => {
+      const matchedResponse = responsesById.get(field.id);
+      defaults[field.id] = {
+        id: field.id,
+        type: field.type,
+        label: field.label,
+        active: true,
+        value: formatValue(field.type, matchedResponse?.value ?? null),
       };
-    };
+    });
 
-    const isActiveField = (field: FeedbackFieldKey) =>
-      selectedModule.module.activeFeedbackFields?.includes(field) ?? false;
-
-    return {
-      distance: toFieldState(
-        "distance",
-        module.feedback?.distance,
-        isActiveField("distance"),
-      ),
-      duration: toFieldState(
-        "duration",
-        module.feedback?.duration,
-        isActiveField("duration"),
-      ),
-      weight: toFieldState(
-        "weight",
-        module.feedback?.weight,
-        isActiveField("weight"),
-      ),
-      comment: toFieldState(
-        "comment",
-        module.feedback?.comment,
-        isActiveField("comment"),
-      ),
-      feeling: toFieldState(
-        "feeling",
-        module.feedback?.feeling,
-        isActiveField("feeling"),
-      ),
-      sleepHours: toFieldState(
-        "sleepHours",
-        module.feedback?.sleepHours,
-        isActiveField("sleepHours"),
-      ),
-    } satisfies FeedbackFormState;
+    return defaults;
   }, [selectedModule]);
 
   useEffect(() => {
@@ -283,12 +257,12 @@ export function WeekScheduleView({
   );
 
   const handleFeedbackChange = (
-    field: FeedbackFieldKey,
-    updater: (current: FeedbackFormState[FeedbackFieldKey]) => FeedbackFormState[FeedbackFieldKey],
+    fieldId: string,
+    updater: (current: FeedbackFormState[string]) => FeedbackFormState[string],
   ) => {
     setFeedbackForm((prev) => {
-      if (!prev) return prev;
-      return { ...prev, [field]: updater(prev[field]) };
+      if (!prev || !prev[fieldId]) return prev;
+      return { ...prev, [fieldId]: updater(prev[fieldId]) };
     });
   };
 
@@ -296,31 +270,42 @@ export function WeekScheduleView({
     if (!feedbackForm || !selectedModule?.module.id || !selectedModule.module.scheduleDayId)
       return null;
 
-    const toNumber = (value: string) => {
-      const parsed = Number.parseFloat(value);
-      return Number.isFinite(parsed) ? parsed : null;
-    };
+    const responses = Object.values(feedbackForm).map((fieldState) => {
+      const toNumber = (value: string) => {
+        const parsed = Number.parseFloat(value);
+        return Number.isFinite(parsed) ? parsed : null;
+      };
 
-    const toDuration = (value: string) => {
-      const parsed = parseDurationToCentiseconds(value);
-      return parsed === undefined ? null : parsed;
-    };
+      const toDuration = (value: string) => {
+        const parsed = parseDurationToCentiseconds(value);
+        return parsed === undefined ? null : parsed;
+      };
+
+      const parsedValue = (() => {
+        if (!fieldState.active) return null;
+
+        if (fieldState.type === "duration") {
+          return toDuration(fieldState.value);
+        }
+
+        if (fieldState.type === "comment") {
+          return fieldState.value.trim() || null;
+        }
+
+        return toNumber(fieldState.value);
+      })();
+
+      return {
+        fieldId: fieldState.id,
+        type: fieldState.type,
+        value: parsedValue,
+      } satisfies FeedbackResponse;
+    });
 
     return {
       moduleId: selectedModule.module.id,
       scheduleDayId: selectedModule.module.scheduleDayId,
-      distance: feedbackForm.distance.active ? toNumber(feedbackForm.distance.value) : null,
-      duration: feedbackForm.duration.active
-        ? toDuration(feedbackForm.duration.value)
-        : null,
-      weight: feedbackForm.weight.active ? toNumber(feedbackForm.weight.value) : null,
-      comment: feedbackForm.comment.active
-        ? feedbackForm.comment.value.trim() || null
-        : null,
-      feeling: feedbackForm.feeling.active ? toNumber(feedbackForm.feeling.value) : null,
-      sleepHours: feedbackForm.sleepHours.active
-        ? toNumber(feedbackForm.sleepHours.value)
-        : null,
+      responses,
     } as const;
   };
 
@@ -346,14 +331,7 @@ export function WeekScheduleView({
               module.scheduleDayId === payload.scheduleDayId
                 ? {
                     ...module,
-                    feedback: {
-                      distance: updated.distance,
-                      duration: updated.duration,
-                      weight: updated.weight,
-                      comment: updated.comment,
-                      feeling: updated.feeling,
-                      sleepHours: updated.sleepHours,
-                    },
+                    feedbackResponses: updated.responses,
                   }
                 : module,
             ),
@@ -509,20 +487,26 @@ export function WeekScheduleView({
                 </div>
 
                 <div className="space-y-3">
+                  {feedbackForm && (selectedModule.module.feedbackFields ?? []).length === 0 && (
+                    <p className="text-sm text-base-content/70">
+                      Inga feedbackfält valda för detta pass.
+                    </p>
+                  )}
+
                   {feedbackForm &&
-                    (Object.keys(FEEDBACK_FIELDS) as FeedbackFieldKey[])
-                      .filter((field) =>
-                        viewerRole === "athlete"
-                          ? feedbackForm[field].active
-                          : true,
-                      )
+                    (selectedModule.module.feedbackFields ?? [])
                       .map((field) => {
-                        const fieldState = feedbackForm[field];
-                        const fieldMeta = FEEDBACK_FIELDS[field];
+                        const fieldState = feedbackForm[field.id];
+                        if (!fieldState) return null;
+
+                        if (viewerRole === "athlete" && !fieldState.active) return null;
+
+                        const fieldMeta = FEEDBACK_FIELDS[field.type];
+                        const label = fieldState.label?.trim() || fieldMeta.label;
 
                         return (
                           <div
-                            key={field}
+                            key={field.id}
                             className="rounded-lg border border-base-200 p-3 space-y-2"
                           >
                             <div className="flex items-center justify-between gap-3">
@@ -532,7 +516,7 @@ export function WeekScheduleView({
                                   className="checkbox checkbox-sm"
                                   checked={fieldState.active}
                                   onChange={(event) =>
-                                    handleFeedbackChange(field, (current) => ({
+                                    handleFeedbackChange(field.id, (current) => ({
                                       ...current,
                                       active: event.target.checked,
                                       value: event.target.checked ? current.value : "",
@@ -540,7 +524,7 @@ export function WeekScheduleView({
                                   }
                                 />
                                 <span className="text-sm font-semibold">
-                                  {fieldMeta.label}
+                                  {label}
                                 </span>
                               </div>
                               <span className="text-xs text-base-content/70">
@@ -556,7 +540,7 @@ export function WeekScheduleView({
                                     placeholder={fieldMeta.placeholder}
                                     value={fieldState.value}
                                     onChange={(event) =>
-                                      handleFeedbackChange(field, (current) => ({
+                                      handleFeedbackChange(field.id, (current) => ({
                                         ...current,
                                         value: event.target.value,
                                       }))
@@ -573,7 +557,7 @@ export function WeekScheduleView({
                                     placeholder={fieldMeta.placeholder}
                                     value={fieldState.value}
                                     onChange={(event) =>
-                                      handleFeedbackChange(field, (current) => ({
+                                      handleFeedbackChange(field.id, (current) => ({
                                         ...current,
                                         value: event.target.value,
                                       }))
