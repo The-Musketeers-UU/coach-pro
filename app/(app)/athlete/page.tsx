@@ -129,63 +129,25 @@ export default function AthleteSchedulePage() {
             </button>
 
             <div className="flex flex-col items-center gap-1">
-              <div className="dropdown dropdown-end">
-                <button
-                  type="button"
-                  tabIndex={0}
-                  className="btn btn-outline btn-secondary btn-sm min-w-[128px] justify-between font-semibold uppercase tracking-wide"
-                >
-                  <span>Vecka {weekNumber}</span>
-                  <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    className="h-4 w-4"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    stroke="currentColor"
-                    strokeWidth="1.5"
-                    aria-hidden
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      d="M6.75 9l5.25 5.25L17.25 9"
-                    />
-                  </svg>
-                </button>
-                <ul
-                  tabIndex={0}
-                  className="dropdown-content menu menu-vertical rounded-box z-10 mt-2 max-h-96 w-44 overflow-y-auto overflow-x-hidden border border-base-200 bg-base-100 p-2 shadow"
-                >
-                  {weekOptions.map((weekOption) => {
-                    const hasSchedule = availableWeeks.has(weekOption);
-                    const isActive = weekOption === weekNumber;
+              <select
+                className="select select-bordered select-sm min-w-[140px] uppercase tracking-wide"
+                value={weekNumber}
+                onChange={(event) => setSelectedWeek(Number(event.target.value))}
+              >
+                {weekOptions.map((weekOption) => {
+                  const hasSchedule = availableWeeks.has(weekOption);
 
-                    return (
-                      <li key={weekOption}>
-                        <button
-                          type="button"
-                          onClick={() => setSelectedWeek(weekOption)}
-                          className={`flex items-center justify-between gap-2 rounded-lg px-3 py-2 text-left text-sm ${
-                            isActive ? "bg-primary/10 font-semibold text-primary" : ""
-                          } ${hasSchedule ? "text-base-content" : "text-base-content/50"}`}
-                        >
-                          <span>Vecka {weekOption}</span>
-                          <span
-                            className={`badge badge-xs border-transparent ${
-                              hasSchedule ? "bg-base-content" : "bg-base-300"
-                            }`}
-                            aria-label={
-                              hasSchedule
-                                ? "Schema finns för veckan"
-                                : "Inget schema för veckan"
-                            }
-                          />
-                        </button>
-                      </li>
-                    );
-                  })}
-                </ul>
-              </div>
+                  return (
+                    <option
+                      key={weekOption}
+                      value={weekOption}
+                      className={hasSchedule ? "text-base-content" : "text-base-content/50"}
+                    >
+                      Vecka {weekOption}
+                    </option>
+                  );
+                })}
+              </select>
 
               <p className="text-[11px] font-medium uppercase tracking-wide text-base-content/60">
                 {formatIsoWeekMonthYear(weekNumber)}
