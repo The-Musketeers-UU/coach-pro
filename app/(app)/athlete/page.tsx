@@ -2,7 +2,10 @@
 
 import { useEffect, useMemo, useState } from "react";
 
-import { WeekScheduleView, type ProgramWeek } from "@/components/WeekScheduleView";
+import {
+  WeekScheduleView,
+  type ProgramWeek,
+} from "@/components/WeekScheduleView";
 import { useAuth } from "@/components/auth-provider";
 import {
   type ScheduleWeekWithModules,
@@ -23,7 +26,7 @@ const dayLabels = [
 const toProgramWeek = (week: ScheduleWeekWithModules): ProgramWeek => ({
   id: week.id,
   label: week.title || `Vecka ${week.week}`,
-  focus: `Ägare: ${week.owner}`,
+  focus: ``,
   days: week.days.map((day) => ({
     id: day.id,
     label: dayLabels[day.day - 1] ?? `Dag ${day.day}`,
@@ -56,7 +59,7 @@ const toProgramWeek = (week: ScheduleWeekWithModules): ProgramWeek => ({
 export default function AthleteSchedulePage() {
   const { user, profile, isLoading, isLoadingProfile } = useAuth();
   const [selectedWeek, setSelectedWeek] = useState(() =>
-    getIsoWeekNumber(new Date()),
+    getIsoWeekNumber(new Date())
   );
   const [rawWeeks, setRawWeeks] = useState<ScheduleWeekWithModules[]>([]);
   const [isFetching, setIsFetching] = useState(false);
@@ -64,10 +67,13 @@ export default function AthleteSchedulePage() {
 
   const currentWeekNumber = useMemo(() => getIsoWeekNumber(new Date()), []);
 
-  const weekOptions = useMemo(() => Array.from({ length: 53 }, (_, i) => i + 1), []);
+  const weekOptions = useMemo(
+    () => Array.from({ length: 53 }, (_, i) => i + 1),
+    []
+  );
   const availableWeeks = useMemo(
     () => new Set(rawWeeks.map((week) => week.week)),
-    [rawWeeks],
+    [rawWeeks]
   );
   const activeWeek = useMemo(() => {
     const weekWithData = rawWeeks.find((week) => week.week === selectedWeek);
@@ -94,7 +100,7 @@ export default function AthleteSchedulePage() {
         setError(
           supabaseError instanceof Error
             ? supabaseError.message
-            : String(supabaseError),
+            : String(supabaseError)
         );
       } finally {
         setIsFetching(false);
@@ -117,6 +123,9 @@ export default function AthleteSchedulePage() {
   return (
     <div className="min-h-screen">
       <div className="mx-auto max-w-full space-y-5 px-5 py-5">
+        <p className="text-md font-medium uppercase tracking-wide text-base-content/60 text-center">
+          {formatIsoWeekMonthYear(weekNumber)}
+        </p>
         <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between justify-self-center">
           <div className="flex items-center gap-3">
             <button
@@ -130,9 +139,11 @@ export default function AthleteSchedulePage() {
 
             <div className="flex flex-col items-center gap-1">
               <select
-                className="select select-bordered select-sm min-w-[140px] uppercase tracking-wide"
+                className="select select-bordered select-sm min-w-[110px] uppercase tracking-wide"
                 value={weekNumber}
-                onChange={(event) => setSelectedWeek(Number(event.target.value))}
+                onChange={(event) =>
+                  setSelectedWeek(Number(event.target.value))
+                }
               >
                 {weekOptions.map((weekOption) => {
                   const hasSchedule = availableWeeks.has(weekOption);
@@ -141,17 +152,17 @@ export default function AthleteSchedulePage() {
                     <option
                       key={weekOption}
                       value={weekOption}
-                      className={hasSchedule ? "text-base-content" : "text-base-content/50"}
+                      className={
+                        hasSchedule
+                          ? "text-base-content"
+                          : "text-base-content/50"
+                      }
                     >
                       Vecka {weekOption}
                     </option>
                   );
                 })}
               </select>
-
-              <p className="text-[11px] font-medium uppercase tracking-wide text-base-content/60">
-                {formatIsoWeekMonthYear(weekNumber)}
-              </p>
             </div>
 
             <button
