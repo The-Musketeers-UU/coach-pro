@@ -13,19 +13,12 @@ type DbModuleRow = {
   name: string;
   category: string;
   subCategory: string | null;
-  distance: number | null;
-  duration: number | null;
-  weight: number | null;
   description: string | null;
-  comment: string | null;
-  feeling: number | null;
-  sleepHours: number | null;
 };
 
 export type ModuleRow = DbModuleRow & { id: string };
 
-const moduleSelectColumns =
-  "id,owner,name,category,subCategory,distance,duration,weight,description,comment,feeling,sleepHours";
+const moduleSelectColumns = "id,owner,name,category,subCategory,description";
 
 type DbScheduleModuleFeedbackRow = {
   id: number | string;
@@ -189,13 +182,7 @@ export type CreateModuleInput = {
   name: string;
   category: string;
   subCategory?: string;
-  distance?: number | null;
-  duration?: number | null;
-  weight?: number | null;
   description?: string;
-  comment?: string | null;
-  feeling?: number | null;
-  sleepHours?: number | null;
 };
 
 export type CreateScheduleWeekInput = {
@@ -545,9 +532,7 @@ export const getScheduleWeeksWithModules = async (
 
     const { data: modules, error: modulesError } = await supabase
       .from("module")
-      .select(
-        "id,owner,name,category,subCategory,distance,duration,weight,description,comment,feeling,sleepHours",
-      )
+      .select(moduleSelectColumns)
       .in("id", moduleIdsForQuery);
 
     if (modulesError) {
@@ -772,13 +757,7 @@ export const createModule = async (input: CreateModuleInput): Promise<ModuleRow>
     name: input.name,
     category: input.category,
     subCategory: input.subCategory?.trim() || null,
-    distance: sanitizeNumber(input.distance) ?? null,
-    duration: sanitizeNumber(input.duration) ?? null,
-    weight: sanitizeNumber(input.weight) ?? null,
     description: input.description?.trim() || null,
-    comment: input.comment?.trim() || null,
-    feeling: sanitizeNumber(input.feeling) ?? null,
-    sleepHours: sanitizeNumber(input.sleepHours) ?? null,
   } satisfies Omit<ModuleRow, "id">;
 
   try {

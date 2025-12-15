@@ -29,27 +29,27 @@ const getActiveFeedbackFields = (
 ) => {
   const activeFields: FeedbackFieldKey[] = [];
 
-  if (module.distance !== null && module.distance !== undefined) {
+  if (module.feedback?.distance !== null && module.feedback?.distance !== undefined) {
     activeFields.push("distance");
   }
 
-  if (module.duration !== null && module.duration !== undefined) {
+  if (module.feedback?.duration !== null && module.feedback?.duration !== undefined) {
     activeFields.push("duration");
   }
 
-  if (module.weight !== null && module.weight !== undefined) {
+  if (module.feedback?.weight !== null && module.feedback?.weight !== undefined) {
     activeFields.push("weight");
   }
 
-  if (module.comment !== null && module.comment !== undefined) {
+  if (module.feedback?.comment !== null && module.feedback?.comment !== undefined) {
     activeFields.push("comment");
   }
 
-  if (module.feeling !== null && module.feeling !== undefined) {
+  if (module.feedback?.feeling !== null && module.feedback?.feeling !== undefined) {
     activeFields.push("feeling");
   }
 
-  if (module.sleepHours !== null && module.sleepHours !== undefined) {
+  if (module.feedback?.sleepHours !== null && module.feedback?.sleepHours !== undefined) {
     activeFields.push("sleepHours");
   }
 
@@ -70,12 +70,12 @@ const toProgramWeek = (week: ScheduleWeekWithModules): ProgramWeek => ({
       description: module.description ?? "",
       category: module.category,
       subcategory: module.subCategory ?? undefined,
-      distance: module.feedback?.distance ?? module.distance,
-      weight: module.feedback?.weight ?? module.weight,
-      duration: module.feedback?.duration ?? module.duration,
-      comment: module.feedback?.comment ?? module.comment,
-      feeling: module.feedback?.feeling ?? module.feeling,
-      sleepHours: module.feedback?.sleepHours ?? module.sleepHours,
+      distance: module.feedback?.distance ?? null,
+      weight: module.feedback?.weight ?? null,
+      duration: module.feedback?.duration ?? null,
+      comment: module.feedback?.comment ?? null,
+      feeling: module.feedback?.feeling ?? null,
+      sleepHours: module.feedback?.sleepHours ?? null,
       activeFeedbackFields: getActiveFeedbackFields(module),
       feedback: module.feedback && {
         distance: module.feedback.distance,

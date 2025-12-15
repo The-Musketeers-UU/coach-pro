@@ -38,12 +38,6 @@ model Module {
   category    String  @db.Text
   subCategory String? @db.Text
   description String? @db.Text
-  duration    Int?
-  distance    Int?
-  weight      Int?
-  comment     String? @db.Text
-  feeling     Int?
-  sleepHours  Int?
 
   scheduleDays            ScheduleDay[]
   scheduleModuleFeedbacks ScheduleModuleFeedback[]

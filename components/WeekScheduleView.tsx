@@ -179,23 +179,15 @@ export function WeekScheduleView({
 
     const toFieldState = (
       field: FeedbackFieldKey,
-      templateValue: unknown,
       feedbackValue: unknown,
       isSelected: boolean,
     ): { active: boolean; value: string } => {
-      const hasTemplateValue =
-        templateValue !== null && templateValue !== undefined;
       const hasFeedbackValue =
         feedbackValue !== null && feedbackValue !== undefined;
-      const resolvedValue = hasFeedbackValue
-        ? feedbackValue
-        : hasTemplateValue
-          ? templateValue
-          : null;
 
       return {
-        active: isSelected || hasTemplateValue || hasFeedbackValue,
-        value: buildValue(field, resolvedValue as number | string | null),
+        active: isSelected || hasFeedbackValue,
+        value: buildValue(field, (hasFeedbackValue ? feedbackValue : null) as number | string | null),
       };
     };
 
@@ -205,37 +197,31 @@ export function WeekScheduleView({
     return {
       distance: toFieldState(
         "distance",
-        module.distance,
         module.feedback?.distance,
         isActiveField("distance"),
       ),
       duration: toFieldState(
         "duration",
-        module.duration,
         module.feedback?.duration,
         isActiveField("duration"),
       ),
       weight: toFieldState(
         "weight",
-        module.weight,
         module.feedback?.weight,
         isActiveField("weight"),
       ),
       comment: toFieldState(
         "comment",
-        module.comment,
         module.feedback?.comment,
         isActiveField("comment"),
       ),
       feeling: toFieldState(
         "feeling",
-        module.feeling,
         module.feedback?.feeling,
         isActiveField("feeling"),
       ),
       sleepHours: toFieldState(
         "sleepHours",
-        module.sleepHours,
         module.feedback?.sleepHours,
         isActiveField("sleepHours"),
       ),
