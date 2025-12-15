@@ -468,18 +468,18 @@ export function WeekScheduleView({
     return (
       <article
         key={day.id}
-        className={`flex min-h-[600px] flex-col rounded-2xl border border-dashed border-base-200 bg-base-300 p-2 ${
-          isToday ? "border-primary ring-2 ring-primary/30" : ""
+        className={`flex min-h-[600px] flex-col rounded-2xl border border-base-200 bg-base-300 p-2 ${
+          isToday ? " ring-2 ring-primary/40" : ""
         }`}
       >
-        <div className="flex items-center gap-4">
+        <div className="flex items-center gap-4 ml-1">
           <div>
-            <p className="text-xs font-semibold uppercase tracking-wide text-neutral">
+            <p className="text-sm uppercase tracking-wide text-neutral">
               {day.label}
             </p>
           </div>
           {dayNumberLabel && (
-            <p className="ml-6 text-xs font-semibold text-base-content/70">
+            <p className=" text-xs font-semibold text-base-content/70">
               {dayNumberLabel}
             </p>
           )}
@@ -508,13 +508,13 @@ export function WeekScheduleView({
 
                 return (
                   <span
-                    className="indicator-item indicator-top indicator-end translate-x-1 translate-y-1 status status-info"
+                    className="indicator-item indicator-top indicator-end translate-x-0 translate-y-0 status status-info"
                     aria-label="Feedback saknas"
                   />
                 );
               })()}
 
-              <div className="space-y-2 rounded-xl border border-base-200 bg-base-100 p-3 transition hover:border-primary focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary">
+              <div className=" w-full space-y-2 rounded-xl border border-base-200 bg-base-100 p-3 transition hover:border-primary focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary">
                 <div className="flex items-start justify-between gap-2">
                   <p className="text-sm font-semibold text-base-content">
                     {module.title}
@@ -600,13 +600,13 @@ export function WeekScheduleView({
               </button>
             </div>
 
-            <div className="grid gap-4 md:grid-cols-[minmax(0,1fr)_minmax(300px,1fr)]">
+            <div className="grid gap-4 md:grid-cols-[minmax(300px,1fr)_minmax(300px,0.5fr)]">
               <div className="space-y-4 rounded-2xl border border-base-300 bg-base-100 p-4">
                 <div className="space-y-2">
                   <p className="text-xs uppercase tracking-wide text-neutral">
                     Beskrivning
                   </p>
-                  <div className="h-40 rounded-lg border border-base-200 bg-base-100/70 p-3 overflow-y-auto">
+                  <div className="h-70 rounded-lg border border-base-200 bg-base-100/70 p-3 overflow-y-auto">
                     <p className="text-sm leading-relaxed text-base-content/80">
                       {selectedModule.module.description}
                     </p>
@@ -618,7 +618,7 @@ export function WeekScheduleView({
                     <p className="text-xs uppercase tracking-wide text-neutral">
                       Kategori
                     </p>
-                    <p className="badge capitalize badge-accent">
+                    <p className="badge badge-sm capitalize badge-accent">
                       {selectedModule.module.category || "-"}
                     </p>
                   </div>
@@ -627,51 +627,23 @@ export function WeekScheduleView({
                     <p className="text-xs uppercase tracking-wide text-neutral">
                       Underkategori
                     </p>
-                    <p className="badge capitalize badge-accent badge-outline">
+                    <p className="badge badge-sm capitalize badge-accent badge-outline">
                       {selectedModule.module.subcategory || "-"}
                     </p>
                   </div>
                 </div>
-
-                {(selectedModule.module.comment ||
-                  selectedModule.module.feeling ||
-                  selectedModule.module.sleepHours) && (
-                  <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-                    {selectedModule.module.comment && (
-                      <div className="sm:col-span-2 space-y-1">
-                        <p className="text-xs uppercase tracking-wide text-neutral">
-                          Kommentar
-                        </p>
-                        <p className="whitespace-pre-wrap text-sm text-base-content/80">
-                          {selectedModule.module.comment}
-                        </p>
-                      </div>
-                    )}
-
-                    {selectedModule.module.feeling && (
-                      <div className="space-y-1">
-                        <p className="text-xs uppercase tracking-wide text-neutral">
-                          Känsla
-                        </p>
-                        <p className="text-sm text-base-content/80">
-                          {selectedModule.module.feeling}
-                        </p>
-                      </div>
-                    )}
-                  </div>
-                )}
               </div>
 
               <div className="space-y-4 rounded-2xl border border-base-300 bg-base-100 p-4">
                 <div className="flex items-center justify-between gap-2">
-                  <p className="text-xs uppercase tracking-wide text-neutral">
+                  <p className="text-xs uppercase font-semibold tracking-wide text-neutral">
                     Din feedback
                   </p>
 
                   {hasSelectedModulePendingFeedback && (
                     <div className="flex items-center gap-2 text-sm text-info">
                       <span className="status status-info" aria-hidden />
-                      <span className="font-medium">Lämna feedback</span>
+                      <span className="font-medium text-xs">Lämna feedback</span>
                     </div>
                   )}
                 </div>
@@ -697,12 +669,12 @@ export function WeekScheduleView({
                           key={field}
                           className="flex items-center justify-between gap-3 py-1"
                         >
-                          <span className="text-[11px] font-semibold uppercase tracking-wide text-neutral">
+                          <span className="text-[11px] uppercase tracking-wide text-neutral">
                             {fieldMeta.label}
                           </span>
                           {fieldMeta.type === "select" ? (
                             <select
-                              className="select select-bordered select-sm w-28 text-right"
+                              className="select select-bordered select-sm w-20 text-right"
                               disabled={!isAthlete}
                               value={fieldState.value}
                               onChange={(event) =>
@@ -718,7 +690,7 @@ export function WeekScheduleView({
                             </select>
                           ) : (
                             <input
-                              className="input input-bordered input-sm w-28 text-right"
+                              className="input input-bordered input-sm w-20 text-right"
                               type={
                                 fieldMeta.type === "textarea" ? "text" : fieldMeta.type
                               }
@@ -739,8 +711,8 @@ export function WeekScheduleView({
                     })}
 
                   {feedbackForm?.comment.active && (
-                    <div className="space-y-1">
-                      <p className="text-[11px] font-semibold uppercase tracking-wide text-neutral">
+                    <div className="space-y-1 mt-5">
+                      <p className="text-[11px] uppercase tracking-wide text-neutral">
                         Kommentar
                       </p>
                       <textarea
@@ -784,19 +756,6 @@ export function WeekScheduleView({
                 )}
               </div>
             </div>
-            <div className="flex items-center justify-end">
-              <button
-                className="btn btn-sm"
-                onClick={() => setSelectedModule(null)}
-                type="button"
-              >
-                Stäng
-              </button>
-            </div>
-
-            <form method="dialog" className="modal-backdrop">
-              <button onClick={() => setSelectedModule(null)}>close</button>
-            </form>
           </div>
         </dialog>
       )}
