@@ -66,11 +66,14 @@ const getStartOfIsoWeek = (date: Date) => {
 const createRollingWeekOptions = (): WeekOption[] => {
   const today = new Date();
   const startOfCurrentWeek = getStartOfIsoWeek(today);
+  const startDate = new Date(startOfCurrentWeek);
+  startDate.setFullYear(startDate.getFullYear() - 1);
+
   const endDate = new Date(startOfCurrentWeek);
   endDate.setFullYear(endDate.getFullYear() + 1);
 
   const options: WeekOption[] = [];
-  let currentWeekStart = startOfCurrentWeek;
+  let currentWeekStart = startDate;
 
   while (currentWeekStart <= endDate) {
     const { weekNumber, year } = getIsoWeekInfo(currentWeekStart);
@@ -83,6 +86,11 @@ const createRollingWeekOptions = (): WeekOption[] => {
   }
 
   return options;
+};
+
+const getWeekValueForDate = (date: Date) => {
+  const { weekNumber, year } = getIsoWeekInfo(date);
+  return `${year}-W${weekNumber}`;
 };
 
 const days: Day[] = [
@@ -190,7 +198,9 @@ function ScheduleBuilderPage() {
   const searchParams = useSearchParams();
   const { user, profile, isLoading, isLoadingProfile } = useAuth();
   const weekOptions = useMemo(() => createRollingWeekOptions(), []);
-  const [selectedWeek, setSelectedWeek] = useState<string>(() => weekOptions[0]?.value ?? "");
+  const [selectedWeek, setSelectedWeek] = useState<string>(() =>
+    getWeekValueForDate(new Date())
+  );
   const [scheduleTitle, setScheduleTitle] = useState("");
   const [modules, setModules] = useState<Module[]>([]);
   const [athletes, setAthletes] = useState<Athlete[]>([]);
@@ -346,9 +356,14 @@ function ScheduleBuilderPage() {
         if (!isCancelled) {
           setScheduleState(schedule, scheduledCount);
 
-          const matchingWeek = weekOptions.find((option) =>
-            option.label.startsWith(`Vecka ${existingWeek.week}`)
-          );
+          const currentYear = getIsoWeekInfo(new Date()).year;
+          const matchingWeek =
+            weekOptions.find(
+              (option) => option.value === `${currentYear}-W${existingWeek.week}`
+            ) ??
+            weekOptions.find((option) =>
+              option.label.startsWith(`Vecka ${existingWeek.week}`)
+            );
 
           if (matchingWeek) {
             setSelectedWeek(matchingWeek.value);
