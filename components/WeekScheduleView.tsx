@@ -469,8 +469,15 @@ export function WeekScheduleView({
       </div>
 
       {selectedModule && (
-        <dialog className="modal modal-open">
-          <div className="modal-box max-w-5xl space-y-4">
+        <dialog
+          className="modal modal-open"
+          onClick={(event) => {
+            if (event.target === event.currentTarget) {
+              setSelectedModule(null);
+            }
+          }}
+        >
+          <div className="modal-box max-w-3xl space-y-4">
             <div className="flex items-start justify-between gap-4">
               <div>
                 <h3 className="text-xl font-semibold">
@@ -485,12 +492,17 @@ export function WeekScheduleView({
               </button>
             </div>
 
-            <div className="grid gap-4 md:grid-cols-[minmax(0,1fr)_minmax(320px,1fr)]">
+            <div className="grid gap-4 md:grid-cols-[minmax(0,1fr)_minmax(300px,1fr)]">
               <div className="space-y-4 rounded-2xl border border-base-300 bg-base-100 p-4">
-                <div className="space-y-1">
-                  <p className="text-sm leading-relaxed text-base-content/80">
-                    {selectedModule.module.description}
+                <div className="space-y-2">
+                  <p className="text-xs uppercase tracking-wide text-neutral">
+                    Beskrivning
                   </p>
+                  <div className="h-40 rounded-lg border border-base-200 bg-base-100/70 p-3 overflow-y-auto">
+                    <p className="text-sm leading-relaxed text-base-content/80">
+                      {selectedModule.module.description}
+                    </p>
+                  </div>
                 </div>
 
                 <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
@@ -572,7 +584,7 @@ export function WeekScheduleView({
                             <span>{fieldMeta.label}</span>
                             {fieldMeta.type === "select" ? (
                               <select
-                                className="select select-bordered select-sm w-32 text-right"
+                                className="select select-bordered select-sm w-28 text-right"
                                 disabled={!isAthlete}
                                 value={fieldState.value}
                                 onChange={(event) =>
@@ -591,7 +603,7 @@ export function WeekScheduleView({
                               </select>
                             ) : (
                               <input
-                                className="input input-bordered input-sm w-32 text-right"
+                                className="input input-bordered input-sm w-28 text-right"
                                 type={
                                   fieldMeta.type === "textarea"
                                     ? "text"
