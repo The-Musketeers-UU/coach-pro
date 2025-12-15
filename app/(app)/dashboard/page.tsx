@@ -14,7 +14,11 @@ import {
   getAthletes,
   getScheduleWeeksWithModules,
 } from "@/lib/supabase/training-modules";
-import { findClosestWeekIndex, getIsoWeekNumber } from "@/lib/week";
+import {
+  findClosestWeekIndex,
+  formatIsoWeekDateRange,
+  getIsoWeekNumber,
+} from "@/lib/week";
 
 const dayLabels = [
   "Måndag",
@@ -30,9 +34,10 @@ const toProgramWeek = (week: ScheduleWeekWithModules): ProgramWeek => ({
   id: week.id,
   label: week.title || `Vecka ${week.week}`,
   focus: `Ägare: ${week.owner}`,
-    days: week.days.map((day) => ({
-      id: day.id,
-      label: dayLabels[day.day - 1] ?? `Dag ${day.day}`,
+  days: week.days.map((day) => ({
+    id: day.id,
+    label: dayLabels[day.day - 1] ?? `Dag ${day.day}`,
+    dayNumber: day.day,
     modules: day.modules.map((module) => ({
       id: module.id,
       scheduleDayId: module.scheduleDayId,
@@ -186,6 +191,9 @@ export default function AthleteSchedulePage() {
               </button>
               <p className="badge-md w-[100px] badge badge-outline badge-secondary font-semibold uppercase tracking-wide">
                 Vecka {weekNumber}
+              </p>
+              <p className="text-[11px] font-medium uppercase tracking-wide text-base-content/60">
+                {formatIsoWeekDateRange(weekNumber)}
               </p>
               <button
                 className="btn btn-outline btn-xs btn-primary"

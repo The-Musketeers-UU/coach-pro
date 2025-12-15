@@ -3,6 +3,7 @@
 import { ReactNode, useEffect, useMemo, useState } from "react";
 import { upsertScheduleModuleFeedback } from "@/lib/supabase/training-modules";
 import { formatCentiseconds, parseDurationToCentiseconds } from "@/lib/time";
+import { getDateRangeForIsoWeek } from "@/lib/week";
 
 import { ModuleBadges } from "@/components/ModuleBadges";
 
@@ -32,6 +33,7 @@ export type ProgramModule = {
 export type ProgramDay = {
   id: string;
   label: string;
+  dayNumber?: number;
   modules: ProgramModule[];
 };
 
@@ -148,6 +150,31 @@ export function WeekScheduleView({
   const [selectedDayId, setSelectedDayId] = useState<string | null>(
     week?.days[0]?.id ?? null
   );
+
+  const weekDateRange = useMemo(
+    () => getDateRangeForIsoWeek(weekNumber, new Date()),
+    [weekNumber]
+  );
+  const today = useMemo(() => {
+    const value = new Date();
+    value.setHours(0, 0, 0, 0);
+    return value;
+  }, []);
+  const dayDateById = useMemo(() => {
+    const map = new Map<string, Date>();
+
+    if (!weekState) return map;
+
+    weekState.days.forEach((day, index) => {
+      const dayNumber = day.dayNumber ?? index + 1;
+      const date = new Date(weekDateRange.start);
+      date.setUTCDate(weekDateRange.start.getUTCDate() + dayNumber - 1);
+      date.setHours(0, 0, 0, 0);
+      map.set(day.id, date);
+    });
+
+    return map;
+  }, [weekDateRange.start, weekState]);
 
   const isAthlete = viewerRole === "athlete";
   void _athleteId;
@@ -373,6 +400,26 @@ export function WeekScheduleView({
       ? weekState.label || `Vecka ${weekNumber}`
       : emptyWeekTitle || `Vecka ${weekNumber}`);
 
+  const hasPendingFeedback = (module: ProgramModule) => {
+    const relevantFields = (Object.keys(FEEDBACK_FIELDS) as FeedbackFieldKey[]).filter(
+      (field) => {
+        const templateValue = module[field];
+        const feedbackValue = module.feedback?.[field];
+
+        return templateValue !== undefined || feedbackValue !== undefined;
+      }
+    );
+
+    if (relevantFields.length === 0) return false;
+    if (!module.feedback) return true;
+
+    return relevantFields.some((field) => {
+      const feedbackValue = module.feedback?.[field];
+
+      return feedbackValue === null || feedbackValue === undefined;
+    });
+  };
+
   const selectedDay =
     weekState?.days.find((day) => day.id === selectedDayId) ??
     weekState?.days[0];
@@ -401,16 +448,33 @@ export function WeekScheduleView({
             }}
             className="group w-full text-left"
           >
-            <div className="space-y-2 rounded-xl border border-base-200 bg-base-100 p-3 transition hover:border-primary focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary">
-              <div className="flex items-start justify-between gap-2">
-                <p className="text-sm font-semibold text-base-content">
-                  {module.title}
+            <div className="indicator w-full text-left">
+              {(() => {
+                const dayDate = dayDateById.get(day.id);
+                const isPastDay = dayDate ? dayDate.getTime() < today.getTime() : false;
+                const showPending = isPastDay && hasPendingFeedback(module);
+
+                if (!showPending) return null;
+
+                return (
+                  <span
+                    className="indicator-item indicator-start -translate-x-2 -translate-y-2 badge badge-info badge-xs border-transparent"
+                    aria-label="Feedback saknas"
+                  />
+                );
+              })()}
+
+              <div className="space-y-2 rounded-xl border border-base-200 bg-base-100 p-3 transition hover:border-primary focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary">
+                <div className="flex items-start justify-between gap-2">
+                  <p className="text-sm font-semibold text-base-content">
+                    {module.title}
+                  </p>
+                </div>
+                <p className="text-xs text-base-content/70">
+                  {module.description}
                 </p>
+                <ModuleBadges module={module} />
               </div>
-              <p className="text-xs text-base-content/70">
-                {module.description}
-              </p>
-              <ModuleBadges module={module} />
             </div>
           </button>
         ))}
