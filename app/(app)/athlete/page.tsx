@@ -132,13 +132,13 @@ export default function AthleteSchedulePage() {
               <div className="dropdown dropdown-end">
                 <label
                   tabIndex={0}
-                  className="badge-md badge badge-outline badge-secondary font-semibold uppercase tracking-wide min-w-[110px] cursor-pointer"
+                  className="badge-md badge badge-outline badge-secondary font-semibold uppercase tracking-wide min-w-[110px] cursor-pointer transition-colors hover:border-primary hover:bg-primary/10 hover:text-primary"
                 >
                   Vecka {weekNumber}
                 </label>
                 <ul
                   tabIndex={0}
-                  className="dropdown-content menu rounded-box z-10 mt-3 max-h-96 w-44 overflow-y-auto border border-base-200 bg-base-100 p-2 shadow"
+                  className="dropdown-content menu menu-vertical rounded-box z-10 mt-3 max-h-96 w-44 overflow-y-auto overflow-x-hidden border border-base-200 bg-base-100 p-2 shadow"
                 >
                   {weekOptions.map((weekOption) => {
                     const hasSchedule = availableWeeks.has(weekOption);

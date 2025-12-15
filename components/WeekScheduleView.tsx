@@ -74,6 +74,25 @@ type FeedbackFormState = Record<
   { active: boolean; value: string }
 >;
 
+const DEFAULT_DAY_LABELS = [
+  "Måndag",
+  "Tisdag",
+  "Onsdag",
+  "Torsdag",
+  "Fredag",
+  "Lördag",
+  "Söndag",
+];
+
+const EMPTY_WEEK_DAYS: ProgramDay[] = DEFAULT_DAY_LABELS.map(
+  (label, index) => ({
+    id: `empty-day-${index + 1}`,
+    label,
+    dayNumber: index + 1,
+    modules: [],
+  })
+);
+
 const FEEDBACK_FIELDS: Record<
   FeedbackFieldKey,
   {
@@ -160,12 +179,14 @@ export function WeekScheduleView({
     value.setHours(0, 0, 0, 0);
     return value;
   }, []);
+  const daysToRender = useMemo(
+    () => weekState?.days ?? EMPTY_WEEK_DAYS,
+    [weekState]
+  );
   const dayDateById = useMemo(() => {
     const map = new Map<string, Date>();
 
-    if (!weekState) return map;
-
-    weekState.days.forEach((day, index) => {
+    daysToRender.forEach((day, index) => {
       const dayNumber = day.dayNumber ?? index + 1;
       const date = new Date(weekDateRange.start);
       date.setUTCDate(weekDateRange.start.getUTCDate() + dayNumber - 1);
@@ -174,7 +195,7 @@ export function WeekScheduleView({
     });
 
     return map;
-  }, [weekDateRange.start, weekState]);
+  }, [daysToRender, weekDateRange.start]);
 
   const isAthlete = viewerRole === "athlete";
   void _athleteId;
@@ -185,19 +206,19 @@ export function WeekScheduleView({
   }, [week]);
 
   useEffect(() => {
-    if (!weekState || weekState.days.length === 0) {
+    if (daysToRender.length === 0) {
       setSelectedDayId(null);
       return;
     }
 
     setSelectedDayId((current) => {
-      if (weekState.days.some((day) => day.id === current)) {
+      if (daysToRender.some((day) => day.id === current)) {
         return current;
       }
 
-      return weekState.days[0]?.id ?? null;
+      return daysToRender[0]?.id ?? null;
     });
-  }, [weekState]);
+  }, [daysToRender]);
 
   const feedbackDefaults = useMemo(() => {
     if (!selectedModule) return null;
@@ -421,8 +442,7 @@ export function WeekScheduleView({
   };
 
   const selectedDay =
-    weekState?.days.find((day) => day.id === selectedDayId) ??
-    weekState?.days[0];
+    daysToRender.find((day) => day.id === selectedDayId) ?? daysToRender[0];
 
   const selectedModuleDayDate = useMemo(() => {
     if (!selectedModule?.module.scheduleDayId) return null;
@@ -529,39 +549,7 @@ export function WeekScheduleView({
           )}
         </div>
 
-        {weekState ? (
-          <>
-            <div className="md:hidden -mx-4 sm:-mx-6">
-              <div className="flex w-full items-center overflow-x-auto border border-base-300 bg-base-100">
-                {weekState.days.map((day) => (
-                  <button
-                    key={day.id}
-                    type="button"
-                    onClick={() => setSelectedDayId(day.id)}
-                    className={`btn btn-sm w-full flex-1 whitespace-nowrap ${
-                      selectedDay?.id === day.id
-                        ? "btn-primary btn-soft"
-                        : "btn-ghost"
-                    }`}
-                  >
-                    <span aria-hidden>{day.label.slice(0, 1)}</span>
-                    <span className="sr-only">{day.label}</span>
-                  </button>
-                ))}
-              </div>
-
-              {selectedDay && (
-                <div className="mt-2 w-full sm:px-6">
-                  {renderDayColumn(selectedDay)}
-                </div>
-              )}
-            </div>
-
-            <div className="hidden grid-cols-1 gap-1 md:grid md:grid-cols-2 xl:grid-cols-7">
-              {weekState.days.map((day) => renderDayColumn(day))}
-            </div>
-          </>
-        ) : (
+        {!weekState && (
           <div className="rounded-2xl border border-dashed border-base-300 bg-base-100/60 p-6 text-center text-sm text-base-content/70 space-y-1">
             <p className="font-semibold text-base-content">
               {emptyWeekTitle || `Vecka ${weekNumber}`}
@@ -569,6 +557,32 @@ export function WeekScheduleView({
             <p>{emptyWeekDescription}</p>
           </div>
         )}
+
+        <div className="md:hidden -mx-4 sm:-mx-6">
+          <div className="flex w-full items-center overflow-x-auto border border-base-300 bg-base-100">
+            {daysToRender.map((day) => (
+              <button
+                key={day.id}
+                type="button"
+                onClick={() => setSelectedDayId(day.id)}
+                className={`btn btn-sm w-full flex-1 whitespace-nowrap ${
+                  selectedDay?.id === day.id ? "btn-primary btn-soft" : "btn-ghost"
+                }`}
+              >
+                <span aria-hidden>{day.label.slice(0, 1)}</span>
+                <span className="sr-only">{day.label}</span>
+              </button>
+            ))}
+          </div>
+
+          {selectedDay && (
+            <div className="mt-2 w-full sm:px-6">{renderDayColumn(selectedDay)}</div>
+          )}
+        </div>
+
+        <div className="hidden grid-cols-1 gap-1 md:grid md:grid-cols-2 xl:grid-cols-7">
+          {daysToRender.map((day) => renderDayColumn(day))}
+        </div>
       </div>
 
       {selectedModule && (
