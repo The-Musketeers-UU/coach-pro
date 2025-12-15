@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 
 import {
   WeekScheduleView,
+  type FeedbackFieldKey,
   type ProgramWeek,
 } from "@/components/WeekScheduleView";
 import { useAuth } from "@/components/auth-provider";
@@ -26,6 +27,38 @@ const dayLabels = [
   "Söndag",
 ];
 
+const getActiveFeedbackFields = (
+  module: ScheduleWeekWithModules["days"][number]["modules"][number],
+) => {
+  const activeFields: FeedbackFieldKey[] = [];
+
+  if (module.distance !== null && module.distance !== undefined) {
+    activeFields.push("distance");
+  }
+
+  if (module.duration !== null && module.duration !== undefined) {
+    activeFields.push("duration");
+  }
+
+  if (module.weight !== null && module.weight !== undefined) {
+    activeFields.push("weight");
+  }
+
+  if (module.comment !== null && module.comment !== undefined) {
+    activeFields.push("comment");
+  }
+
+  if (module.feeling !== null && module.feeling !== undefined) {
+    activeFields.push("feeling");
+  }
+
+  if (module.sleepHours !== null && module.sleepHours !== undefined) {
+    activeFields.push("sleepHours");
+  }
+
+  return activeFields;
+};
+
 const toProgramWeek = (week: ScheduleWeekWithModules): ProgramWeek => ({
   id: week.id,
   label: week.title || `Vecka ${week.week}`,
@@ -46,6 +79,7 @@ const toProgramWeek = (week: ScheduleWeekWithModules): ProgramWeek => ({
       comment: module.feedback?.comment ?? module.comment,
       feeling: module.feedback?.feeling ?? module.feeling,
       sleepHours: module.feedback?.sleepHours ?? module.sleepHours,
+      activeFeedbackFields: getActiveFeedbackFields(module),
       feedback: module.feedback && {
         distance: module.feedback.distance,
         weight: module.feedback.weight,
