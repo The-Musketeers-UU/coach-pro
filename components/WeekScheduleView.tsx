@@ -424,6 +424,22 @@ export function WeekScheduleView({
     weekState?.days.find((day) => day.id === selectedDayId) ??
     weekState?.days[0];
 
+  const selectedModuleDayDate = useMemo(() => {
+    if (!selectedModule?.module.scheduleDayId) return null;
+
+    return dayDateById.get(selectedModule.module.scheduleDayId) ?? null;
+  }, [dayDateById, selectedModule?.module.scheduleDayId]);
+
+  const hasSelectedModulePendingFeedback = useMemo(() => {
+    if (!selectedModule) return false;
+
+    const isPastDay = selectedModuleDayDate
+      ? selectedModuleDayDate.getTime() < today.getTime()
+      : false;
+
+    return isPastDay && hasPendingFeedback(selectedModule.module);
+  }, [hasPendingFeedback, selectedModule, selectedModuleDayDate, today]);
+
   const renderDayColumn = (day: ProgramDay) => (
     <article
       key={day.id}
@@ -458,7 +474,7 @@ export function WeekScheduleView({
 
                 return (
                   <span
-                    className="indicator-item indicator-start -translate-x-2 -translate-y-2 badge badge-info badge-xs border-transparent"
+                    className="indicator-item indicator-start -translate-x-2 -translate-y-2 status status-info"
                     aria-label="Feedback saknas"
                   />
                 );
@@ -555,6 +571,13 @@ export function WeekScheduleView({
                 <h3 className="text-xl font-semibold">
                   {selectedModule.module.title}
                 </h3>
+
+                {hasSelectedModulePendingFeedback && (
+                  <div className="mt-1 flex items-center gap-2 text-sm text-info">
+                    <span className="status status-info" aria-hidden />
+                    <span className="font-medium">Lämna feedback</span>
+                  </div>
+                )}
               </div>
               <button
                 className="btn btn-circle btn-ghost btn-sm"
