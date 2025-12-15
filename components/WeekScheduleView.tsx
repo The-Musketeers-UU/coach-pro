@@ -241,6 +241,14 @@ export function WeekScheduleView({
     setIsSubmittingFeedback(false);
   }, [feedbackDefaults]);
 
+  const hasFeedbackChanges = useMemo(() => {
+    if (!feedbackForm || !feedbackDefaults) return false;
+
+    return (Object.keys(feedbackForm) as FeedbackFieldKey[]).some((field) => {
+      return feedbackForm[field].value !== feedbackDefaults[field].value;
+    });
+  }, [feedbackDefaults, feedbackForm]);
+
   const updateFeedbackValue = (field: FeedbackFieldKey, value: string) =>
     setFeedbackForm((current) =>
       current
@@ -664,9 +672,9 @@ export function WeekScheduleView({
                       className="btn btn-primary btn-sm"
                       onClick={persistFeedback}
                       type="button"
-                      disabled={isSubmittingFeedback}
+                      disabled={isSubmittingFeedback || !hasFeedbackChanges}
                     >
-                      {isSubmittingFeedback ? "Sparar..." : "Lämna feedback"}
+                      {isSubmittingFeedback ? "Sparar..." : "Spara feedback"}
                     </button>
                   </div>
                 )}
