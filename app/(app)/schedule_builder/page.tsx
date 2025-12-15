@@ -66,11 +66,14 @@ const getStartOfIsoWeek = (date: Date) => {
 const createRollingWeekOptions = (): WeekOption[] => {
   const today = new Date();
   const startOfCurrentWeek = getStartOfIsoWeek(today);
+  const startDate = new Date(startOfCurrentWeek);
+  startDate.setFullYear(startDate.getFullYear() - 1);
+
   const endDate = new Date(startOfCurrentWeek);
   endDate.setFullYear(endDate.getFullYear() + 1);
 
   const options: WeekOption[] = [];
-  let currentWeekStart = startOfCurrentWeek;
+  let currentWeekStart = startDate;
 
   while (currentWeekStart <= endDate) {
     const { weekNumber, year } = getIsoWeekInfo(currentWeekStart);
@@ -190,7 +193,13 @@ function ScheduleBuilderPage() {
   const searchParams = useSearchParams();
   const { user, profile, isLoading, isLoadingProfile } = useAuth();
   const weekOptions = useMemo(() => createRollingWeekOptions(), []);
-  const [selectedWeek, setSelectedWeek] = useState<string>(() => weekOptions[0]?.value ?? "");
+  const currentWeekValue = useMemo(() => {
+    const startOfCurrentWeek = getStartOfIsoWeek(new Date());
+    const { weekNumber, year } = getIsoWeekInfo(startOfCurrentWeek);
+
+    return `${year}-W${weekNumber}`;
+  }, []);
+  const [selectedWeek, setSelectedWeek] = useState<string>(() => currentWeekValue);
   const [scheduleTitle, setScheduleTitle] = useState("");
   const [modules, setModules] = useState<Module[]>([]);
   const [athletes, setAthletes] = useState<Athlete[]>([]);
