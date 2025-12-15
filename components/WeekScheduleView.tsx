@@ -20,14 +20,8 @@ export type ProgramModule = {
   comment?: string | null;
   feeling?: number | null;
   sleepHours?: number | null;
-  feedback?: {
-    distance: number | null;
-    weight: number | null;
-    duration: number | null;
-    comment: string | null;
-    feeling: number | null;
-    sleepHours: number | null;
-  };
+  feedbackFields?: FeedbackFieldDefinition[];
+  feedbackResponses?: FeedbackResponse[];
 };
 
 export type ProgramDay = {
@@ -60,7 +54,7 @@ type WeekScheduleViewProps = {
   coachId?: string;
 };
 
-type FeedbackFieldKey =
+export type FeedbackFieldKey =
   | "distance"
   | "duration"
   | "weight"
@@ -68,7 +62,22 @@ type FeedbackFieldKey =
   | "feeling"
   | "sleepHours";
 
-type FeedbackFormState = Record<FeedbackFieldKey, { active: boolean; value: string }>;
+export type FeedbackFieldDefinition = {
+  id: string;
+  type: FeedbackFieldKey;
+  label?: string | null;
+};
+
+export type FeedbackResponse = {
+  fieldId: string;
+  type: FeedbackFieldKey;
+  value: number | string | null;
+};
+
+type FeedbackFormState = Record<
+  string,
+  { id: string; type: FeedbackFieldKey; label?: string | null; active: boolean; value: string }
+>;
 
 const FEEDBACK_FIELDS: Record<
   FeedbackFieldKey,
@@ -122,7 +131,7 @@ export function WeekScheduleView({
   headerAction,
   emptyWeekTitle = "Inget program",
   emptyWeekDescription = "Ingen data for veckan.",
-  viewerRole: _viewerRole,
+  viewerRole,
   athleteId: _athleteId,
   coachId: _coachId,
 }: WeekScheduleViewProps) {
@@ -137,7 +146,6 @@ export function WeekScheduleView({
     week?.days[0]?.id ?? null,
   );
 
-  void _viewerRole;
   void _athleteId;
   void _coachId;
 
@@ -164,10 +172,11 @@ export function WeekScheduleView({
     if (!selectedModule) return null;
 
     const { module } = selectedModule;
-    const buildValue = (
-      field: FeedbackFieldKey,
-      value: number | string | null | undefined,
-    ) => {
+    const responsesById = new Map(
+      (module.feedbackResponses ?? []).map((response) => [response.fieldId, response]),
+    );
+
+    const formatValue = (field: FeedbackFieldKey, value: number | string | null | undefined) => {
       if (value === null || value === undefined) return "";
 
       if (field === "duration") {
@@ -177,28 +186,20 @@ export function WeekScheduleView({
       return String(value);
     };
 
-    const toFieldState = (
-      field: FeedbackFieldKey,
-      templateValue: unknown,
-      feedbackValue: unknown,
-    ): { active: boolean; value: string } => {
-      const resolvedValue =
-        feedbackValue !== undefined ? feedbackValue : templateValue;
+    const defaults: FeedbackFormState = {};
 
-      return {
-        active: templateValue !== undefined || feedbackValue !== undefined,
-        value: buildValue(field, resolvedValue as number | string | null),
+    (module.feedbackFields ?? []).forEach((field) => {
+      const matchedResponse = responsesById.get(field.id);
+      defaults[field.id] = {
+        id: field.id,
+        type: field.type,
+        label: field.label,
+        active: true,
+        value: formatValue(field.type, matchedResponse?.value ?? null),
       };
-    };
+    });
 
-    return {
-      distance: toFieldState("distance", module.distance, module.feedback?.distance),
-      duration: toFieldState("duration", module.duration, module.feedback?.duration),
-      weight: toFieldState("weight", module.weight, module.feedback?.weight),
-      comment: toFieldState("comment", module.comment, module.feedback?.comment),
-      feeling: toFieldState("feeling", module.feeling, module.feedback?.feeling),
-      sleepHours: toFieldState("sleepHours", module.sleepHours, module.feedback?.sleepHours),
-    } satisfies FeedbackFormState;
+    return defaults;
   }, [selectedModule]);
 
   useEffect(() => {
@@ -256,12 +257,12 @@ export function WeekScheduleView({
   );
 
   const handleFeedbackChange = (
-    field: FeedbackFieldKey,
-    updater: (current: FeedbackFormState[FeedbackFieldKey]) => FeedbackFormState[FeedbackFieldKey],
+    fieldId: string,
+    updater: (current: FeedbackFormState[string]) => FeedbackFormState[string],
   ) => {
     setFeedbackForm((prev) => {
-      if (!prev) return prev;
-      return { ...prev, [field]: updater(prev[field]) };
+      if (!prev || !prev[fieldId]) return prev;
+      return { ...prev, [fieldId]: updater(prev[fieldId]) };
     });
   };
 
@@ -269,31 +270,42 @@ export function WeekScheduleView({
     if (!feedbackForm || !selectedModule?.module.id || !selectedModule.module.scheduleDayId)
       return null;
 
-    const toNumber = (value: string) => {
-      const parsed = Number.parseFloat(value);
-      return Number.isFinite(parsed) ? parsed : null;
-    };
+    const responses = Object.values(feedbackForm).map((fieldState) => {
+      const toNumber = (value: string) => {
+        const parsed = Number.parseFloat(value);
+        return Number.isFinite(parsed) ? parsed : null;
+      };
 
-    const toDuration = (value: string) => {
-      const parsed = parseDurationToCentiseconds(value);
-      return parsed === undefined ? null : parsed;
-    };
+      const toDuration = (value: string) => {
+        const parsed = parseDurationToCentiseconds(value);
+        return parsed === undefined ? null : parsed;
+      };
+
+      const parsedValue = (() => {
+        if (!fieldState.active) return null;
+
+        if (fieldState.type === "duration") {
+          return toDuration(fieldState.value);
+        }
+
+        if (fieldState.type === "comment") {
+          return fieldState.value.trim() || null;
+        }
+
+        return toNumber(fieldState.value);
+      })();
+
+      return {
+        fieldId: fieldState.id,
+        type: fieldState.type,
+        value: parsedValue,
+      } satisfies FeedbackResponse;
+    });
 
     return {
       moduleId: selectedModule.module.id,
       scheduleDayId: selectedModule.module.scheduleDayId,
-      distance: feedbackForm.distance.active ? toNumber(feedbackForm.distance.value) : null,
-      duration: feedbackForm.duration.active
-        ? toDuration(feedbackForm.duration.value)
-        : null,
-      weight: feedbackForm.weight.active ? toNumber(feedbackForm.weight.value) : null,
-      comment: feedbackForm.comment.active
-        ? feedbackForm.comment.value.trim() || null
-        : null,
-      feeling: feedbackForm.feeling.active ? toNumber(feedbackForm.feeling.value) : null,
-      sleepHours: feedbackForm.sleepHours.active
-        ? toNumber(feedbackForm.sleepHours.value)
-        : null,
+      responses,
     } as const;
   };
 
@@ -319,14 +331,7 @@ export function WeekScheduleView({
               module.scheduleDayId === payload.scheduleDayId
                 ? {
                     ...module,
-                    feedback: {
-                      distance: updated.distance,
-                      duration: updated.duration,
-                      weight: updated.weight,
-                      comment: updated.comment,
-                      feeling: updated.feeling,
-                      sleepHours: updated.sleepHours,
-                    },
+                    feedbackResponses: updated.responses,
                   }
                 : module,
             ),
@@ -482,76 +487,88 @@ export function WeekScheduleView({
                 </div>
 
                 <div className="space-y-3">
-                  {feedbackForm &&
-                    (Object.keys(FEEDBACK_FIELDS) as FeedbackFieldKey[]).map((field) => {
-                      const fieldState = feedbackForm[field];
-                      const fieldMeta = FEEDBACK_FIELDS[field];
+                  {feedbackForm && (selectedModule.module.feedbackFields ?? []).length === 0 && (
+                    <p className="text-sm text-base-content/70">
+                      Inga feedbackfält valda för detta pass.
+                    </p>
+                  )}
 
-                      return (
-                        <div
-                          key={field}
-                          className="rounded-lg border border-base-200 p-3 space-y-2"
-                        >
-                          <div className="flex items-center justify-between gap-3">
-                            <div className="flex items-center gap-2">
-                              <input
-                                type="checkbox"
-                                className="checkbox checkbox-sm"
-                                checked={fieldState.active}
-                                onChange={(event) =>
-                                  handleFeedbackChange(field, (current) => ({
-                                    ...current,
-                                    active: event.target.checked,
-                                    value: event.target.checked ? current.value : "",
-                                  }))
-                                }
-                              />
-                              <span className="text-sm font-semibold">
-                                {fieldMeta.label}
+                  {feedbackForm &&
+                    (selectedModule.module.feedbackFields ?? [])
+                      .map((field) => {
+                        const fieldState = feedbackForm[field.id];
+                        if (!fieldState) return null;
+
+                        if (viewerRole === "athlete" && !fieldState.active) return null;
+
+                        const fieldMeta = FEEDBACK_FIELDS[field.type];
+                        const label = fieldState.label?.trim() || fieldMeta.label;
+
+                        return (
+                          <div
+                            key={field.id}
+                            className="rounded-lg border border-base-200 p-3 space-y-2"
+                          >
+                            <div className="flex items-center justify-between gap-3">
+                              <div className="flex items-center gap-2">
+                                <input
+                                  type="checkbox"
+                                  className="checkbox checkbox-sm"
+                                  checked={fieldState.active}
+                                  onChange={(event) =>
+                                    handleFeedbackChange(field.id, (current) => ({
+                                      ...current,
+                                      active: event.target.checked,
+                                      value: event.target.checked ? current.value : "",
+                                    }))
+                                  }
+                                />
+                                <span className="text-sm font-semibold">
+                                  {label}
+                                </span>
+                              </div>
+                              <span className="text-xs text-base-content/70">
+                                {fieldState.active ? "Aktiverad" : "Av"}
                               </span>
                             </div>
-                            <span className="text-xs text-base-content/70">
-                              {fieldState.active ? "Aktiverad" : "Av"}
-                            </span>
-                          </div>
 
-                          {fieldState.active && (
-                            <div>
-                              {fieldMeta.type === "textarea" ? (
-                                <textarea
-                                  className="textarea textarea-bordered w-full"
-                                  placeholder={fieldMeta.placeholder}
-                                  value={fieldState.value}
-                                  onChange={(event) =>
-                                    handleFeedbackChange(field, (current) => ({
-                                      ...current,
-                                      value: event.target.value,
-                                    }))
-                                  }
-                                  rows={2}
-                                />
-                              ) : (
-                                <input
-                                  className="input input-bordered input-sm w-full"
-                                  type={fieldMeta.type}
-                                  step={fieldMeta.step}
-                                  min={fieldMeta.min}
-                                  max={fieldMeta.max}
-                                  placeholder={fieldMeta.placeholder}
-                                  value={fieldState.value}
-                                  onChange={(event) =>
-                                    handleFeedbackChange(field, (current) => ({
-                                      ...current,
-                                      value: event.target.value,
-                                    }))
-                                  }
-                                />
-                              )}
-                            </div>
-                          )}
-                        </div>
-                      );
-                    })}
+                            {fieldState.active && (
+                              <div>
+                                {fieldMeta.type === "textarea" ? (
+                                  <textarea
+                                    className="textarea textarea-bordered w-full"
+                                    placeholder={fieldMeta.placeholder}
+                                    value={fieldState.value}
+                                    onChange={(event) =>
+                                      handleFeedbackChange(field.id, (current) => ({
+                                        ...current,
+                                        value: event.target.value,
+                                      }))
+                                    }
+                                    rows={2}
+                                  />
+                                ) : (
+                                  <input
+                                    className="input input-bordered input-sm w-full"
+                                    type={fieldMeta.type}
+                                    step={fieldMeta.step}
+                                    min={fieldMeta.min}
+                                    max={fieldMeta.max}
+                                    placeholder={fieldMeta.placeholder}
+                                    value={fieldState.value}
+                                    onChange={(event) =>
+                                      handleFeedbackChange(field.id, (current) => ({
+                                        ...current,
+                                        value: event.target.value,
+                                      }))
+                                    }
+                                  />
+                                )}
+                              </div>
+                            )}
+                          </div>
+                        );
+                      })}
                 </div>
 
                 <div className="flex items-center justify-end gap-3">

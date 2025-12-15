@@ -18,7 +18,6 @@ import {
   type Module,
   type ModuleForm,
 } from "./types";
-import { formatCentiseconds, parseDurationToCentiseconds } from "@/lib/time";
 
 const createInitialFormState = (): ModuleForm => ({
   title: "",
@@ -31,7 +30,7 @@ const createInitialFormState = (): ModuleForm => ({
   comment: "",
   feeling: "",
   sleepHours: "",
-  activeFeedbackFields: [],
+  feedbackFields: [],
 });
 
 const createEmptySchedule = (days: Day[]): DaySchedule =>
@@ -134,6 +133,7 @@ export const useScheduleBuilderState = ({
       feeling: module.feeling,
       sleepHours: module.sleepHours,
       sourceModuleId: module.sourceModuleId ?? module.id,
+      feedbackFields: module.feedbackFields,
     };
   };
 
@@ -408,29 +408,6 @@ export const useScheduleBuilderState = ({
       };
     }
 
-    const toNumberIfActive = (type: typeof formState.activeFeedbackFields[number]) => {
-      if (!formState.activeFeedbackFields.includes(type)) {
-        return undefined;
-      }
-
-      const rawValue = formState[type].trim();
-      if (!rawValue) return null;
-
-      if (type === "duration") {
-        return parseDurationToCentiseconds(rawValue);
-      }
-
-      const parsed = Number.parseFloat(rawValue);
-      return Number.isFinite(parsed) ? parsed : undefined;
-    };
-
-    const toTextIfActive = (type: "comment") => {
-      if (!formState.activeFeedbackFields.includes(type)) return undefined;
-
-      const trimmed = formState[type].trim();
-      return trimmed || null;
-    };
-
     return {
       module: {
         id: moduleId ?? `mod-${(libraryModuleCounter.current += 1)}`,
@@ -438,13 +415,8 @@ export const useScheduleBuilderState = ({
         description: trimmedDescription,
         category: selectedCategory,
         subcategory: trimmedSubcategory || undefined,
-        distance: toNumberIfActive("distance"),
-        duration: toNumberIfActive("duration"),
-        weight: toNumberIfActive("weight"),
-        feeling: toNumberIfActive("feeling"),
-        sleepHours: toNumberIfActive("sleepHours"),
-        comment: toTextIfActive("comment"),
         sourceModuleId: moduleId,
+        feedbackFields: [...formState.feedbackFields],
       },
     };
   };
@@ -492,46 +464,18 @@ export const useScheduleBuilderState = ({
     setEditFormError(null);
     setIsEditMode(false);
     setEditingContext(context);
-    const activeFeedbackFields: ModuleForm["activeFeedbackFields"] = [];
-
-    if (module.distance !== undefined) {
-      activeFeedbackFields.push("distance");
-    }
-
-    if (module.duration !== undefined) {
-      activeFeedbackFields.push("duration");
-    }
-
-    if (module.weight !== undefined) {
-      activeFeedbackFields.push("weight");
-    }
-
-    if (module.comment) {
-      activeFeedbackFields.push("comment");
-    }
-
-    if (module.feeling !== undefined) {
-      activeFeedbackFields.push("feeling");
-    }
-
-    if (module.sleepHours !== undefined) {
-      activeFeedbackFields.push("sleepHours");
-    }
-
     setEditingModuleForm({
       title: module.title,
       description: module.description,
       category: module.category,
       subcategory: module.subcategory ?? "",
-      distance: module.distance !== undefined ? String(module.distance) : "",
-      duration:
-        module.duration !== undefined ? formatCentiseconds(module.duration) : "",
-      weight: module.weight !== undefined ? String(module.weight) : "",
-      comment: module.comment ?? "",
-      feeling: module.feeling !== undefined ? String(module.feeling) : "",
-      sleepHours:
-        module.sleepHours !== undefined ? String(module.sleepHours) : "",
-      activeFeedbackFields,
+      distance: "",
+      duration: "",
+      weight: "",
+      comment: "",
+      feeling: "",
+      sleepHours: "",
+      feedbackFields: module.feedbackFields ? [...module.feedbackFields] : [],
     });
   };
 
