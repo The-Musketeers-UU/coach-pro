@@ -38,6 +38,9 @@ type WeekOption = { value: string; label: string };
 
 const MILLISECONDS_IN_WEEK = 7 * 24 * 60 * 60 * 1000;
 
+const formatWeekValue = (weekNumber: number, year: number) =>
+  `${year}-W${weekNumber.toString().padStart(2, "0")}`;
+
 const getIsoWeekInfo = (date: Date) => {
   const target = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()));
   const dayNumber = (target.getUTCDay() + 6) % 7;
@@ -77,8 +80,8 @@ const createRollingWeekOptions = (): WeekOption[] => {
 
   while (currentWeekStart <= endDate) {
     const { weekNumber, year } = getIsoWeekInfo(currentWeekStart);
-    const value = `${year}-W${weekNumber}`;
-    const label = `Vecka ${weekNumber} (${year})`;
+    const value = formatWeekValue(weekNumber, year);
+    const label = `Vecka ${weekNumber.toString().padStart(2, "0")} ${year}`;
 
     options.push({ value, label });
 
@@ -90,7 +93,7 @@ const createRollingWeekOptions = (): WeekOption[] => {
 
 const getWeekValueForDate = (date: Date) => {
   const { weekNumber, year } = getIsoWeekInfo(date);
-  return `${year}-W${weekNumber}`;
+  return formatWeekValue(weekNumber, year);
 };
 
 const days: Day[] = [
@@ -359,10 +362,13 @@ function ScheduleBuilderPage() {
           const currentYear = getIsoWeekInfo(new Date()).year;
           const matchingWeek =
             weekOptions.find(
-              (option) => option.value === `${currentYear}-W${existingWeek.week}`
+              (option) =>
+                option.value === formatWeekValue(existingWeek.week, currentYear)
             ) ??
             weekOptions.find((option) =>
-              option.label.startsWith(`Vecka ${existingWeek.week}`)
+              option.label.startsWith(
+                `Vecka ${existingWeek.week.toString().padStart(2, "0")}`
+              )
             );
 
           if (matchingWeek) {
