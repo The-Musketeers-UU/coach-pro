@@ -67,7 +67,10 @@ type FeedbackFieldKey =
   | "feeling"
   | "sleepHours";
 
-type FeedbackFormState = Record<FeedbackFieldKey, { active: boolean; value: string }>;
+type FeedbackFormState = Record<
+  FeedbackFieldKey,
+  { active: boolean; value: string }
+>;
 
 const FEEDBACK_FIELDS: Record<
   FeedbackFieldKey,
@@ -82,32 +85,32 @@ const FEEDBACK_FIELDS: Record<
   }
 > = {
   distance: {
-    label: "Distans",
-    placeholder: "Lägg till distans (m)",
+    label: "Distans (m)",
+    placeholder: "",
     type: "number",
     step: 10,
     min: 0,
   },
   duration: {
-    label: "Tid",
-    placeholder: "Lägg till tid (mm:ss.hh)",
+    label: "Tid (mm:ss.hh)",
+    placeholder: "",
     type: "text",
   },
   weight: {
-    label: "Vikt",
-    placeholder: "Lägg till vikt (kg)",
+    label: "Vikt (kg)",
+    placeholder: "",
     type: "number",
     step: 1,
     min: 0,
   },
   comment: {
     label: "Kommentar",
-    placeholder: "Svara på frågan eller lämna feedback",
+    placeholder: "",
     type: "textarea",
   },
   feeling: {
-    label: "Känsla",
-    placeholder: "Bedöm känsla (1-10)",
+    label: "Känsla (1-10)",
+    placeholder: "",
     type: "select",
     options: Array.from({ length: 10 }, (_, index) => {
       const value = `${index + 1}`;
@@ -116,7 +119,7 @@ const FEEDBACK_FIELDS: Record<
   },
   sleepHours: {
     label: "Sömn (timmar)",
-    placeholder: "Hur mycket sömn?",
+    placeholder: "",
     type: "number",
     step: 0.5,
     min: 0,
@@ -134,15 +137,16 @@ export function WeekScheduleView({
   athleteId: _athleteId,
   coachId: _coachId,
 }: WeekScheduleViewProps) {
-  const [selectedModule, setSelectedModule] = useState<SelectedModuleState | null>(
-    null,
-  );
+  const [selectedModule, setSelectedModule] =
+    useState<SelectedModuleState | null>(null);
   const [weekState, setWeekState] = useState<ProgramWeek | undefined>(week);
-  const [feedbackForm, setFeedbackForm] = useState<FeedbackFormState | null>(null);
+  const [feedbackForm, setFeedbackForm] = useState<FeedbackFormState | null>(
+    null
+  );
   const [feedbackError, setFeedbackError] = useState<string | null>(null);
   const [isSubmittingFeedback, setIsSubmittingFeedback] = useState(false);
   const [selectedDayId, setSelectedDayId] = useState<string | null>(
-    week?.days[0]?.id ?? null,
+    week?.days[0]?.id ?? null
   );
 
   const isAthlete = viewerRole === "athlete";
@@ -174,7 +178,7 @@ export function WeekScheduleView({
     const { module } = selectedModule;
     const buildValue = (
       field: FeedbackFieldKey,
-      value: number | string | null | undefined,
+      value: number | string | null | undefined
     ) => {
       if (value === null || value === undefined) return "";
 
@@ -188,7 +192,7 @@ export function WeekScheduleView({
     const toFieldState = (
       field: FeedbackFieldKey,
       templateValue: unknown,
-      feedbackValue: unknown,
+      feedbackValue: unknown
     ): { active: boolean; value: string } => {
       const resolvedValue =
         feedbackValue !== undefined ? feedbackValue : templateValue;
@@ -200,12 +204,32 @@ export function WeekScheduleView({
     };
 
     return {
-      distance: toFieldState("distance", module.distance, module.feedback?.distance),
-      duration: toFieldState("duration", module.duration, module.feedback?.duration),
+      distance: toFieldState(
+        "distance",
+        module.distance,
+        module.feedback?.distance
+      ),
+      duration: toFieldState(
+        "duration",
+        module.duration,
+        module.feedback?.duration
+      ),
       weight: toFieldState("weight", module.weight, module.feedback?.weight),
-      comment: toFieldState("comment", module.comment, module.feedback?.comment),
-      feeling: toFieldState("feeling", module.feeling, module.feedback?.feeling),
-      sleepHours: toFieldState("sleepHours", module.sleepHours, module.feedback?.sleepHours),
+      comment: toFieldState(
+        "comment",
+        module.comment,
+        module.feedback?.comment
+      ),
+      feeling: toFieldState(
+        "feeling",
+        module.feeling,
+        module.feedback?.feeling
+      ),
+      sleepHours: toFieldState(
+        "sleepHours",
+        module.sleepHours,
+        module.feedback?.sleepHours
+      ),
     } satisfies FeedbackFormState;
   }, [selectedModule]);
 
@@ -217,17 +241,14 @@ export function WeekScheduleView({
     setIsSubmittingFeedback(false);
   }, [feedbackDefaults]);
 
-  const updateFeedbackValue = (
-    field: FeedbackFieldKey,
-    value: string,
-  ) =>
+  const updateFeedbackValue = (field: FeedbackFieldKey, value: string) =>
     setFeedbackForm((current) =>
       current
         ? {
             ...current,
             [field]: { ...current[field], value },
           }
-        : current,
+        : current
     );
 
   const prepareFeedbackPayload = () => {
@@ -313,10 +334,10 @@ export function WeekScheduleView({
                           ...module,
                           feedback: updatedFeedback,
                         }
-                      : module,
+                      : module
                   ),
                 }
-              : day,
+              : day
           ),
         };
       });
@@ -327,11 +348,11 @@ export function WeekScheduleView({
               ...current,
               module: { ...current.module, feedback: updatedFeedback },
             }
-          : current,
+          : current
       );
     } catch (error) {
       setFeedbackError(
-        error instanceof Error ? error.message : "Kunde inte spara feedback.",
+        error instanceof Error ? error.message : "Kunde inte spara feedback."
       );
     } finally {
       setIsSubmittingFeedback(false);
@@ -345,7 +366,8 @@ export function WeekScheduleView({
       : emptyWeekTitle || `Vecka ${weekNumber}`);
 
   const selectedDay =
-    weekState?.days.find((day) => day.id === selectedDayId) ?? weekState?.days[0];
+    weekState?.days.find((day) => day.id === selectedDayId) ??
+    weekState?.days[0];
 
   const renderDayColumn = (day: ProgramDay) => (
     <article
@@ -377,7 +399,9 @@ export function WeekScheduleView({
                   {module.title}
                 </p>
               </div>
-              <p className="text-xs text-base-content/70">{module.description}</p>
+              <p className="text-xs text-base-content/70">
+                {module.description}
+              </p>
               <ModuleBadges module={module} />
             </div>
           </button>
@@ -390,12 +414,12 @@ export function WeekScheduleView({
     <div className="card bg-base-200 border border-base-300 shadow-md">
       <div className="card-body gap-6">
         <div className="flex items-start justify-between gap-4">
-            <div className="space-y-1">
-              <h2 className="text-xl font-semibold">{heading}</h2>
-              {weekState?.focus && (
-                <p className="text-sm text-base-content/70">{weekState.focus}</p>
-              )}
-            </div>
+          <div className="space-y-1">
+            <h2 className="text-xl font-semibold">{heading}</h2>
+            {weekState?.focus && (
+              <p className="text-sm text-base-content/70">{weekState.focus}</p>
+            )}
+          </div>
 
           {headerAction && (
             <div className="flex items-center justify-end">{headerAction}</div>
@@ -424,7 +448,9 @@ export function WeekScheduleView({
               </div>
 
               {selectedDay && (
-                <div className="mt-2 w-full sm:px-6">{renderDayColumn(selectedDay)}</div>
+                <div className="mt-2 w-full sm:px-6">
+                  {renderDayColumn(selectedDay)}
+                </div>
               )}
             </div>
 
@@ -462,18 +488,6 @@ export function WeekScheduleView({
             <div className="grid gap-4 md:grid-cols-[minmax(0,1fr)_minmax(320px,1fr)]">
               <div className="space-y-4 rounded-2xl border border-base-300 bg-base-100 p-4">
                 <div className="space-y-1">
-                  <p className="text-xs uppercase tracking-wide text-neutral">
-                    Titel
-                  </p>
-                  <p className="text-base font-semibold text-base-content">
-                    {selectedModule.module.title}
-                  </p>
-                </div>
-
-                <div className="space-y-1">
-                  <p className="text-xs uppercase tracking-wide text-neutral">
-                    Beskrivning
-                  </p>
                   <p className="text-sm leading-relaxed text-base-content/80">
                     {selectedModule.module.description}
                   </p>
@@ -484,7 +498,7 @@ export function WeekScheduleView({
                     <p className="text-xs uppercase tracking-wide text-neutral">
                       Kategori
                     </p>
-                    <p className="badge badge-outline capitalize">
+                    <p className="badge capitalize badge-accent">
                       {selectedModule.module.category || "-"}
                     </p>
                   </div>
@@ -493,7 +507,7 @@ export function WeekScheduleView({
                     <p className="text-xs uppercase tracking-wide text-neutral">
                       Underkategori
                     </p>
-                    <p className="text-sm text-base-content/80">
+                    <p className="badge capitalize badge-accent badge-outline">
                       {selectedModule.module.subcategory || "-"}
                     </p>
                   </div>
@@ -524,26 +538,14 @@ export function WeekScheduleView({
                         </p>
                       </div>
                     )}
-
-                    {selectedModule.module.sleepHours && (
-                      <div className="space-y-1">
-                        <p className="text-xs uppercase tracking-wide text-neutral">
-                          Sömn (timmar)
-                        </p>
-                        <p className="text-sm text-base-content/80">
-                          {selectedModule.module.sleepHours}
-                        </p>
-                      </div>
-                    )}
                   </div>
                 )}
-
-                <ModuleBadges module={selectedModule.module} />
               </div>
 
-
-              <div className="space-y-4 rounded-2xl border border-base-300 bg-base-100 p-4">
-                <p className="text-xs uppercase tracking-wide text-neutral">Feedback</p>
+              <div className=" rounded-2xl border border-base-300 bg-base-100 p-4">
+                <p className="text-xs uppercase tracking-wide text-neutral pb-2">
+                  Din feedback
+                </p>
 
                 <div className="space-y-2">
                   {feedbackForm &&
@@ -579,7 +581,10 @@ export function WeekScheduleView({
                               >
                                 <option value="">-</option>
                                 {fieldMeta.options?.map((option) => (
-                                  <option key={option.value} value={option.value}>
+                                  <option
+                                    key={option.value}
+                                    value={option.value}
+                                  >
                                     {option.label}
                                   </option>
                                 ))}
@@ -587,7 +592,11 @@ export function WeekScheduleView({
                             ) : (
                               <input
                                 className="input input-bordered input-sm w-32 text-right"
-                                type={fieldMeta.type === "textarea" ? "text" : fieldMeta.type}
+                                type={
+                                  fieldMeta.type === "textarea"
+                                    ? "text"
+                                    : fieldMeta.type
+                                }
                                 step={fieldMeta.step}
                                 min={fieldMeta.min}
                                 max={fieldMeta.max}
@@ -625,12 +634,16 @@ export function WeekScheduleView({
                   )}
 
                   {!feedbackForm && (
-                    <p className="text-sm text-base-content/70">Ingen feedback tillgänglig.</p>
+                    <p className="text-sm text-base-content/70">
+                      Ingen feedback tillgänglig.
+                    </p>
                   )}
                 </div>
 
                 {feedbackError && (
-                  <div className="alert alert-error py-2 text-sm">{feedbackError}</div>
+                  <div className="alert alert-error py-2 text-sm">
+                    {feedbackError}
+                  </div>
                 )}
 
                 {isAthlete && (
@@ -645,17 +658,16 @@ export function WeekScheduleView({
                     </button>
                   </div>
                 )}
-
-                <div className="flex items-center justify-end">
-                  <button
-                    className="btn btn-ghost btn-sm"
-                    onClick={() => setSelectedModule(null)}
-                    type="button"
-                  >
-                    Stäng
-                  </button>
-                </div>
               </div>
+            </div>
+            <div className="flex items-center justify-end">
+              <button
+                className="btn btn-sm"
+                onClick={() => setSelectedModule(null)}
+                type="button"
+              >
+                Stäng
+              </button>
             </div>
 
             <form method="dialog" className="modal-backdrop">
