@@ -7,25 +7,43 @@ import type {
 import { supabase } from "@/lib/supabase";
 import { getSupabaseBrowserClient } from "@/lib/supabase/browser-client";
 
+export type FeedbackFieldType =
+  | "distance"
+  | "duration"
+  | "weight"
+  | "comment"
+  | "feeling"
+  | "sleepHours";
+
+export type FeedbackFieldDefinition = {
+  id: string;
+  type: FeedbackFieldType;
+  label?: string | null;
+};
+
+export type FeedbackResponse = {
+  fieldId: string;
+  type: FeedbackFieldType;
+  value: number | string | null;
+};
+
 type DbModuleRow = {
   id: number | string;
   owner: string;
   name: string;
   category: string;
   subCategory: string | null;
-  distance: number | null;
-  duration: number | null;
-  weight: number | null;
   description: string | null;
-  comment: string | null;
-  feeling: number | null;
-  sleepHours: number | null;
+  activeFeedbackFields: unknown;
 };
 
-export type ModuleRow = DbModuleRow & { id: string };
+export type ModuleRow = Omit<DbModuleRow, "activeFeedbackFields"> & {
+  id: string;
+  activeFeedbackFields: FeedbackFieldDefinition[];
+};
 
 const moduleSelectColumns =
-  "id,owner,name,category,subCategory,distance,duration,weight,description,comment,feeling,sleepHours";
+  "id,owner,name,category,subCategory,description,activeFeedbackFields";
 
 type DbScheduleModuleFeedbackRow = {
   id: number | string;
@@ -37,12 +55,14 @@ type DbScheduleModuleFeedbackRow = {
   comment: string | null;
   feeling: number | null;
   sleepHours: number | null;
+  responses: unknown;
 };
 
 export type ScheduleModuleFeedbackRow = DbScheduleModuleFeedbackRow & {
   id: string;
   moduleId: string;
   scheduleDayId: string;
+  responses: FeedbackResponse[];
 };
 
 type DbScheduleWeekRow = {
@@ -99,9 +119,60 @@ const toDbNumericId = (value: number | string) => {
 const toDbNumericIds = (values: Array<number | string>) =>
   values.map((value) => toDbNumericId(value));
 
+const parseFeedbackFields = (raw: unknown): FeedbackFieldDefinition[] => {
+  if (!Array.isArray(raw)) return [];
+
+  return raw
+    .map((item) => {
+      if (!item || typeof item !== "object") return null;
+
+      const candidate = item as { id?: unknown; type?: unknown; label?: unknown };
+      if (typeof candidate.id !== "string" || typeof candidate.type !== "string") {
+        return null;
+      }
+
+      return {
+        id: candidate.id,
+        type: candidate.type as FeedbackFieldType,
+        label:
+          typeof candidate.label === "string" || candidate.label === null
+            ? candidate.label
+            : undefined,
+      } satisfies FeedbackFieldDefinition;
+    })
+    .filter(Boolean) as FeedbackFieldDefinition[];
+};
+
+const parseFeedbackResponses = (raw: unknown): FeedbackResponse[] => {
+  if (!Array.isArray(raw)) return [];
+
+  return raw
+    .map((item) => {
+      if (!item || typeof item !== "object") return null;
+
+      const candidate = item as { fieldId?: unknown; type?: unknown; value?: unknown };
+      if (typeof candidate.fieldId !== "string" || typeof candidate.type !== "string") {
+        return null;
+      }
+
+      return {
+        fieldId: candidate.fieldId,
+        type: candidate.type as FeedbackFieldType,
+        value:
+          typeof candidate.value === "number" ||
+          typeof candidate.value === "string" ||
+          candidate.value === null
+            ? candidate.value
+            : null,
+      } satisfies FeedbackResponse;
+    })
+    .filter(Boolean) as FeedbackResponse[];
+};
+
 const coerceModuleRow = (row: DbModuleRow): ModuleRow => ({
   ...row,
   id: toId(row.id),
+  activeFeedbackFields: parseFeedbackFields(row.activeFeedbackFields),
 });
 
 const coerceScheduleModuleFeedbackRow = (
@@ -111,6 +182,7 @@ const coerceScheduleModuleFeedbackRow = (
   id: toId(row.id),
   moduleId: toId(row.moduleId),
   scheduleDayId: toId(row.scheduleDayId),
+  responses: parseFeedbackResponses(row.responses),
 });
 
 const coerceScheduleWeekRow = (row: DbScheduleWeekRow): ScheduleWeekRow => ({
@@ -189,13 +261,8 @@ export type CreateModuleInput = {
   name: string;
   category: string;
   subCategory?: string;
-  distance?: number | null;
-  duration?: number | null;
-  weight?: number | null;
   description?: string;
-  comment?: string | null;
-  feeling?: number | null;
-  sleepHours?: number | null;
+  feedbackFields?: FeedbackFieldDefinition[];
 };
 
 export type CreateScheduleWeekInput = {
@@ -208,12 +275,7 @@ export type CreateScheduleWeekInput = {
 export type UpsertScheduleModuleFeedbackInput = {
   moduleId: string;
   scheduleDayId: string;
-  distance: number | null;
-  duration: number | null;
-  weight: number | null;
-  comment: string | null;
-  feeling: number | null;
-  sleepHours: number | null;
+  responses: FeedbackResponse[];
 };
 
 export type AddModuleToScheduleDayInput = {
@@ -226,9 +288,6 @@ export type GetScheduleWeekByWeekInput = {
   athleteId: string;
   week: number;
 };
-
-const sanitizeNumber = (value: number | null | undefined) =>
-  Number.isFinite(value) ? Number(value) : undefined;
 
 const formatSupabaseError = (error: unknown) => {
   if (!error) return "Okänt fel";
@@ -302,12 +361,13 @@ export const upsertScheduleModuleFeedback = async (
   const payload = {
     moduleId: toDbNumericId(input.moduleId),
     scheduleDayId: toDbNumericId(input.scheduleDayId),
-    distance: sanitizeNumber(input.distance) ?? null,
-    duration: sanitizeNumber(input.duration) ?? null,
-    weight: sanitizeNumber(input.weight) ?? null,
-    comment: input.comment?.trim() || null,
-    feeling: sanitizeNumber(input.feeling) ?? null,
-    sleepHours: sanitizeNumber(input.sleepHours) ?? null,
+    responses: input.responses ?? [],
+    distance: null,
+    duration: null,
+    weight: null,
+    comment: null,
+    feeling: null,
+    sleepHours: null,
   } satisfies Omit<DbScheduleModuleFeedbackRow, "id">;
 
   try {
@@ -315,7 +375,7 @@ export const upsertScheduleModuleFeedback = async (
       .from("scheduleModuleFeedback")
       .upsert(payload, { onConflict: "moduleId,scheduleDayId" })
       .select(
-        "id,moduleId,scheduleDayId,distance,duration,weight,comment,feeling,sleepHours",
+        "id,moduleId,scheduleDayId,distance,duration,weight,comment,feeling,sleepHours,responses",
       )
       .single();
 
@@ -434,7 +494,7 @@ const getScheduleDaysWithModules = async (
       const { data: feedbackData, error: feedbackError } = await supabase
         .from("scheduleModuleFeedback")
         .select(
-          "id,moduleId,scheduleDayId,distance,duration,weight,comment,feeling,sleepHours",
+          "id,moduleId,scheduleDayId,distance,duration,weight,comment,feeling,sleepHours,responses",
         )
         .in("scheduleDayId", dayIdsForQuery);
 
@@ -545,9 +605,7 @@ export const getScheduleWeeksWithModules = async (
 
     const { data: modules, error: modulesError } = await supabase
       .from("module")
-      .select(
-        "id,owner,name,category,subCategory,distance,duration,weight,description,comment,feeling,sleepHours",
-      )
+      .select(moduleSelectColumns)
       .in("id", moduleIdsForQuery);
 
     if (modulesError) {
@@ -577,7 +635,7 @@ export const getScheduleWeeksWithModules = async (
     const { data: feedbackData, error: feedbackError } = await supabase
       .from("scheduleModuleFeedback")
       .select(
-        "id,moduleId,scheduleDayId,distance,duration,weight,comment,feeling,sleepHours",
+        "id,moduleId,scheduleDayId,distance,duration,weight,comment,feeling,sleepHours,responses",
       )
       .in("scheduleDayId", dayIdsForQuery);
 
@@ -772,13 +830,10 @@ export const createModule = async (input: CreateModuleInput): Promise<ModuleRow>
     name: input.name,
     category: input.category,
     subCategory: input.subCategory?.trim() || null,
-    distance: sanitizeNumber(input.distance) ?? null,
-    duration: sanitizeNumber(input.duration) ?? null,
-    weight: sanitizeNumber(input.weight) ?? null,
     description: input.description?.trim() || null,
-    comment: input.comment?.trim() || null,
-    feeling: sanitizeNumber(input.feeling) ?? null,
-    sleepHours: sanitizeNumber(input.sleepHours) ?? null,
+    activeFeedbackFields: Array.isArray(input.feedbackFields)
+      ? input.feedbackFields
+      : [],
   } satisfies Omit<ModuleRow, "id">;
 
   try {

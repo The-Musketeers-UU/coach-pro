@@ -38,12 +38,7 @@ model Module {
   category    String  @db.Text
   subCategory String? @db.Text
   description String? @db.Text
-  duration    Int?
-  distance    Int?
-  weight      Int?
-  comment     String? @db.Text
-  feeling     Int?
-  sleepHours  Int?
+  activeFeedbackFields Json @default("[]")
 
   scheduleDays            ScheduleDay[]
   scheduleModuleFeedbacks ScheduleModuleFeedback[]
@@ -99,6 +94,7 @@ model ScheduleModuleFeedback {
   comment    String? @db.Text
   feeling    Int?
   sleepHours Int?
+  responses  Json @default("[]")
 
   @@unique([moduleId, scheduleDayId])
   @@map("scheduleModuleFeedback")
