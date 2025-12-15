@@ -13,6 +13,78 @@ import {
 } from "@/lib/supabase/training-modules";
 import { formatIsoWeekMonthYear, getIsoWeekNumber } from "@/lib/week";
 
+type WeekOption = {
+  value: string;
+  label: string;
+  weekNumber: number;
+  startDate: Date;
+};
+
+const MILLISECONDS_IN_WEEK = 7 * 24 * 60 * 60 * 1000;
+
+const getIsoWeekInfo = (date: Date) => {
+  const target = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()));
+  const dayNumber = (target.getUTCDay() + 6) % 7;
+  target.setUTCDate(target.getUTCDate() - dayNumber + 3);
+
+  const firstThursday = new Date(Date.UTC(target.getUTCFullYear(), 0, 4));
+  const firstThursdayDayNumber = (firstThursday.getUTCDay() + 6) % 7;
+  firstThursday.setUTCDate(firstThursday.getUTCDate() - firstThursdayDayNumber + 3);
+
+  const weekNumber =
+    1 + Math.round((target.getTime() - firstThursday.getTime()) / MILLISECONDS_IN_WEEK);
+
+  return { weekNumber, year: target.getUTCFullYear() } as const;
+};
+
+const getStartOfIsoWeek = (date: Date) => {
+  const result = new Date(date);
+  const day = result.getDay();
+  const diff = day === 0 ? -6 : 1 - day;
+  result.setDate(result.getDate() + diff);
+  result.setHours(0, 0, 0, 0);
+
+  return result;
+};
+
+const createRollingWeekOptions = (): WeekOption[] => {
+  const today = new Date();
+  const startOfCurrentWeek = getStartOfIsoWeek(today);
+  const startDate = new Date(startOfCurrentWeek);
+  startDate.setFullYear(startDate.getFullYear() - 1);
+
+  const endDate = new Date(startOfCurrentWeek);
+  endDate.setFullYear(endDate.getFullYear() + 1);
+
+  const options: WeekOption[] = [];
+  let currentWeekStart = startDate;
+
+  while (currentWeekStart <= endDate) {
+    const { weekNumber, year } = getIsoWeekInfo(currentWeekStart);
+    const value = `${year}-W${weekNumber}`;
+    const label = `Vecka ${weekNumber} (${year})`;
+
+    options.push({
+      value,
+      label,
+      weekNumber,
+      startDate: new Date(currentWeekStart),
+    });
+
+    currentWeekStart = new Date(currentWeekStart.getTime() + MILLISECONDS_IN_WEEK);
+  }
+
+  return options;
+};
+
+const parseWeekNumber = (value: string): number | null => {
+  const match = /^\d{4}-W(\d{1,2})$/.exec(value);
+  if (!match) return null;
+
+  const week = Number(match[1]);
+  return Number.isNaN(week) ? null : week;
+};
+
 const dayLabels = [
   "Måndag",
   "Tisdag",
@@ -58,34 +130,75 @@ const toProgramWeek = (week: ScheduleWeekWithModules): ProgramWeek => ({
 
 export default function AthleteSchedulePage() {
   const { user, profile, isLoading, isLoadingProfile } = useAuth();
-  const [selectedWeek, setSelectedWeek] = useState(() =>
-    getIsoWeekNumber(new Date())
-  );
+  const weekOptions = useMemo(() => createRollingWeekOptions(), []);
+  const currentWeekValue = useMemo(() => {
+    const startOfCurrentWeek = getStartOfIsoWeek(new Date());
+    const { weekNumber, year } = getIsoWeekInfo(startOfCurrentWeek);
+
+    return `${year}-W${weekNumber}`;
+  }, []);
+  const [selectedWeekValue, setSelectedWeekValue] = useState(currentWeekValue);
   const [rawWeeks, setRawWeeks] = useState<ScheduleWeekWithModules[]>([]);
   const [isFetching, setIsFetching] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const currentWeekNumber = useMemo(() => getIsoWeekNumber(new Date()), []);
-
-  const weekOptions = useMemo(
-    () => Array.from({ length: 53 }, (_, i) => i + 1),
-    []
-  );
   const availableWeeks = useMemo(
     () => new Set(rawWeeks.map((week) => week.week)),
     [rawWeeks]
   );
+  const activeWeekOption = useMemo(() => {
+    if (weekOptions.length === 0) return undefined;
+
+    return (
+      weekOptions.find((option) => option.value === selectedWeekValue) ??
+      weekOptions.find((option) => option.value === currentWeekValue) ??
+      weekOptions[0]
+    );
+  }, [currentWeekValue, selectedWeekValue, weekOptions]);
+  const weekNumber = useMemo(
+    () =>
+      parseWeekNumber(activeWeekOption?.value ?? currentWeekValue) ??
+      currentWeekNumber,
+    [activeWeekOption?.value, currentWeekNumber, currentWeekValue],
+  );
+  const weekReferenceDate = activeWeekOption?.startDate ?? new Date();
   const activeWeek = useMemo(() => {
-    const weekWithData = rawWeeks.find((week) => week.week === selectedWeek);
+    const weekWithData = rawWeeks.find((week) => week.week === weekNumber);
     return weekWithData ? toProgramWeek(weekWithData) : undefined;
-  }, [rawWeeks, selectedWeek]);
-  const weekNumber = selectedWeek || currentWeekNumber;
+  }, [rawWeeks, weekNumber]);
+  const activeWeekIndex = useMemo(
+    () =>
+      activeWeekOption
+        ? weekOptions.findIndex((option) => option.value === activeWeekOption.value)
+        : -1,
+    [activeWeekOption, weekOptions],
+  );
+  const isFirstSelectableWeek = activeWeekIndex <= 0;
+  const isLastSelectableWeek =
+    activeWeekIndex === -1 || activeWeekIndex >= weekOptions.length - 1;
 
   const goToPreviousWeek = () =>
-    setSelectedWeek((prev) => (prev > 1 ? prev - 1 : 1));
+    setSelectedWeekValue((previous) => {
+      const previousIndex = weekOptions.findIndex(
+        (option) => option.value === previous,
+      );
+
+      if (previousIndex <= 0) return previous;
+
+      return weekOptions[previousIndex - 1]?.value ?? previous;
+    });
 
   const goToNextWeek = () =>
-    setSelectedWeek((prev) => (prev < 53 ? prev + 1 : 53));
+    setSelectedWeekValue((previous) => {
+      const previousIndex = weekOptions.findIndex(
+        (option) => option.value === previous,
+      );
+      if (previousIndex === -1) return previous;
+
+      const nextIndex = Math.min(weekOptions.length - 1, previousIndex + 1);
+      return weekOptions[nextIndex]?.value ?? previous;
+    });
 
   useEffect(() => {
     if (!profile?.id) return;
@@ -124,7 +237,7 @@ export default function AthleteSchedulePage() {
     <div className="min-h-screen">
       <div className="mx-auto max-w-full space-y-5 px-5 py-5">
         <p className="text-md font-medium uppercase tracking-wide text-base-content/60 text-center">
-          {formatIsoWeekMonthYear(weekNumber)}
+          {formatIsoWeekMonthYear(weekNumber, weekReferenceDate)}
         </p>
         <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between justify-self-center">
           <div className="flex items-center gap-3">
@@ -132,7 +245,7 @@ export default function AthleteSchedulePage() {
               className="btn btn-outline btn-xs btn-primary"
               onClick={goToPreviousWeek}
               aria-label="Previous week"
-              disabled={weekNumber <= 1}
+              disabled={isFirstSelectableWeek}
             >
               &lt;
             </button>
@@ -140,25 +253,23 @@ export default function AthleteSchedulePage() {
             <div className="flex flex-col items-center gap-1">
               <select
                 className="select select-bordered select-sm min-w-[110px] uppercase tracking-wide"
-                value={weekNumber}
-                onChange={(event) =>
-                  setSelectedWeek(Number(event.target.value))
-                }
+                value={activeWeekOption?.value ?? currentWeekValue}
+                onChange={(event) => setSelectedWeekValue(event.target.value)}
               >
                 {weekOptions.map((weekOption) => {
-                  const hasSchedule = availableWeeks.has(weekOption);
+                  const hasSchedule = availableWeeks.has(weekOption.weekNumber);
 
                   return (
                     <option
-                      key={weekOption}
-                      value={weekOption}
+                      key={weekOption.value}
+                      value={weekOption.value}
                       className={
                         hasSchedule
                           ? "text-base-content"
                           : "text-base-content/50"
                       }
                     >
-                      Vecka {weekOption}
+                      {weekOption.label}
                     </option>
                   );
                 })}
@@ -169,7 +280,7 @@ export default function AthleteSchedulePage() {
               className="btn btn-outline btn-xs btn-primary"
               onClick={goToNextWeek}
               aria-label="Next week"
-              disabled={weekNumber >= 53}
+              disabled={isLastSelectableWeek}
             >
               &gt;
             </button>
