@@ -189,12 +189,14 @@ export default function AthleteSchedulePage() {
               >
                 &lt;
               </button>
-              <p className="badge-md w-[100px] badge badge-outline badge-secondary font-semibold uppercase tracking-wide">
-                Vecka {weekNumber}
-              </p>
-              <p className="text-[11px] font-medium uppercase tracking-wide text-base-content/60">
-                {formatIsoWeekMonthYear(weekNumber)}
-              </p>
+              <div className="flex flex-col items-center">
+                <p className="badge-md w-[100px] badge badge-outline badge-secondary font-semibold uppercase tracking-wide">
+                  Vecka {weekNumber}
+                </p>
+                <p className="text-[11px] font-medium uppercase tracking-wide text-base-content/60">
+                  {formatIsoWeekMonthYear(weekNumber)}
+                </p>
+              </div>
               <button
                 className="btn btn-outline btn-xs btn-primary"
                 onClick={goToNextWeek}

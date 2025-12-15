@@ -434,7 +434,7 @@ export function WeekScheduleView({
     if (!selectedModule) return false;
 
     const isPastDay = selectedModuleDayDate
-      ? selectedModuleDayDate.getTime() < today.getTime()
+      ? selectedModuleDayDate.getTime() <= today.getTime()
       : false;
 
     return isPastDay && hasPendingFeedback(selectedModule.module);
@@ -443,20 +443,23 @@ export function WeekScheduleView({
   const renderDayColumn = (day: ProgramDay) => {
     const dayDate = dayDateById.get(day.id);
     const dayNumberLabel = dayDate ? dayDate.getUTCDate().toString() : "";
+    const isToday = dayDate ? dayDate.getTime() === today.getTime() : false;
 
     return (
       <article
         key={day.id}
-        className="flex min-h-[600px] flex-col rounded-2xl border border-dashed border-base-200 bg-base-300 p-2"
+        className={`flex min-h-[600px] flex-col rounded-2xl border border-dashed border-base-200 bg-base-300 p-2 ${
+          isToday ? "border-primary ring-2 ring-primary/30" : ""
+        }`}
       >
-        <div className="flex items-center justify-between">
+        <div className="flex items-center gap-4">
           <div>
             <p className="text-xs font-semibold uppercase tracking-wide text-neutral">
               {day.label}
             </p>
           </div>
           {dayNumberLabel && (
-            <p className="text-xs font-semibold text-base-content/70">
+            <p className="ml-6 text-xs font-semibold text-base-content/70">
               {dayNumberLabel}
             </p>
           )}
@@ -476,14 +479,16 @@ export function WeekScheduleView({
             <div className="indicator w-full text-left">
               {(() => {
                 const dayDate = dayDateById.get(day.id);
-                const isPastDay = dayDate ? dayDate.getTime() < today.getTime() : false;
+                const isPastDay = dayDate
+                  ? dayDate.getTime() <= today.getTime()
+                  : false;
                 const showPending = isPastDay && hasPendingFeedback(module);
 
                 if (!showPending) return null;
 
                 return (
                   <span
-                    className="indicator-item indicator-start -translate-x-2 -translate-y-2 status status-info"
+                    className="indicator-item indicator-top indicator-end translate-x-1 translate-y-1 status status-info"
                     aria-label="Feedback saknas"
                   />
                 );
