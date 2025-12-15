@@ -16,7 +16,7 @@ import {
 } from "@/lib/supabase/training-modules";
 import {
   findClosestWeekIndex,
-  formatIsoWeekDateRange,
+  formatIsoWeekMonthYear,
   getIsoWeekNumber,
 } from "@/lib/week";
 
@@ -193,7 +193,7 @@ export default function AthleteSchedulePage() {
                 Vecka {weekNumber}
               </p>
               <p className="text-[11px] font-medium uppercase tracking-wide text-base-content/60">
-                {formatIsoWeekDateRange(weekNumber)}
+                {formatIsoWeekMonthYear(weekNumber)}
               </p>
               <button
                 className="btn btn-outline btn-xs btn-primary"

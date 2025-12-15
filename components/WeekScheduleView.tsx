@@ -440,18 +440,27 @@ export function WeekScheduleView({
     return isPastDay && hasPendingFeedback(selectedModule.module);
   }, [hasPendingFeedback, selectedModule, selectedModuleDayDate, today]);
 
-  const renderDayColumn = (day: ProgramDay) => (
-    <article
-      key={day.id}
-      className="flex min-h-[600px] flex-col rounded-2xl border border-dashed border-base-200 bg-base-300 p-2"
-    >
-      <div className="flex items-center justify-between">
-        <div>
-          <p className="text-xs font-semibold uppercase tracking-wide text-neutral">
-            {day.label}
-          </p>
+  const renderDayColumn = (day: ProgramDay) => {
+    const dayDate = dayDateById.get(day.id);
+    const dayNumberLabel = dayDate ? dayDate.getUTCDate().toString() : "";
+
+    return (
+      <article
+        key={day.id}
+        className="flex min-h-[600px] flex-col rounded-2xl border border-dashed border-base-200 bg-base-300 p-2"
+      >
+        <div className="flex items-center justify-between">
+          <div>
+            <p className="text-xs font-semibold uppercase tracking-wide text-neutral">
+              {day.label}
+            </p>
+          </div>
+          {dayNumberLabel && (
+            <p className="text-xs font-semibold text-base-content/70">
+              {dayNumberLabel}
+            </p>
+          )}
         </div>
-      </div>
 
       <div className="mt-3 flex-1 space-y-1">
         {day.modules.map((module, index) => (
@@ -495,8 +504,9 @@ export function WeekScheduleView({
           </button>
         ))}
       </div>
-    </article>
-  );
+      </article>
+    );
+  };
 
   return (
     <div className="card bg-base-200 border border-base-300 shadow-md">
@@ -571,13 +581,6 @@ export function WeekScheduleView({
                 <h3 className="text-xl font-semibold">
                   {selectedModule.module.title}
                 </h3>
-
-                {hasSelectedModulePendingFeedback && (
-                  <div className="mt-1 flex items-center gap-2 text-sm text-info">
-                    <span className="status status-info" aria-hidden />
-                    <span className="font-medium">Lämna feedback</span>
-                  </div>
-                )}
               </div>
               <button
                 className="btn btn-circle btn-ghost btn-sm"
@@ -649,10 +652,19 @@ export function WeekScheduleView({
                 )}
               </div>
 
-              <div className=" rounded-2xl border border-base-300 bg-base-100 p-4">
-                <p className="text-xs uppercase tracking-wide text-neutral pb-2">
-                  Din feedback
-                </p>
+              <div className="space-y-4 rounded-2xl border border-base-300 bg-base-100 p-4">
+                <div className="flex items-center justify-between gap-2">
+                  <p className="text-xs uppercase tracking-wide text-neutral">
+                    Din feedback
+                  </p>
+
+                  {hasSelectedModulePendingFeedback && (
+                    <div className="flex items-center gap-2 text-sm text-info">
+                      <span className="status status-info" aria-hidden />
+                      <span className="font-medium">Lämna feedback</span>
+                    </div>
+                  )}
+                </div>
 
                 <div className="space-y-2">
                   {feedbackForm &&
@@ -673,56 +685,51 @@ export function WeekScheduleView({
                       return (
                         <div
                           key={field}
-                          className="rounded-lg border border-base-200 px-3 py-2"
+                          className="flex items-center justify-between gap-3 py-1"
                         >
-                          <label className="flex items-center justify-between gap-3 text-[11px] font-semibold uppercase tracking-wide text-neutral">
-                            <span>{fieldMeta.label}</span>
-                            {fieldMeta.type === "select" ? (
-                              <select
-                                className="select select-bordered select-sm w-28 text-right"
-                                disabled={!isAthlete}
-                                value={fieldState.value}
-                                onChange={(event) =>
-                                  updateFeedbackValue(field, event.target.value)
-                                }
-                              >
-                                <option value="">-</option>
-                                {fieldMeta.options?.map((option) => (
-                                  <option
-                                    key={option.value}
-                                    value={option.value}
-                                  >
-                                    {option.label}
-                                  </option>
-                                ))}
-                              </select>
-                            ) : (
-                              <input
-                                className="input input-bordered input-sm w-28 text-right"
-                                type={
-                                  fieldMeta.type === "textarea"
-                                    ? "text"
-                                    : fieldMeta.type
-                                }
-                                step={fieldMeta.step}
-                                min={fieldMeta.min}
-                                max={fieldMeta.max}
-                                placeholder={fieldMeta.placeholder}
-                                value={fieldState.value}
-                                readOnly={!isAthlete}
-                                disabled={!isAthlete}
-                                onChange={(event) =>
-                                  updateFeedbackValue(field, event.target.value)
-                                }
-                              />
-                            )}
-                          </label>
+                          <span className="text-[11px] font-semibold uppercase tracking-wide text-neutral">
+                            {fieldMeta.label}
+                          </span>
+                          {fieldMeta.type === "select" ? (
+                            <select
+                              className="select select-bordered select-sm w-28 text-right"
+                              disabled={!isAthlete}
+                              value={fieldState.value}
+                              onChange={(event) =>
+                                updateFeedbackValue(field, event.target.value)
+                              }
+                            >
+                              <option value="">-</option>
+                              {fieldMeta.options?.map((option) => (
+                                <option key={option.value} value={option.value}>
+                                  {option.label}
+                                </option>
+                              ))}
+                            </select>
+                          ) : (
+                            <input
+                              className="input input-bordered input-sm w-28 text-right"
+                              type={
+                                fieldMeta.type === "textarea" ? "text" : fieldMeta.type
+                              }
+                              step={fieldMeta.step}
+                              min={fieldMeta.min}
+                              max={fieldMeta.max}
+                              placeholder={fieldMeta.placeholder}
+                              value={fieldState.value}
+                              readOnly={!isAthlete}
+                              disabled={!isAthlete}
+                              onChange={(event) =>
+                                updateFeedbackValue(field, event.target.value)
+                              }
+                            />
+                          )}
                         </div>
                       );
                     })}
 
                   {feedbackForm?.comment.active && (
-                    <div className="space-y-2 rounded-lg border border-base-200 p-3">
+                    <div className="space-y-1">
                       <p className="text-[11px] font-semibold uppercase tracking-wide text-neutral">
                         Kommentar
                       </p>

@@ -64,6 +64,21 @@ export const formatIsoWeekDateRange = (
   )}`;
 };
 
+export const formatIsoWeekMonthYear = (
+  weekNumber: number,
+  referenceDate = new Date(),
+) => {
+  const { start, isoYear } = getDateRangeForIsoWeek(weekNumber, referenceDate);
+  const monthYearFormatter = new Intl.DateTimeFormat("sv-SE", {
+    month: "long",
+    year: "numeric",
+  });
+
+  return monthYearFormatter.format(
+    new Date(Date.UTC(isoYear, start.getUTCMonth(), start.getUTCDate())),
+  );
+};
+
 export { getStartDateOfIsoWeek, resolveIsoWeekYear };
 
 export const findClosestWeekIndex = (
