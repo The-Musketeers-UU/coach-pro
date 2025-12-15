@@ -130,15 +130,31 @@ export default function AthleteSchedulePage() {
 
             <div className="flex flex-col items-center gap-1">
               <div className="dropdown dropdown-end">
-                <label
+                <button
+                  type="button"
                   tabIndex={0}
-                  className="badge-md badge badge-outline badge-secondary font-semibold uppercase tracking-wide min-w-[110px] cursor-pointer transition-colors hover:border-primary hover:bg-primary/10 hover:text-primary"
+                  className="btn btn-outline btn-secondary btn-sm min-w-[128px] justify-between font-semibold uppercase tracking-wide"
                 >
-                  Vecka {weekNumber}
-                </label>
+                  <span>Vecka {weekNumber}</span>
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    className="h-4 w-4"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                    strokeWidth="1.5"
+                    aria-hidden
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      d="M6.75 9l5.25 5.25L17.25 9"
+                    />
+                  </svg>
+                </button>
                 <ul
                   tabIndex={0}
-                  className="dropdown-content menu menu-vertical rounded-box z-10 mt-3 max-h-96 w-44 overflow-y-auto overflow-x-hidden border border-base-200 bg-base-100 p-2 shadow"
+                  className="dropdown-content menu menu-vertical rounded-box z-10 mt-2 max-h-96 w-44 overflow-y-auto overflow-x-hidden border border-base-200 bg-base-100 p-2 shadow"
                 >
                   {weekOptions.map((weekOption) => {
                     const hasSchedule = availableWeeks.has(weekOption);

@@ -549,15 +549,6 @@ export function WeekScheduleView({
           )}
         </div>
 
-        {!weekState && (
-          <div className="rounded-2xl border border-dashed border-base-300 bg-base-100/60 p-6 text-center text-sm text-base-content/70 space-y-1">
-            <p className="font-semibold text-base-content">
-              {emptyWeekTitle || `Vecka ${weekNumber}`}
-            </p>
-            <p>{emptyWeekDescription}</p>
-          </div>
-        )}
-
         <div className="md:hidden -mx-4 sm:-mx-6">
           <div className="flex w-full items-center overflow-x-auto border border-base-300 bg-base-100">
             {daysToRender.map((day) => (

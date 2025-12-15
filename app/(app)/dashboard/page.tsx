@@ -189,10 +189,61 @@ export default function AthleteSchedulePage() {
               >
                 &lt;
               </button>
-              <div className="flex flex-col items-center">
-                <p className="badge-md w-[100px] badge badge-outline badge-secondary font-semibold uppercase tracking-wide">
-                  Vecka {weekNumber}
-                </p>
+              <div className="flex flex-col items-center gap-1">
+                <div className="dropdown dropdown-end">
+                  <button
+                    type="button"
+                    tabIndex={0}
+                    className="btn btn-outline btn-secondary btn-sm min-w-[120px] justify-between font-semibold uppercase tracking-wide"
+                  >
+                    <span>Vecka {weekNumber}</span>
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      className="h-4 w-4"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      stroke="currentColor"
+                      strokeWidth="1.5"
+                      aria-hidden
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        d="M6.75 9l5.25 5.25L17.25 9"
+                      />
+                    </svg>
+                  </button>
+                  <ul
+                    tabIndex={0}
+                    className="dropdown-content menu menu-vertical rounded-box z-10 mt-2 max-h-96 w-44 overflow-y-auto overflow-x-hidden border border-base-200 bg-base-100 p-2 shadow"
+                  >
+                    {rawWeeks.length === 0 && (
+                      <li>
+                        <span className="px-3 py-2 text-sm text-base-content/60">
+                          Inga veckor tillgängliga
+                        </span>
+                      </li>
+                    )}
+                    {rawWeeks.map((weekOption, index) => {
+                      const isActive = index === weekIndex;
+
+                      return (
+                        <li key={weekOption.id}>
+                          <button
+                            type="button"
+                            onClick={() => setWeekIndex(index)}
+                            className={`flex items-center justify-between gap-2 rounded-lg px-3 py-2 text-left text-sm ${
+                              isActive ? "bg-primary/10 font-semibold text-primary" : ""
+                            }`}
+                          >
+                            <span>Vecka {weekOption.week}</span>
+                            <span className="badge badge-xs border-transparent bg-base-content" aria-hidden />
+                          </button>
+                        </li>
+                      );
+                    })}
+                  </ul>
+                </div>
                 <p className="text-[11px] font-medium uppercase tracking-wide text-base-content/60">
                   {formatIsoWeekMonthYear(weekNumber)}
                 </p>
