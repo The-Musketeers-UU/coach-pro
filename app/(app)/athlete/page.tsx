@@ -85,10 +85,13 @@ export default function AthleteSchedulePage() {
       }),
     []
   );
-  const availableWeeks = useMemo(
-    () => new Set(rawWeeks.map((week) => week.week)),
-    [rawWeeks]
-  );
+  const availableWeeks = useMemo(() => {
+    const weeksWithSchedules = rawWeeks.filter((week) =>
+      week.days.some((day) => day.modules.length > 0)
+    );
+
+    return new Set(weeksWithSchedules.map((week) => week.week));
+  }, [rawWeeks]);
   const activeWeek = useMemo(() => {
     const weekWithData = rawWeeks.find((week) => week.week === selectedWeek);
     return weekWithData ? toProgramWeek(weekWithData) : undefined;
