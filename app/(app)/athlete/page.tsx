@@ -11,7 +11,11 @@ import {
   type ScheduleWeekWithModules,
   getScheduleWeeksWithModules,
 } from "@/lib/supabase/training-modules";
-import { formatIsoWeekMonthYear, getIsoWeekNumber } from "@/lib/week";
+import {
+  formatIsoWeekMonthYear,
+  getDateRangeForIsoWeek,
+  getIsoWeekNumber,
+} from "@/lib/week";
 
 const dayLabels = [
   "Måndag",
@@ -68,7 +72,17 @@ export default function AthleteSchedulePage() {
   const currentWeekNumber = useMemo(() => getIsoWeekNumber(new Date()), []);
 
   const weekOptions = useMemo(
-    () => Array.from({ length: 53 }, (_, i) => i + 1),
+    () =>
+      Array.from({ length: 53 }, (_, i) => {
+        const week = i + 1;
+        const { isoYear } = getDateRangeForIsoWeek(week);
+
+        return {
+          week,
+          isoYear,
+          label: `Vecka ${week} (${isoYear})`,
+        };
+      }),
     []
   );
   const availableWeeks = useMemo(
@@ -146,19 +160,24 @@ export default function AthleteSchedulePage() {
                 }
               >
                 {weekOptions.map((weekOption) => {
-                  const hasSchedule = availableWeeks.has(weekOption);
+                  const hasSchedule = availableWeeks.has(weekOption.week);
 
                   return (
                     <option
-                      key={weekOption}
-                      value={weekOption}
+                      key={weekOption.week}
+                      value={weekOption.week}
                       className={
                         hasSchedule
                           ? "text-base-content"
                           : "text-base-content/50"
                       }
+                      style={{
+                        color: hasSchedule
+                          ? "hsl(var(--bc))"
+                          : "hsl(var(--bc) / 0.5)",
+                      }}
                     >
-                      Vecka {weekOption}
+                      {weekOption.label}
                     </option>
                   );
                 })}
