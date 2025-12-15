@@ -8,11 +8,7 @@ import {
   type ScheduleWeekWithModules,
   getScheduleWeeksWithModules,
 } from "@/lib/supabase/training-modules";
-import {
-  findClosestWeekIndex,
-  formatIsoWeekMonthYear,
-  getIsoWeekNumber,
-} from "@/lib/week";
+import { formatIsoWeekMonthYear, getIsoWeekNumber } from "@/lib/week";
 
 const dayLabels = [
   "Måndag",
@@ -59,26 +55,31 @@ const toProgramWeek = (week: ScheduleWeekWithModules): ProgramWeek => ({
 
 export default function AthleteSchedulePage() {
   const { user, profile, isLoading, isLoadingProfile } = useAuth();
-  const [weekIndex, setWeekIndex] = useState(0);
+  const [selectedWeek, setSelectedWeek] = useState(() =>
+    getIsoWeekNumber(new Date()),
+  );
   const [rawWeeks, setRawWeeks] = useState<ScheduleWeekWithModules[]>([]);
   const [isFetching, setIsFetching] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const currentWeekNumber = getIsoWeekNumber(new Date());
+  const currentWeekNumber = useMemo(() => getIsoWeekNumber(new Date()), []);
 
-  const viewWeeks = useMemo(() => rawWeeks.map(toProgramWeek), [rawWeeks]);
-  const safeWeekIndex = Math.min(
-    Math.max(weekIndex, 0),
-    Math.max(viewWeeks.length - 1, 0),
+  const weekOptions = useMemo(() => Array.from({ length: 53 }, (_, i) => i + 1), []);
+  const availableWeeks = useMemo(
+    () => new Set(rawWeeks.map((week) => week.week)),
+    [rawWeeks],
   );
-  const activeWeek = viewWeeks[safeWeekIndex];
-  const weekNumber = rawWeeks[safeWeekIndex]?.week ?? currentWeekNumber;
+  const activeWeek = useMemo(() => {
+    const weekWithData = rawWeeks.find((week) => week.week === selectedWeek);
+    return weekWithData ? toProgramWeek(weekWithData) : undefined;
+  }, [rawWeeks, selectedWeek]);
+  const weekNumber = selectedWeek || currentWeekNumber;
 
   const goToPreviousWeek = () =>
-    setWeekIndex((prev) => Math.max(0, Math.min(prev, viewWeeks.length - 1) - 1));
+    setSelectedWeek((prev) => (prev > 1 ? prev - 1 : 1));
 
   const goToNextWeek = () =>
-    setWeekIndex((prev) => Math.min(viewWeeks.length - 1, prev + 1));
+    setSelectedWeek((prev) => (prev < 53 ? prev + 1 : 53));
 
   useEffect(() => {
     if (!profile?.id) return;
@@ -89,7 +90,6 @@ export default function AthleteSchedulePage() {
       try {
         const weeks = await getScheduleWeeksWithModules(profile.id);
         setRawWeeks(weeks);
-        setWeekIndex(findClosestWeekIndex(weeks, currentWeekNumber));
       } catch (supabaseError) {
         setError(
           supabaseError instanceof Error
@@ -117,56 +117,86 @@ export default function AthleteSchedulePage() {
   return (
     <div className="min-h-screen">
       <div className="mx-auto max-w-full space-y-5 px-5 py-5">
-          <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between justify-self-center">
-            <div className="flex items-center gap-3">
-              <button
-                className="btn btn-outline btn-xs btn-primary"
-                onClick={goToPreviousWeek}
-                aria-label="Previous week"
-                disabled={weekIndex === 0}
-              >
-                &lt;
-              </button>
-              <div className="flex flex-col items-center">
-                <p className="badge-md badge badge-outline badge-secondary font-semibold uppercase tracking-wide min-w-[100px]">
+        <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between justify-self-center">
+          <div className="flex items-center gap-3">
+            <button
+              className="btn btn-outline btn-xs btn-primary"
+              onClick={goToPreviousWeek}
+              aria-label="Previous week"
+              disabled={weekNumber <= 1}
+            >
+              &lt;
+            </button>
+
+            <div className="flex flex-col items-center gap-1">
+              <div className="dropdown dropdown-end">
+                <label
+                  tabIndex={0}
+                  className="badge-md badge badge-outline badge-secondary font-semibold uppercase tracking-wide min-w-[110px] cursor-pointer"
+                >
                   Vecka {weekNumber}
-                </p>
-                <p className="text-[11px] font-medium uppercase tracking-wide text-base-content/60">
-                  {formatIsoWeekMonthYear(weekNumber)}
-                </p>
+                </label>
+                <ul
+                  tabIndex={0}
+                  className="dropdown-content menu rounded-box z-10 mt-3 max-h-96 w-44 overflow-y-auto border border-base-200 bg-base-100 p-2 shadow"
+                >
+                  {weekOptions.map((weekOption) => {
+                    const hasSchedule = availableWeeks.has(weekOption);
+                    const isActive = weekOption === weekNumber;
+
+                    return (
+                      <li key={weekOption}>
+                        <button
+                          type="button"
+                          onClick={() => setSelectedWeek(weekOption)}
+                          className={`flex items-center justify-between gap-2 rounded-lg px-3 py-2 text-left text-sm ${
+                            isActive ? "bg-primary/10 font-semibold text-primary" : ""
+                          } ${hasSchedule ? "text-base-content" : "text-base-content/50"}`}
+                        >
+                          <span>Vecka {weekOption}</span>
+                          <span
+                            className={`badge badge-xs border-transparent ${
+                              hasSchedule ? "bg-base-content" : "bg-base-300"
+                            }`}
+                            aria-label={
+                              hasSchedule
+                                ? "Schema finns för veckan"
+                                : "Inget schema för veckan"
+                            }
+                          />
+                        </button>
+                      </li>
+                    );
+                  })}
+                </ul>
               </div>
-              <button
-                className="btn btn-outline btn-xs btn-primary"
-                onClick={goToNextWeek}
-                aria-label="Next week"
-                disabled={weekIndex === viewWeeks.length - 1 || viewWeeks.length === 0}
-              >
-                &gt;
-              </button>
+
+              <p className="text-[11px] font-medium uppercase tracking-wide text-base-content/60">
+                {formatIsoWeekMonthYear(weekNumber)}
+              </p>
             </div>
+
+            <button
+              className="btn btn-outline btn-xs btn-primary"
+              onClick={goToNextWeek}
+              aria-label="Next week"
+              disabled={weekNumber >= 53}
+            >
+              &gt;
+            </button>
+          </div>
         </div>
 
         {error && <div className="alert alert-error">{error}</div>}
 
-        {viewWeeks.length === 0 ? (
-          <WeekScheduleView
-            week={undefined}
-            weekNumber={weekNumber}
-            emptyWeekTitle="Inget schema"
-            emptyWeekDescription="Det finns inget schema för den här veckan."
-            viewerRole="athlete"
-            athleteId={profile?.id}
-          />
-        ) : (
-          <WeekScheduleView
-            week={activeWeek}
-            weekNumber={weekNumber}
-            emptyWeekTitle="Inget program"
-            emptyWeekDescription="Ingen data för veckan."
-            viewerRole="athlete"
-            athleteId={profile?.id}
-          />
-        )}
+        <WeekScheduleView
+          week={activeWeek}
+          weekNumber={weekNumber}
+          emptyWeekTitle="Inget schema"
+          emptyWeekDescription="Det finns inget schema för den här veckan."
+          viewerRole="athlete"
+          athleteId={profile?.id}
+        />
       </div>
     </div>
   );
