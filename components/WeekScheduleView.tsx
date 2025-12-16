@@ -296,7 +296,12 @@ export function WeekScheduleView({
     if (!feedbackForm || !feedbackDefaults) return false;
 
     return (Object.keys(feedbackForm) as FeedbackFieldKey[]).some((field) => {
-      return feedbackForm[field].value !== feedbackDefaults[field].value;
+      const current = feedbackForm[field];
+      const defaults = feedbackDefaults[field];
+
+      if (!current || !defaults) return false;
+
+      return current.value !== defaults.value;
     });
   }, [feedbackDefaults, feedbackForm]);
 
