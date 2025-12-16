@@ -218,7 +218,7 @@ export function ModuleFormFields({ formState, onChange }: ModuleFormFieldsProps)
                   type="text"
                   value={field.label ?? ""}
                   onChange={(event) => updateFeedbackLabel(field.id, event.target.value)}
-                  placeholder={feedbackFieldPlaceholders[field.type]}
+                  placeholder=""
                 />
               </label>
             </div>
