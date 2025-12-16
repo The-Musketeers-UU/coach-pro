@@ -426,7 +426,10 @@ export function WeekScheduleView({
     if (!selectedModule || !feedbackForm) return null;
 
     const parseNumberField = (field: FeedbackFieldKey) => {
-      const rawValue = feedbackForm[field].value.trim();
+      const fieldState = feedbackForm[field];
+      if (!fieldState) return null;
+
+      const rawValue = fieldState.value.trim();
       if (!rawValue) return null;
 
       const parsed = Number.parseFloat(rawValue.replace(",", "."));
@@ -445,7 +448,7 @@ export function WeekScheduleView({
     const sleepHours = parseNumberField("sleepHours");
     if (sleepHours === undefined) return { error: "Ogiltig sömn." } as const;
 
-    const durationValue = feedbackForm.duration.value.trim();
+    const durationValue = feedbackForm.duration?.value.trim() ?? "";
     const duration = durationValue
       ? parseDurationToCentiseconds(durationValue)
       : null;
