@@ -72,7 +72,7 @@ const toProgramWeek = (week: ScheduleWeekWithModules): ProgramWeek => ({
         comment: getText("comment"),
         feeling: getNumeric("feeling"),
         sleepHours: getNumeric("sleepHours"),
-        feedbackFields: [],
+        feedbackFields: module.activeFeedbackFields ?? [],
         feedbackResponses: responses,
       };
     }),
