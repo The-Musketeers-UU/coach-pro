@@ -6,12 +6,15 @@ import { useEffect, useRef, useState } from "react";
 import { ThemeToggle } from "@/components/theme_toggle";
 import { useAuth } from "@/components/auth-provider";
 
+const statsLink = { href: "/stats", label: "Statistik" };
+
 const coachLinks = [
   { href: "/schedule_builder", label: "Schemabyggare" },
   { href: "/dashboard", label: "Träningsöversikt" },
+  statsLink,
 ];
 
-const athleteLinks = [{ href: "/athlete", label: "Mina scheman" }];
+const athleteLinks = [{ href: "/athlete", label: "Mina scheman" }, statsLink];
 
 export function SiteNav() {
   const pathname = usePathname();
