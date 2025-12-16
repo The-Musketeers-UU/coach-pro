@@ -13,6 +13,7 @@ export type Module = {
   feeling?: number | null;
   sleepHours?: number | null;
   sourceModuleId?: string;
+  feedbackFields?: FeedbackFieldDefinition[];
 };
 
 export type DaySchedule = Record<string, Module[]>;
@@ -39,7 +40,7 @@ export type ModuleForm = {
   comment: string;
   feeling: string;
   sleepHours: string;
-  activeFeedbackFields: FeedbackFieldType[];
+  feedbackFields: FeedbackFieldDefinition[];
 };
 
 export type FeedbackFieldType =
@@ -49,6 +50,12 @@ export type FeedbackFieldType =
   | "comment"
   | "feeling"
   | "sleepHours";
+
+export type FeedbackFieldDefinition = {
+  id: string;
+  type: FeedbackFieldType;
+  label?: string;
+};
 
 export type Athlete = {
   id: string;

@@ -11,6 +11,8 @@ import {
 } from "@/components/WeekSelector";
 import {
   WeekScheduleView,
+  type FeedbackFieldKey,
+  type FeedbackFieldDefinition,
   type ProgramWeek,
 } from "@/components/WeekScheduleView";
 import { useAuth } from "@/components/auth-provider";
@@ -43,28 +45,42 @@ const toProgramWeek = (week: ScheduleWeekWithModules): ProgramWeek => ({
     id: day.id,
     label: dayLabels[day.day - 1] ?? `Dag ${day.day}`,
     dayNumber: day.day,
-    modules: day.modules.map((module) => ({
-      id: module.id,
-      scheduleDayId: module.scheduleDayId,
-      title: module.name,
-      description: module.description ?? "",
-      category: module.category,
-      subcategory: module.subCategory ?? undefined,
-      distance: module.feedback?.distance ?? module.distance,
-      weight: module.feedback?.weight ?? module.weight,
-      duration: module.feedback?.duration ?? module.duration,
-      comment: module.feedback?.comment ?? module.comment,
-      feeling: module.feedback?.feeling ?? module.feeling,
-      sleepHours: module.feedback?.sleepHours ?? module.sleepHours,
-      feedback: module.feedback && {
-        distance: module.feedback.distance,
-        weight: module.feedback.weight,
-        duration: module.feedback.duration,
-        comment: module.feedback.comment,
-        feeling: module.feedback.feeling,
-        sleepHours: module.feedback.sleepHours,
-      },
-    })),
+    modules: day.modules.map((module) => {
+      const responses = module.feedback?.responses ?? [];
+
+      const byType = new Map<FeedbackFieldKey, number | string | null>();
+      for (const r of responses) byType.set(r.type, r.value);
+
+      const getNumeric = (type: FeedbackFieldKey) => {
+        const matched = byType.get(type);
+        if (matched === null || matched === undefined) return null;
+        const parsed = Number(matched);
+        return Number.isFinite(parsed) ? parsed : null;
+      };
+
+      const getText = (type: FeedbackFieldKey) => {
+        const matched = byType.get(type);
+        return matched === null || matched === undefined ? null : String(matched);
+      };
+
+      return {
+        id: module.id,
+        scheduleDayId: module.scheduleDayId,
+        title: module.name,
+        description: module.description ?? "",
+        category: module.category,
+        subcategory: module.subCategory ?? undefined,
+        distance: getNumeric("distance"),
+        weight: getNumeric("weight"),
+        duration: getNumeric("duration"),
+        comment: getText("comment"),
+        feeling: getNumeric("feeling"),
+        sleepHours: getNumeric("sleepHours"),
+
+        feedbackFields: [],
+        feedbackResponses: responses,
+      };
+    }),
   })),
 });
 
