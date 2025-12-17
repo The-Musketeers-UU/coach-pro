@@ -408,6 +408,32 @@ export const useScheduleBuilderState = ({
       };
     }
 
+    const distanceFields = formState.feedbackFields.filter(
+      (field) => field.type === "distance",
+    );
+
+    const hasEmptyDistance = distanceFields.some(
+      (field) => !field.label || !field.label.trim(),
+    );
+
+    if (hasEmptyDistance) {
+      return {
+        error: "Fyll i distansen för varje distans- och tidspar.",
+      };
+    }
+
+    const normalizedFeedbackFields = formState.feedbackFields.map((field) => {
+      if (field.type === "distance") {
+        return { ...field, label: field.label?.trim() ?? "" };
+      }
+
+      if (field.type === "duration") {
+        return { ...field, label: "Vilken tid sprang du distansen på?" };
+      }
+
+      return field;
+    });
+
     return {
       module: {
         id: moduleId ?? `mod-${(libraryModuleCounter.current += 1)}`,
@@ -416,7 +442,7 @@ export const useScheduleBuilderState = ({
         category: selectedCategory,
         subcategory: trimmedSubcategory || undefined,
         sourceModuleId: moduleId,
-        feedbackFields: [...formState.feedbackFields],
+        feedbackFields: normalizedFeedbackFields,
       },
     };
   };

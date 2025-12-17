@@ -8,7 +8,7 @@ import type {
 
 const feedbackFieldLabels: Record<FeedbackFieldType, string> = {
   distance: "Distans (m)",
-  duration: "Tid (mm:ss.hh)",
+  duration: "Vilken tid sprang du distansen på?",
   weight: "Vikt (kg)",
   comment: "Kommentar",
   feeling: "Känsla (1-10)",
@@ -17,7 +17,7 @@ const feedbackFieldLabels: Record<FeedbackFieldType, string> = {
 
 const feedbackFieldDescriptions: Record<FeedbackFieldType, string> = {
   distance: "Vilken distans sprang du?",
-  duration: "Vilken tid sprang du på?",
+  duration: "Vilken tid sprang du distansen på?",
   weight: "Vilken vikt använde du?",
   comment: "Lämna en kommentar om passet",
   feeling: "Atleten väljer en känsla på en skala 1–10.",
@@ -35,9 +35,11 @@ const createFeedbackField = (
 ): FeedbackFieldDefinition => {
   const countOfType = existing.filter((field) => field.type === type).length;
   const defaultLabel =
-    countOfType === 0
-      ? feedbackFieldLabels[type]
-      : `${feedbackFieldLabels[type]} #${countOfType + 1}`;
+    type === "distance"
+      ? ""
+      : countOfType === 0
+        ? feedbackFieldLabels[type]
+        : `${feedbackFieldLabels[type]} #${countOfType + 1}`;
 
   const id =
     typeof crypto !== "undefined" && crypto.randomUUID
@@ -83,7 +85,10 @@ export function ModuleFormFields({ formState, onChange }: ModuleFormFieldsProps)
       const nextFields: FeedbackFieldDefinition[] = [];
       nextFields.push(...prev.feedbackFields);
       nextFields.push(createFeedbackField("distance", nextFields));
-      nextFields.push(createFeedbackField("duration", nextFields));
+      nextFields.push({
+        ...createFeedbackField("duration", nextFields),
+        label: feedbackFieldLabels.duration,
+      });
 
       return { ...prev, feedbackFields: nextFields };
     });
@@ -129,6 +134,15 @@ export function ModuleFormFields({ formState, onChange }: ModuleFormFieldsProps)
     onChange((prev) => ({
       ...prev,
       feedbackFields: prev.feedbackFields.filter((field) => field.id !== fieldId),
+    }));
+  };
+
+  const updateFieldLabel = (fieldId: string, value: string) => {
+    onChange((prev) => ({
+      ...prev,
+      feedbackFields: prev.feedbackFields.map((field) =>
+        field.id === fieldId ? { ...field, label: value } : field,
+      ),
     }));
   };
 
@@ -211,18 +225,18 @@ export function ModuleFormFields({ formState, onChange }: ModuleFormFieldsProps)
         </div>
       </div>
 
-      <div className="rounded-lg border border-base-300 p-3 text-xs">
+      <div className="rounded-lg border border-base-300 p-3 text-[11px]">
         <div className="flex flex-col gap-4">
           <div>
-            <p className="text-sm font-medium">Valfria feedbackfält</p>
-            <p className="text-[11px] text-base-content/70">
+            <p className="text-xs font-semibold">Valfria feedbackfält</p>
+            <p className="text-[10px] text-base-content/70">
               Välj vilka uppföljningsfrågor som ska samlas in efter passet.
             </p>
           </div>
 
           <div className="flex flex-col divide-y divide-base-200 rounded-md border border-base-200">
             {(["comment", "feeling", "sleepHours"] as const).map((type) => (
-              <label key={type} className="flex items-center gap-2 px-3 py-2 text-xs">
+              <label key={type} className="flex items-center gap-2 px-3 py-2 text-sm">
                 <input
                   type="checkbox"
                   className="checkbox checkbox-sm"
@@ -230,22 +244,22 @@ export function ModuleFormFields({ formState, onChange }: ModuleFormFieldsProps)
                   onChange={() => toggleFeedbackField(type)}
                 />
                 <div className="flex flex-col">
-                  <span className="text-xs font-semibold sm:text-[13px]">
+                  <span className="text-sm font-semibold">
                     {feedbackFieldLabels[type]}
                   </span>
-                  <span className="text-[11px] text-base-content/70">
+                  <span className="text-xs text-base-content/70">
                     {feedbackFieldDescriptions[type]}
                   </span>
                 </div>
               </label>
             ))}
 
-            <div className="flex flex-col gap-3 px-3 py-3 text-xs">
+            <div className="flex flex-col gap-3 px-3 py-3 text-sm">
               <div className="flex items-start justify-between gap-2">
                 <div className="flex flex-col">
-                  <span className="text-xs font-semibold sm:text-[13px]">Distans &amp; tid</span>
-                  <span className="text-[11px] text-base-content/70">
-                    {feedbackFieldDescriptions.distance} {feedbackFieldDescriptions.duration}
+                  <span className="text-sm font-semibold">Distans &amp; tid</span>
+                  <span className="text-xs text-base-content/70">
+                    Ange distansen så sparas tiden som uppföljning efter passet.
                   </span>
                 </div>
                 <button
@@ -257,9 +271,7 @@ export function ModuleFormFields({ formState, onChange }: ModuleFormFieldsProps)
                 </button>
               </div>
 
-              {distanceFields.length === 0 && durationFields.length === 0 ? (
-                <p className="text-[11px] text-base-content/70">Inga distans+tid-par tillagda.</p>
-              ) : (
+              {distanceFields.length > 0 && (
                 <div className="flex flex-col gap-2">
                   {distanceFields.map((distanceField, index) => {
                     const durationField = durationFields[index];
@@ -267,19 +279,48 @@ export function ModuleFormFields({ formState, onChange }: ModuleFormFieldsProps)
                     return (
                       <div
                         key={distanceField.id}
-                        className="flex items-center justify-between rounded-md bg-base-200/60 px-3 py-2 text-xs"
+                        className="flex flex-col gap-2 rounded-md bg-base-200/60 px-3 py-2"
                       >
-                        <span className="text-xs font-medium">
-                          Distans &amp; tid #{index + 1}
-                        </span>
-                        <button
-                          type="button"
-                          className="btn btn-ghost btn-xs"
-                          onClick={() => removeDistanceDurationPair(index)}
-                          disabled={!durationField}
-                        >
-                          Ta bort
-                        </button>
+                        <div className="flex items-start justify-between gap-2">
+                          <span className="text-sm font-semibold">
+                            Distans &amp; tid #{index + 1}
+                          </span>
+                          <button
+                            type="button"
+                            className="btn btn-ghost btn-xs"
+                            onClick={() => removeDistanceDurationPair(index)}
+                            aria-label="Ta bort distans- och tidspar"
+                          >
+                            ✕
+                          </button>
+                        </div>
+
+                        <div className="flex flex-col gap-2 sm:flex-row sm:items-end">
+                          <label className="form-control w-full gap-1 text-sm">
+                            <span className="label-text text-sm">Distans</span>
+                            <input
+                              type="text"
+                              className="input input-xs input-bordered"
+                              placeholder="t.ex. 5 000 m"
+                              value={distanceField.label ?? ""}
+                              onChange={(event) =>
+                                updateFieldLabel(distanceField.id, event.target.value)
+                              }
+                              required
+                            />
+                          </label>
+
+                          <label className="form-control w-full gap-1 text-sm">
+                            <span className="label-text text-sm">Tid</span>
+                            <input
+                              type="text"
+                              className="input input-xs input-bordered"
+                              value={durationField?.label ?? feedbackFieldLabels.duration}
+                              readOnly
+                              disabled
+                            />
+                          </label>
+                        </div>
                       </div>
                     );
                   })}
@@ -287,13 +328,13 @@ export function ModuleFormFields({ formState, onChange }: ModuleFormFieldsProps)
               )}
             </div>
 
-            <div className="flex flex-col gap-3 px-3 py-3 text-xs">
+            <div className="flex flex-col gap-3 px-3 py-3 text-sm">
               <div className="flex items-start justify-between gap-2">
                 <div className="flex flex-col">
-                  <span className="text-xs font-semibold sm:text-[13px]">
+                  <span className="text-sm font-semibold">
                     {feedbackFieldLabels.weight}
                   </span>
-                  <span className="text-[11px] text-base-content/70">
+                  <span className="text-xs text-base-content/70">
                     {feedbackFieldDescriptions.weight}
                   </span>
                 </div>
@@ -306,22 +347,21 @@ export function ModuleFormFields({ formState, onChange }: ModuleFormFieldsProps)
                 </button>
               </div>
 
-              {weightFields.length === 0 ? (
-                <p className="text-[11px] text-base-content/70">Inga viktfält tillagda.</p>
-              ) : (
+              {weightFields.length > 0 && (
                 <div className="flex flex-col gap-2">
                   {weightFields.map((field, index) => (
                     <div
                       key={field.id}
-                      className="flex items-center justify-between rounded-md bg-base-200/60 px-3 py-2 text-xs"
+                      className="flex items-center justify-between rounded-md bg-base-200/60 px-3 py-2"
                     >
-                      <span className="text-xs font-medium">Vikt #{index + 1}</span>
+                      <span className="text-sm font-medium">Vikt #{index + 1}</span>
                       <button
                         type="button"
                         className="btn btn-ghost btn-xs"
                         onClick={() => removeWeightField(field.id)}
+                        aria-label="Ta bort viktfält"
                       >
-                        Ta bort
+                        ✕
                       </button>
                     </div>
                   ))}
