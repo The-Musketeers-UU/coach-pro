@@ -21,7 +21,7 @@ import {
   type ScheduleWeekWithModules,
   getScheduleWeeksWithModules,
 } from "@/lib/supabase/training-modules";
-import { getIsoWeekNumber } from "@/lib/week";
+import { formatIsoWeekMonthYear, getIsoWeekNumber } from "@/lib/week";
 
 const dayLabels = [
   "Måndag",
@@ -36,7 +36,6 @@ const dayLabels = [
 const toProgramWeek = (week: ScheduleWeekWithModules): ProgramWeek => ({
   id: week.id,
   label: week.title || `Vecka ${week.week}`,
-  focus: `Ägare: ${week.owner}`,
   days: week.days.map((day) => ({
     id: day.id,
     label: dayLabels[day.day - 1] ?? `Dag ${day.day}`,
@@ -161,17 +160,29 @@ export default function AthleteSchedulePage() {
   return (
     <div className="min-h-screen">
       <div className="mx-auto max-w-full space-y-5 px-5 py-5">
-        <div className="flex justify-center">
-          <WeekSelector
-            weekOptions={weekOptions}
-            selectedWeekValue={selectedWeekValue}
-            currentWeekValue={currentWeekValue}
-            availableWeeks={availableWeeks}
-            onChange={setSelectedWeekValue}
-            onPrevious={goToPreviousWeek}
-            onNext={goToNextWeek}
-            className="md:flex-row"
-          />
+        <div className="grid gap-4 md:grid-cols-[1fr_auto_1fr] md:items-center">
+          <p className="text-lg font-medium uppercase tracking-wide text-base-content/70">
+            {formatIsoWeekMonthYear(
+              weekSelection.weekNumber,
+              weekSelection.weekReferenceDate,
+            )}
+          </p>
+
+          <div className="flex justify-center">
+            <WeekSelector
+              weekOptions={weekOptions}
+              selectedWeekValue={selectedWeekValue}
+              currentWeekValue={currentWeekValue}
+              availableWeeks={availableWeeks}
+              onChange={setSelectedWeekValue}
+              onPrevious={goToPreviousWeek}
+              onNext={goToNextWeek}
+              className="md:flex-row md:items-center md:gap-4"
+              showMonthLabel={false}
+            />
+          </div>
+
+          <div className="hidden md:block" />
         </div>
 
         {error && <div className="alert alert-error">{error}</div>}

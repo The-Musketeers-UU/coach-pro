@@ -24,6 +24,7 @@ import {
   type ModuleRow,
   type ScheduleWeekWithModules,
   createModule,
+  updateModule,
   addModuleToScheduleDay,
   createScheduleWeek,
   updateScheduleWeek,
@@ -213,14 +214,29 @@ function ScheduleBuilderPage() {
       throw new Error("Inloggning krävs för att spara block.");
     }
 
-    const created = await createModule({
+    const payload = {
       ownerId: profile.id,
       name: module.title,
       category: module.category,
       subCategory: module.subcategory,
       description: module.description,
       feedbackFields: module.feedbackFields ?? [],
-    });
+    } as const;
+
+    if (module.sourceModuleId) {
+      const updated = await updateModule({
+        id: module.sourceModuleId,
+        name: payload.name,
+        category: payload.category,
+        subCategory: payload.subCategory,
+        description: payload.description,
+        feedbackFields: payload.feedbackFields,
+      });
+
+      return mapModuleRow(updated);
+    }
+
+    const created = await createModule(payload);
 
     return mapModuleRow(created);
   };
@@ -681,6 +697,7 @@ function ScheduleBuilderPage() {
           setEditingModuleForm={editingControls.setEditingModuleForm}
           onClose={editingControls.closeEditModal}
           onSave={editingControls.handleSaveEditedModule}
+          isSaving={editingControls.isSavingEditedModule}
         />
       </div>
 

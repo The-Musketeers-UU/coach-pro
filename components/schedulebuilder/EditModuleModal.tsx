@@ -12,6 +12,7 @@ type EditModuleModalProps = {
   setEditingModuleForm: Dispatch<SetStateAction<ModuleForm | null>>;
   onClose: () => void;
   onSave: (event: FormEvent<HTMLFormElement>) => void;
+  isSaving?: boolean;
 };
 
 export function EditModuleModal({
@@ -22,6 +23,7 @@ export function EditModuleModal({
   setEditingModuleForm,
   onClose,
   onSave,
+  isSaving = false,
 }: EditModuleModalProps) {
   if (!isOpen || !editingModuleForm) return null;
 
@@ -37,11 +39,6 @@ export function EditModuleModal({
             <h3 className="text-xl font-semibold">
               {editingModuleForm?.title || editingContext?.moduleId}
             </h3>
-            {editingContext && (
-              <p className="text-xs text-base-content/60">
-                {editingContext.type === "library" ? "Bibliotek" : "Schedule"}
-              </p>
-            )}
           </div>
           <button className="btn btn-circle btn-ghost btn-sm" onClick={onClose}>
             ✕
@@ -61,7 +58,11 @@ export function EditModuleModal({
               <button type="button" className="btn flex-1" onClick={onClose}>
                 Avbryt
               </button>
-              <button type="submit" className="btn btn-secondary flex-1">
+              <button
+                type="submit"
+                className={`btn btn-secondary flex-1 ${isSaving ? "loading" : ""}`}
+                disabled={isSaving}
+              >
                 Spara ändringar
               </button>
             </div>

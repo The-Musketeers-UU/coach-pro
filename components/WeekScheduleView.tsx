@@ -41,6 +41,7 @@ export type ProgramWeek = {
 type SelectedModuleState = {
   module: ProgramModule;
   key: string;
+  hadUnreadFeedback?: boolean;
 };
 
 type WeekScheduleViewProps = {
@@ -125,7 +126,7 @@ const FEEDBACK_FIELDS: Record<
     min: 0,
   },
   duration: {
-    label: "Tid (mm:ss.hh)",
+    label: "Tid",
     placeholder: "",
     type: "text",
   },
@@ -167,8 +168,8 @@ export function WeekScheduleView({
   emptyWeekTitle = "Inget program",
   emptyWeekDescription = "Ingen data for veckan.",
   viewerRole,
-  athleteId: _athleteId,
-  coachId: _coachId,
+  athleteId,
+  coachId,
 }: WeekScheduleViewProps) {
   const [selectedModule, setSelectedModule] =
     useState<SelectedModuleState | null>(null);
@@ -176,11 +177,21 @@ export function WeekScheduleView({
   const [feedbackForm, setFeedbackForm] = useState<FeedbackFormState | null>(
     null
   );
+  const [reviewedFeedbackSignatures, setReviewedFeedbackSignatures] =
+    useState<Map<string, string>>(() => new Map());
   const [feedbackError, setFeedbackError] = useState<string | null>(null);
   const [isSubmittingFeedback, setIsSubmittingFeedback] = useState(false);
   const [selectedDayId, setSelectedDayId] = useState<string | null>(
     week?.days[0]?.id ?? null
   );
+
+  const feedbackSignatureStorageKey = useMemo(() => {
+    const roleKey = viewerRole ?? "unknown";
+    const athleteKey = athleteId ?? "any";
+    const coachKey = coachId ?? "self";
+
+    return `reviewedFeedbackSignatures:${roleKey}:${coachKey}:${athleteKey}`;
+  }, [athleteId, coachId, viewerRole]);
 
   const weekDateRange = useMemo(
     () => getDateRangeForIsoWeek(weekNumber, new Date()),
@@ -214,19 +225,33 @@ export function WeekScheduleView({
 
   const isAthlete = viewerRole === "athlete";
 
-  void _athleteId;
-  void _coachId;
-
   useEffect(() => {
     setWeekState(week);
   }, [week]);
 
-  void _athleteId;
-  void _coachId;
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+
+    const stored = window.localStorage.getItem(feedbackSignatureStorageKey);
+    if (!stored) return;
+
+    try {
+      const entries = JSON.parse(stored) as [string, string][];
+      setReviewedFeedbackSignatures(new Map(entries));
+    } catch (error) {
+      console.error("Failed to parse feedback signatures", error);
+    }
+  }, [feedbackSignatureStorageKey]);
 
   useEffect(() => {
-    setWeekState(week);
-  }, [week]);
+    if (typeof window === "undefined") return;
+
+    const entries = Array.from(reviewedFeedbackSignatures.entries());
+    window.localStorage.setItem(
+      feedbackSignatureStorageKey,
+      JSON.stringify(entries)
+    );
+  }, [feedbackSignatureStorageKey, reviewedFeedbackSignatures]);
 
   useEffect(() => {
     if (daysToRender.length === 0) {
@@ -416,6 +441,7 @@ export function WeekScheduleView({
                   feeling: updated.feeling,
                   sleepHours: updated.sleepHours,
                 },
+                feedbackResponses: updated.responses,
               },
             }
           : prev
@@ -536,6 +562,7 @@ export function WeekScheduleView({
                       ? {
                           ...module,
                           feedback: updatedFeedback,
+                          feedbackResponses: updatedFeedback.responses,
                         }
                       : module
                   ),
@@ -549,7 +576,11 @@ export function WeekScheduleView({
         current
           ? {
               ...current,
-              module: { ...current.module, feedback: updatedFeedback },
+              module: {
+                ...current.module,
+                feedback: updatedFeedback,
+                feedbackResponses: updatedFeedback.responses,
+              },
             }
           : current
       );
@@ -569,9 +600,10 @@ export function WeekScheduleView({
       : emptyWeekTitle || `Vecka ${weekNumber}`);
 
   const hasPendingFeedback = (module: ProgramModule) => {
-    const selectedTypes = new Set(
-      (module.feedbackFields ?? []).map((f) => f.type)
-    );
+    const selectedFields = module.feedbackFields ?? [];
+    if (selectedFields.length === 0) return false;
+
+    const selectedTypes = new Set(selectedFields.map((f) => f.type));
 
     const responsesByType = new Map(
       (module.feedbackResponses ?? []).map((r) => [r.type, r.value] as const)
@@ -579,11 +611,7 @@ export function WeekScheduleView({
 
     const relevantFields = (
       Object.keys(FEEDBACK_FIELDS) as FeedbackFieldKey[]
-    ).filter(
-      (field) => selectedTypes.has(field) || module[field] !== undefined
-    );
-
-    if (relevantFields.length === 0) return false;
+    ).filter((field) => selectedTypes.has(field));
 
     // Om det finns relevanta fält men inga responses alls: pending
     if ((module.feedbackResponses ?? []).length === 0) return true;
@@ -593,6 +621,29 @@ export function WeekScheduleView({
       const value = responsesByType.get(field);
       return value === null || value === undefined;
     });
+  };
+
+  const getFeedbackSignature = (module: ProgramModule) =>
+    JSON.stringify(
+      (module.feedbackResponses ?? []).map((response) => ({
+        id: response.fieldId,
+        type: response.type,
+        value:
+          typeof response.value === "string"
+            ? response.value.trim()
+            : response.value,
+      }))
+    );
+
+  const hasUnreadFeedbackForCoach = (
+    module: ProgramModule,
+    moduleKey: string,
+  ) => {
+    const signature = getFeedbackSignature(module);
+    if (signature === "[]") return false;
+
+    const seenSignature = reviewedFeedbackSignatures.get(moduleKey);
+    return seenSignature !== signature;
   };
 
   const selectedDay =
@@ -605,7 +656,7 @@ export function WeekScheduleView({
   }, [dayDateById, selectedModule?.module.scheduleDayId]);
 
   const hasSelectedModulePendingFeedback = useMemo(() => {
-    if (!selectedModule) return false;
+    if (!selectedModule || !isAthlete) return false;
 
     const isPastDay = selectedModuleDayDate
       ? selectedModuleDayDate.getTime() <= today.getTime()
@@ -613,6 +664,11 @@ export function WeekScheduleView({
 
     return isPastDay && hasPendingFeedback(selectedModule.module);
   }, [hasPendingFeedback, selectedModule, selectedModuleDayDate, today]);
+
+  const hasSelectedModuleUnreadFeedbackForCoach = useMemo(
+    () => Boolean(!isAthlete && selectedModule?.hadUnreadFeedback),
+    [isAthlete, selectedModule?.hadUnreadFeedback],
+  );
 
   const renderDayColumn = (day: ProgramDay) => {
     const dayDate = dayDateById.get(day.id);
@@ -646,7 +702,25 @@ export function WeekScheduleView({
               type="button"
               onClick={() => {
                 const moduleKey = module.id ?? `${day.id}-${index}`;
-                setSelectedModule({ module, key: moduleKey });
+                const hadUnreadFeedback =
+                  viewerRole === "coach"
+                    ? hasUnreadFeedbackForCoach(module, moduleKey)
+                    : false;
+
+                if (viewerRole === "coach") {
+                  const signature = getFeedbackSignature(module);
+                  setReviewedFeedbackSignatures((current) => {
+                    const next = new Map(current);
+                    next.set(moduleKey, signature);
+                    return next;
+                  });
+                }
+
+                setSelectedModule({
+                  module,
+                  key: moduleKey,
+                  hadUnreadFeedback,
+                });
               }}
               className="group w-full text-left"
             >
@@ -656,14 +730,24 @@ export function WeekScheduleView({
                   const isPastDay = dayDate
                     ? dayDate.getTime() <= today.getTime()
                     : false;
-                  const showPending = isPastDay && hasPendingFeedback(module);
+                  const moduleKey = module.id ?? `${day.id}-${index}`;
 
-                  if (!showPending) return null;
+                  const showPending =
+                    isAthlete && isPastDay && hasPendingFeedback(module);
+
+                  const showUnreadForCoach =
+                    !isAthlete && hasUnreadFeedbackForCoach(module, moduleKey);
+
+                  if (!showPending && !showUnreadForCoach) return null;
+
+                  const indicatorLabel = showPending
+                    ? "Feedback saknas"
+                    : "Ny feedback";
 
                   return (
                     <span
                       className="indicator-item indicator-top indicator-end translate-x-0 translate-y-0 status status-info"
-                      aria-label="Feedback saknas"
+                      aria-label={indicatorLabel}
                     />
                   );
                 })()}
@@ -743,12 +827,19 @@ export function WeekScheduleView({
             }
           }}
         >
-          <div className="modal-box max-w-3xl space-y-4">
+          <div className="modal-box max-w-4xl space-y-4">
             <div className="flex items-start justify-between gap-4">
-              <div>
+              <div className="space-y-1">
                 <h3 className="text-xl font-semibold">
                   {selectedModule.module.title}
                 </h3>
+
+                {hasSelectedModuleUnreadFeedbackForCoach && (
+                  <div className="flex items-center gap-2 text-sm font-semibold text-info">
+                    <span className="status status-info" aria-hidden />
+                    <span>Ny feedback</span>
+                  </div>
+                )}
               </div>
               <button
                 className="btn btn-circle btn-ghost btn-sm"
@@ -758,7 +849,7 @@ export function WeekScheduleView({
               </button>
             </div>
 
-            <div className="grid gap-4 md:grid-cols-[minmax(300px,1fr)_minmax(300px,0.5fr)]">
+            <div className="grid gap-4 md:grid-cols-[minmax(320px,1fr)_minmax(360px,0.8fr)]">
               <div className="space-y-4 rounded-2xl border border-base-300 bg-base-100 p-4">
                 <div className="space-y-2">
                   <p className="text-xs uppercase tracking-wide text-neutral">
@@ -792,10 +883,10 @@ export function WeekScheduleView({
                 </div>
               </div>
 
-              <div className="space-y-4 rounded-2xl border border-base-300 bg-base-100 p-4">
+              <div className="flex h-full flex-col space-y-3 rounded-2xl border border-base-300 bg-base-100 p-4">
                 <div className="flex items-center justify-between gap-2">
-                  <p className="text-xs uppercase font-semibold tracking-wide text-neutral">
-                    Din feedback
+                  <p className="text-xs uppercase tracking-wide text-neutral">
+                    Atletens feedback
                   </p>
 
                   {hasSelectedModulePendingFeedback && (
@@ -808,110 +899,253 @@ export function WeekScheduleView({
                   )}
                 </div>
 
-                <div className="space-y-3">
+                <div className="space-y-2 flex-1">
                   {feedbackForm &&
-                    (selectedModule.module.feedbackFields ?? []).length ===
-                      0 && (
-                      <p className="text-sm text-base-content/70">
-                        Inga feedbackfält valda för detta pass.
-                      </p>
-                    )}
+                    (() => {
+                      const fields = selectedModule.module.feedbackFields ?? [];
+                      const items: (
+                        | {
+                            kind: "distanceDuration";
+                            distance: FeedbackFormState[string];
+                            duration?: FeedbackFormState[string];
+                          }
+                        | { kind: "single"; field: FeedbackFormState[string] }
+                      )[] = [];
 
-                  {feedbackForm &&
-                    (selectedModule.module.feedbackFields ?? []).map(
-                      (field) => {
+                      for (let index = 0; index < fields.length; index += 1) {
+                        const field = fields[index];
                         const fieldState = feedbackForm[field.id];
-                        if (!fieldState) return null;
+                        if (!fieldState) continue;
 
-                        if (viewerRole === "athlete" && !fieldState.active)
-                          return null;
+                        if (viewerRole === "athlete" && !fieldState.active) {
+                          continue;
+                        }
 
-                        const fieldMeta = FEEDBACK_FIELDS[field.type];
+                        if (field.type === "distance") {
+                          const nextField = fields[index + 1];
+                          const durationState =
+                            nextField?.type === "duration"
+                              ? feedbackForm[nextField.id]
+                              : undefined;
+
+                          if (durationState) {
+                            items.push({
+                              kind: "distanceDuration",
+                              distance: fieldState,
+                              duration: durationState,
+                            });
+                            index += 1;
+                            continue;
+                          }
+                        }
+
+                        items.push({ kind: "single", field: fieldState });
+                      }
+
+                      const distanceItems = items.filter(
+                        (item): item is {
+                          kind: "distanceDuration";
+                          distance: FeedbackFormState[string];
+                          duration?: FeedbackFormState[string];
+                        } => item.kind === "distanceDuration",
+                      );
+
+                      const weightItems = items.filter(
+                        (item): item is { kind: "single"; field: FeedbackFormState[string] } =>
+                          item.kind === "single" && item.field.type === "weight",
+                      );
+
+                      const otherItems = items.filter(
+                        (item): item is { kind: "single"; field: FeedbackFormState[string] } =>
+                          item.kind === "single" && item.field.type !== "weight",
+                      );
+
+                      const commentItems = otherItems.filter(
+                        (item) => item.field.type === "comment",
+                      );
+                      const miscItems = otherItems.filter(
+                        (item) => item.field.type !== "comment",
+                      );
+
+                      const renderSingleField = (
+                        item: { kind: "single"; field: FeedbackFormState[string] },
+                      ) => {
+                        const fieldMeta = FEEDBACK_FIELDS[item.field.type];
+                        const baseLabel = item.field.label?.trim() || fieldMeta.label;
                         const label =
-                          fieldState.label?.trim() || fieldMeta.label;
+                          item.field.type === "weight"
+                            ? baseLabel.replace(/\s*#\d+$/, "")
+                            : baseLabel;
+
+                        if (item.field.type === "comment") {
+                          return (
+                            <label
+                              key={item.field.id}
+                              className="flex flex-col gap-1 text-[13px]"
+                            >
+                              <div className="flex items-center justify-between gap-2">
+                                <span className="text-[13px] text-base-content/70">{label}</span>
+                              </div>
+                              <textarea
+                                className="textarea textarea-bordered w-full"
+                                placeholder={fieldMeta.placeholder}
+                                value={item.field.value}
+                                readOnly={!isAthlete}
+                                disabled={!isAthlete}
+                                onChange={(event) =>
+                                  handleFeedbackChange(item.field.id, (current) => ({
+                                    ...current,
+                                    value: event.target.value,
+                                  }))
+                                }
+                                rows={2}
+                              />
+                            </label>
+                          );
+                        }
+
+                        if (fieldMeta.type === "select" && fieldMeta.options) {
+                          return (
+                            <label
+                              key={item.field.id}
+                              className="flex w-full items-center justify-between gap-3 text-[13px]"
+                            >
+                              <span className="text-[13px] text-base-content/70">{label}</span>
+                              <select
+                                className="select select-bordered select-sm w-28"
+                                value={item.field.value}
+                                disabled={!isAthlete}
+                                onChange={(event) =>
+                                  handleFeedbackChange(item.field.id, (current) => ({
+                                    ...current,
+                                    value: event.target.value,
+                                  }))
+                                }
+                              >
+                                <option value="">-</option>
+                                {fieldMeta.options.map((option) => (
+                                  <option key={option.value} value={option.value}>
+                                    {option.label}
+                                  </option>
+                                ))}
+                              </select>
+                            </label>
+                          );
+                        }
 
                         return (
-                          <div
-                            key={field.id}
-                            className="rounded-lg border border-base-200 p-3 space-y-2"
+                          <label
+                            key={item.field.id}
+                            className="flex w-full items-center justify-between gap-3 text-[13px]"
                           >
-                            <div className="flex items-center justify-between gap-3">
-                              <div className="flex items-center gap-2">
-                                <input
-                                  type="checkbox"
-                                  className="checkbox checkbox-sm"
-                                  checked={fieldState.active}
-                                  disabled={!isAthlete}
-                                  onChange={(event) =>
-                                    handleFeedbackChange(
-                                      field.id,
-                                      (current) => ({
-                                        ...current,
-                                        active: event.target.checked,
-                                        value: event.target.checked
-                                          ? current.value
-                                          : "",
-                                      })
-                                    )
-                                  }
-                                />
-                                <span className="text-sm font-semibold">
-                                  {label}
-                                </span>
-                              </div>
-                              <span className="text-xs text-base-content/70">
-                                {fieldState.active ? "Aktiverad" : "Av"}
-                              </span>
-                            </div>
-
-                            {fieldState.active && (
-                              <div>
-                                {fieldMeta.type === "textarea" ? (
-                                  <textarea
-                                    className="textarea textarea-bordered w-full"
-                                    placeholder={fieldMeta.placeholder}
-                                    value={fieldState.value}
-                                    readOnly={!isAthlete}
-                                    disabled={!isAthlete}
-                                    onChange={(event) =>
-                                      handleFeedbackChange(
-                                        field.id,
-                                        (current) => ({
-                                          ...current,
-                                          value: event.target.value,
-                                        })
-                                      )
-                                    }
-                                    rows={2}
-                                  />
-                                ) : (
-                                  <input
-                                    className="input input-bordered input-sm w-full"
-                                    type={fieldMeta.type}
-                                    step={fieldMeta.step}
-                                    min={fieldMeta.min}
-                                    max={fieldMeta.max}
-                                    placeholder={fieldMeta.placeholder}
-                                    value={fieldState.value}
-                                    readOnly={!isAthlete}
-                                    disabled={!isAthlete}
-                                    onChange={(event) =>
-                                      handleFeedbackChange(
-                                        field.id,
-                                        (current) => ({
-                                          ...current,
-                                          value: event.target.value,
-                                        })
-                                      )
-                                    }
-                                  />
-                                )}
-                              </div>
-                            )}
-                          </div>
+                            <span className="text-[13px] text-base-content/70">{label}</span>
+                            <input
+                              className="input input-bordered input-sm w-28 text-right"
+                              type={fieldMeta.type}
+                              step={fieldMeta.step}
+                              min={fieldMeta.min}
+                              max={fieldMeta.max}
+                              placeholder={fieldMeta.placeholder}
+                              value={item.field.value}
+                              readOnly={!isAthlete}
+                              disabled={!isAthlete}
+                              onChange={(event) =>
+                                handleFeedbackChange(item.field.id, (current) => ({
+                                  ...current,
+                                  value: event.target.value,
+                                }))
+                              }
+                            />
+                          </label>
                         );
-                      }
-                    )}
+                      };
+
+                      return (
+                        <div className="space-y-2">
+                          {distanceItems.length > 0 && (
+                            <div className="flex flex-wrap gap-2">
+                              {distanceItems.map((item) => {
+                                const durationLabel =
+                                  (item.duration?.label?.trim() || FEEDBACK_FIELDS.duration.label).replace(
+                                    /\s*#\d+$/,
+                                    ""
+                                  );
+
+                                return (
+                                  <div
+                                    key={item.distance.id}
+                                    className="grid w-full min-w-0 grid-cols-[minmax(0,1fr)_minmax(0,1fr)] items-end gap-3"
+                                  >
+                                    <label className="flex items-center justify-between gap-2 text-[13px]">
+                                      <span className="text-[13px] text-base-content/70">Distans</span>
+                                      <input
+                                        className="input input-bordered input-sm w-full max-w-[120px]"
+                                        type="number"
+                                        step={FEEDBACK_FIELDS.distance.step}
+                                        min={FEEDBACK_FIELDS.distance.min}
+                                        placeholder={FEEDBACK_FIELDS.distance.placeholder}
+                                        value={item.distance.value}
+                                        readOnly={!isAthlete}
+                                        disabled={!isAthlete}
+                                        onChange={(event) =>
+                                          handleFeedbackChange(
+                                            item.distance.id,
+                                            (current) => ({
+                                              ...current,
+                                              value: event.target.value,
+                                            }),
+                                          )
+                                        }
+                                      />
+                                    </label>
+
+                                    {item.duration && (
+                                      <label className="flex items-center justify-between gap-2 text-[13px]">
+                                        <span className="text-[13px] text-base-content/70">{durationLabel}</span>
+                                        <input
+                                          className="input input-bordered input-sm w-full"
+                                          type="text"
+                                          placeholder={FEEDBACK_FIELDS.duration.placeholder}
+                                          value={item.duration.value}
+                                          readOnly={!isAthlete}
+                                          disabled={!isAthlete}
+                                          onChange={(event) =>
+                                            handleFeedbackChange(
+                                              item.duration.id,
+                                              (current) => ({
+                                                ...current,
+                                                value: event.target.value,
+                                              }),
+                                            )
+                                          }
+                                        />
+                                      </label>
+                                    )}
+                                  </div>
+                                );
+                              })}
+                            </div>
+                          )}
+
+                          {weightItems.length > 0 && (
+                            <div className="flex flex-wrap gap-2">
+                              {weightItems.map((item) => (
+                                <div
+                                  key={item.field.id}
+                                  className="flex min-w-[240px] flex-1 items-center"
+                                >
+                                  {renderSingleField(item)}
+                                </div>
+                              ))}
+                            </div>
+                          )}
+
+                          {miscItems.map((item) => renderSingleField(item))}
+
+                          {commentItems.map((item) => renderSingleField(item))}
+                        </div>
+                      );
+                    })()}
                 </div>
 
                 {feedbackError && (
@@ -921,7 +1155,7 @@ export function WeekScheduleView({
                 )}
 
                 {isAthlete && (
-                  <div className="flex items-center justify-end">
+                  <div className="mt-auto flex items-center justify-end">
                     <button
                       className="btn btn-primary btn-sm"
                       onClick={persistFeedback}
