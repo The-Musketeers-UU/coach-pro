@@ -228,8 +228,8 @@ export function ModuleFormFields({ formState, onChange }: ModuleFormFieldsProps)
       <div className="rounded-lg border border-base-300 p-3 text-[11px]">
         <div className="flex flex-col gap-4">
           <div>
-            <p className="text-xs font-semibold">Valfria feedbackfält</p>
-            <p className="text-[10px] text-base-content/70">
+            <p className="text-sm font-semibold">Valfria feedbackfält</p>
+            <p className="text-xs text-base-content/70">
               Välj vilka uppföljningsfrågor som ska samlas in efter passet.
             </p>
           </div>
@@ -281,20 +281,9 @@ export function ModuleFormFields({ formState, onChange }: ModuleFormFieldsProps)
                         key={distanceField.id}
                         className="flex flex-col gap-2 rounded-md bg-base-200/60 px-3 py-2"
                       >
-                        <div className="flex items-start justify-end gap-2">
-                          <button
-                            type="button"
-                            className="btn btn-ghost btn-xs"
-                            onClick={() => removeDistanceDurationPair(index)}
-                            aria-label="Ta bort distans- och tidspar"
-                          >
-                            ✕
-                          </button>
-                        </div>
-
                         <div className="flex flex-col gap-2 sm:flex-row sm:items-end">
                           <label className="form-control w-full gap-1 text-sm">
-                            <span className="label-text text-sm">Distans</span>
+                            <span className="label-text text-xs">Distans</span>
                             <input
                               type="number"
                               inputMode="decimal"
@@ -309,7 +298,7 @@ export function ModuleFormFields({ formState, onChange }: ModuleFormFieldsProps)
                           </label>
 
                           <label className="form-control w-full gap-1 text-sm">
-                            <span className="label-text text-sm">Tid</span>
+                            <span className="label-text text-xs">Tid</span>
                             <input
                               type="text"
                               className="input input-xs input-bordered"
@@ -318,6 +307,17 @@ export function ModuleFormFields({ formState, onChange }: ModuleFormFieldsProps)
                               disabled
                             />
                           </label>
+                        </div>
+
+                        <div className="flex justify-start">
+                          <button
+                            type="button"
+                            className="btn btn-ghost btn-xs"
+                            onClick={() => removeDistanceDurationPair(index)}
+                            aria-label="Ta bort distans- och tidspar"
+                          >
+                            ✕
+                          </button>
                         </div>
                       </div>
                     );
@@ -352,7 +352,7 @@ export function ModuleFormFields({ formState, onChange }: ModuleFormFieldsProps)
                       key={field.id}
                       className="flex items-center justify-between rounded-md bg-base-200/60 px-3 py-2"
                     >
-                      <span className="text-sm font-medium">Vikt #{index + 1}</span>
+                      <span className="text-[11px] font-normal">Vikt #{index + 1}</span>
                       <button
                         type="button"
                         className="btn btn-ghost btn-xs"

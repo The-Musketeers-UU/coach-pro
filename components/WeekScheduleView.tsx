@@ -969,7 +969,6 @@ export function WeekScheduleView({
 
                       const renderSingleField = (
                         item: { kind: "single"; field: FeedbackFormState[string] },
-                        options?: { padded?: boolean },
                       ) => {
                         const fieldMeta = FEEDBACK_FIELDS[item.field.type];
                         const label = item.field.label?.trim() || fieldMeta.label;
@@ -1033,9 +1032,7 @@ export function WeekScheduleView({
                         return (
                           <label
                             key={item.field.id}
-                            className={`flex w-full items-center justify-between gap-3 text-[11px] ${
-                              options?.padded ? "rounded-lg bg-base-100 px-3 py-2" : ""
-                            }`}
+                            className="flex w-full items-center justify-between gap-3 text-[11px]"
                           >
                             <span className="text-[11px] text-base-content/70">{label}</span>
                             <input
@@ -1070,7 +1067,7 @@ export function WeekScheduleView({
                                 return (
                                   <div
                                     key={item.distance.id}
-                                    className="flex min-w-[280px] flex-1 flex-wrap items-center gap-3 rounded-lg bg-base-100 p-3"
+                                    className="flex min-w-[280px] flex-1 flex-wrap items-center gap-3"
                                   >
                                     <label className="flex flex-1 items-center justify-between gap-2 text-[11px]">
                                       <span className="text-[11px] text-base-content/70">Distans</span>
@@ -1130,7 +1127,7 @@ export function WeekScheduleView({
                                   key={item.field.id}
                                   className="flex min-w-[240px] flex-1 items-center"
                                 >
-                                  {renderSingleField(item, { padded: true })}
+                                  {renderSingleField(item)}
                                 </div>
                               ))}
                             </div>
