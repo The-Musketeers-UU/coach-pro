@@ -153,13 +153,13 @@ export function WeekSelector({
     [currentWeekValue, selectedWeekValue, weekOptions],
   );
 
-  const containerClassName = ["flex flex-col items-center gap-1", className]
+  const containerClassName = ["flex w-full flex-col items-center gap-1 md:w-auto", className]
     .filter(Boolean)
     .join(" ");
 
   return (
     <div className={containerClassName}>
-      <p className="text-md font-medium uppercase tracking-wide text-base-content/60 text-center">
+      <p className="text-md self-start text-left font-medium uppercase tracking-wide text-base-content/60">
         {formatIsoWeekMonthYear(selection.weekNumber, selection.weekReferenceDate)}
       </p>
       <div className="flex items-center gap-3">

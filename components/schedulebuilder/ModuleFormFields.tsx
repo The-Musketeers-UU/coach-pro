@@ -244,7 +244,7 @@ export function ModuleFormFields({ formState, onChange }: ModuleFormFieldsProps)
                   onChange={() => toggleFeedbackField(type)}
                 />
                 <div className="flex flex-col">
-                  <span className="text-sm font-semibold">
+                  <span className="text-xs font-semibold">
                     {feedbackFieldLabels[type]}
                   </span>
                   <span className="text-xs text-base-content/70">
@@ -257,7 +257,7 @@ export function ModuleFormFields({ formState, onChange }: ModuleFormFieldsProps)
             <div className="flex flex-col gap-3 px-3 py-3 text-sm">
               <div className="flex items-start justify-between gap-2">
                 <div className="flex flex-col">
-                  <span className="text-sm font-semibold">Distans &amp; tid</span>
+                  <span className="text-xs font-semibold">Distans &amp; tid</span>
                   <span className="text-xs text-base-content/70">
                     Ange distansen så sparas tiden som uppföljning efter passet.
                   </span>
@@ -281,10 +281,7 @@ export function ModuleFormFields({ formState, onChange }: ModuleFormFieldsProps)
                         key={distanceField.id}
                         className="flex flex-col gap-2 rounded-md bg-base-200/60 px-3 py-2"
                       >
-                        <div className="flex items-start justify-between gap-2">
-                          <span className="text-sm font-semibold">
-                            Distans &amp; tid #{index + 1}
-                          </span>
+                        <div className="flex items-start justify-end gap-2">
                           <button
                             type="button"
                             className="btn btn-ghost btn-xs"
@@ -299,9 +296,10 @@ export function ModuleFormFields({ formState, onChange }: ModuleFormFieldsProps)
                           <label className="form-control w-full gap-1 text-sm">
                             <span className="label-text text-sm">Distans</span>
                             <input
-                              type="text"
+                              type="number"
+                              inputMode="decimal"
                               className="input input-xs input-bordered"
-                              placeholder="t.ex. 5 000 m"
+                              placeholder="t.ex. 5000"
                               value={distanceField.label ?? ""}
                               onChange={(event) =>
                                 updateFieldLabel(distanceField.id, event.target.value)
@@ -331,7 +329,7 @@ export function ModuleFormFields({ formState, onChange }: ModuleFormFieldsProps)
             <div className="flex flex-col gap-3 px-3 py-3 text-sm">
               <div className="flex items-start justify-between gap-2">
                 <div className="flex flex-col">
-                  <span className="text-sm font-semibold">
+                  <span className="text-xs font-semibold">
                     {feedbackFieldLabels.weight}
                   </span>
                   <span className="text-xs text-base-content/70">
