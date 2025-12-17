@@ -265,6 +265,15 @@ export type CreateModuleInput = {
   feedbackFields?: FeedbackFieldDefinition[];
 };
 
+export type UpdateModuleInput = {
+  id: string;
+  name: string;
+  category: string;
+  subCategory?: string;
+  description?: string;
+  feedbackFields?: FeedbackFieldDefinition[];
+};
+
 export type CreateScheduleWeekInput = {
   ownerId: string;
   athleteId: string;
@@ -847,6 +856,37 @@ export const createModule = async (input: CreateModuleInput): Promise<ModuleRow>
     return coerceModuleRow(data);
   } catch (error) {
     console.error("ƒ?O Error creating module:", error);
+    throw toReadableError(error);
+  }
+};
+
+export const updateModule = async (input: UpdateModuleInput): Promise<ModuleRow> => {
+  const payload = {
+    name: input.name,
+    category: input.category,
+    subCategory: input.subCategory?.trim() || null,
+    description: input.description?.trim() || null,
+    activeFeedbackFields: Array.isArray(input.feedbackFields)
+      ? input.feedbackFields
+      : [],
+  } satisfies Partial<ModuleRow>;
+
+  try {
+    const { data, error } = await supabase
+      .from("module")
+      .update(payload)
+      .eq("id", toDbNumericId(input.id))
+      .select()
+      .single();
+
+    if (error) {
+      console.error("Error updating module:", error);
+      throw toReadableError(error);
+    }
+
+    return coerceModuleRow(data);
+  } catch (error) {
+    console.error("Error updating module via SQL query:", error);
     throw toReadableError(error);
   }
 };

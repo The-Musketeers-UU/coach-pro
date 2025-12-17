@@ -7,7 +7,7 @@ export default function AuthLayout({
   children: React.ReactNode;
 }) {
   return (
-    <div className="min-h-screen">
+    <div className="min-h-screen bg-base-200">
       {/* Titel placerad lite längre ner via translate-y */}
       <h1 className="text-center text-5xl font-semibold tracking-tight text-primary py-[8vh]">
         Coach Pro

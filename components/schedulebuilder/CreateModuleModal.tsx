@@ -26,7 +26,7 @@ export function CreateModuleModal({
 }: CreateModuleModalProps) {
   return (
     <dialog className={`modal ${isOpen ? "modal-open" : ""} z-[1100]`}>
-      <div className="modal-box max-w-md space-y-4">
+      <div className="modal-box w-full max-w-4xl space-y-4">
         <div className="flex items-start justify-between gap-4">
           <div>
             <h3 className="text-xl font-semibold">Skapa nytt block</h3>

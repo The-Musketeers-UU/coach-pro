@@ -102,13 +102,13 @@ export function ReusableBlocksDrawer({
           </label>
           <button
             type="button"
-            className="btn btn-secondary btn-sm self-start"
+            className="btn btn-secondary btn-sm self-start w-full"
             onClick={() => {
               resetModuleForm();
               openCreateModal();
             }}
           >
-            Skapa ny modul
+            + Skapa ny modul
           </button>
         </div>
         <div className="min-h-0 flex-1 space-y-3 overflow-y-auto pr-1">

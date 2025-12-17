@@ -4,6 +4,12 @@ import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 
 import {
+  WeekSelector,
+  createRollingWeekOptions,
+  getCurrentWeekValue,
+  getWeekSelection,
+} from "@/components/WeekSelector";
+import {
   WeekScheduleView,
   type FeedbackFieldKey,
   type FeedbackFieldDefinition,
@@ -16,7 +22,11 @@ import {
   getAthletes,
   getScheduleWeeksWithModules,
 } from "@/lib/supabase/training-modules";
-import { findClosestWeekIndex, getIsoWeekNumber } from "@/lib/week";
+import {
+  formatIsoWeekMonthYear,
+  findClosestWeekIndex,
+  getIsoWeekNumber,
+} from "@/lib/week";
 
 const dayLabels = [
   "Måndag",
@@ -31,20 +41,25 @@ const dayLabels = [
 const toProgramWeek = (week: ScheduleWeekWithModules): ProgramWeek => ({
   id: week.id,
   label: week.title || `Vecka ${week.week}`,
-  focus: `Ägare: ${week.owner}`,
-    days: week.days.map((day) => ({
-      id: day.id,
-      label: dayLabels[day.day - 1] ?? `Dag ${day.day}`,
+  days: week.days.map((day) => ({
+    id: day.id,
+    label: dayLabels[day.day - 1] ?? `Dag ${day.day}`,
+    dayNumber: day.day,
     modules: day.modules.map((module) => {
       const responses = module.feedback?.responses ?? [];
+
+      const byType = new Map<FeedbackFieldKey, number | string | null>();
+      for (const r of responses) byType.set(r.type, r.value);
+
       const getNumeric = (type: FeedbackFieldKey) => {
-        const matched = responses.find((response) => response.type === type)?.value;
+        const matched = byType.get(type);
         if (matched === null || matched === undefined) return null;
         const parsed = Number(matched);
         return Number.isFinite(parsed) ? parsed : null;
       };
+
       const getText = (type: FeedbackFieldKey) => {
-        const matched = responses.find((response) => response.type === type)?.value;
+        const matched = byType.get(type);
         return matched === null || matched === undefined ? null : String(matched);
       };
 
@@ -61,7 +76,7 @@ const toProgramWeek = (week: ScheduleWeekWithModules): ProgramWeek => ({
         comment: getText("comment"),
         feeling: getNumeric("feeling"),
         sleepHours: getNumeric("sleepHours"),
-        feedbackFields: module.activeFeedbackFields as FeedbackFieldDefinition[],
+        feedbackFields: module.activeFeedbackFields ?? [],
         feedbackResponses: responses,
       };
     }),
@@ -71,24 +86,52 @@ const toProgramWeek = (week: ScheduleWeekWithModules): ProgramWeek => ({
 export default function AthleteSchedulePage() {
   const router = useRouter();
   const { user, profile, isLoading, isLoadingProfile } = useAuth();
-  const [weekIndex, setWeekIndex] = useState(0);
+  const weekOptions = useMemo(() => createRollingWeekOptions(), []);
+  const currentWeekValue = useMemo(() => getCurrentWeekValue(), []);
+  const [selectedWeekValue, setSelectedWeekValue] = useState(currentWeekValue);
   const [rawWeeks, setRawWeeks] = useState<ScheduleWeekWithModules[]>([]);
   const [athletes, setAthletes] = useState<AthleteRow[]>([]);
   const [selectedAthlete, setSelectedAthlete] = useState<string>("");
   const [isFetching, setIsFetching] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const currentWeekNumber = getIsoWeekNumber(new Date());
+  const currentWeekNumber = useMemo(() => getIsoWeekNumber(new Date()), []);
+  const availableWeeks = useMemo(
+    () => new Set(rawWeeks.map((week) => week.week)),
+    [rawWeeks],
+  );
+  const weekSelection = useMemo(
+    () => getWeekSelection({ weekOptions, selectedWeekValue, currentWeekValue }),
+    [currentWeekValue, selectedWeekValue, weekOptions],
+  );
+  const weekNumber = weekSelection.weekNumber ?? currentWeekNumber;
+  const activeWeekData = useMemo(
+    () => rawWeeks.find((week) => week.week === weekNumber),
+    [rawWeeks, weekNumber],
+  );
+  const activeWeek = useMemo(
+    () => (activeWeekData ? toProgramWeek(activeWeekData) : undefined),
+    [activeWeekData],
+  );
+  const activeWeekId = activeWeekData?.id;
 
-  const viewWeeks = useMemo(() => rawWeeks.map(toProgramWeek), [rawWeeks]);
-  const activeWeek = viewWeeks[weekIndex];
-  const weekNumber = rawWeeks[weekIndex]?.week ?? currentWeekNumber;
-  const activeWeekId = rawWeeks[weekIndex]?.id;
+  const goToPreviousWeek = () =>
+    setSelectedWeekValue((previous) => {
+      const previousIndex = weekOptions.findIndex((option) => option.value === previous);
 
-  const goToPreviousWeek = () => setWeekIndex((prev) => Math.max(0, prev - 1));
+      if (previousIndex <= 0) return previous;
+
+      return weekOptions[previousIndex - 1]?.value ?? previous;
+    });
 
   const goToNextWeek = () =>
-    setWeekIndex((prev) => Math.min(viewWeeks.length - 1, prev + 1));
+    setSelectedWeekValue((previous) => {
+      const previousIndex = weekOptions.findIndex((option) => option.value === previous);
+      if (previousIndex === -1) return previous;
+
+      const nextIndex = Math.min(weekOptions.length - 1, previousIndex + 1);
+      return weekOptions[nextIndex]?.value ?? previous;
+    });
 
   const handleModifyWeek = () => {
     if (!activeWeekId) return;
@@ -107,9 +150,9 @@ export default function AthleteSchedulePage() {
 
     if (!profile?.isCoach) {
       router.replace("/athlete");
-      console.log("user is athlete")
-    }else{
-     console.log("User is a coach")
+      console.log("user is athlete");
+    } else {
+      console.log("User is a coach");
     }
   }, [isLoading, isLoadingProfile, profile?.isCoach, router, user]);
 
@@ -143,7 +186,18 @@ export default function AthleteSchedulePage() {
       try {
         const weeks = await getScheduleWeeksWithModules(selectedAthlete);
         setRawWeeks(weeks);
-        setWeekIndex(findClosestWeekIndex(weeks, currentWeekNumber));
+        const closestWeekIndex = findClosestWeekIndex(weeks, currentWeekNumber);
+        const closestWeekNumber = weeks[closestWeekIndex]?.week;
+
+        if (closestWeekNumber) {
+          const closestWeekValue = weekOptions.find(
+            (option) => option.weekNumber === closestWeekNumber,
+          )?.value;
+
+          if (closestWeekValue) {
+            setSelectedWeekValue(closestWeekValue);
+          }
+        }
       } catch (supabaseError) {
         setError(
           supabaseError instanceof Error
@@ -156,9 +210,12 @@ export default function AthleteSchedulePage() {
     };
 
     void loadWeeks();
-  }, [currentWeekNumber, profile?.isCoach, selectedAthlete]);
+  }, [currentWeekNumber, profile?.isCoach, selectedAthlete, weekOptions]);
 
-  if (isLoading || isLoadingProfile || isFetching) {
+  const isInitialLoad = isLoading || isLoadingProfile;
+  const isWeekLoading = isFetching;
+
+  if (isInitialLoad) {
     return (
       <div className="flex min-h-screen items-center justify-center">
         <span className="loading loading-spinner" aria-label="Laddar scheman" />
@@ -179,38 +236,26 @@ export default function AthleteSchedulePage() {
   return (
     <div className="min-h-screen">
       <div className="mx-auto max-w-full space-y-5 px-5 py-5">
-        <div className="flex gap-4 flex-row items-center justify-between">
-          <h1 className="hidden pl-5 text-xl font-semibold sm:block w-[26vw]">
-            Träningsöversikt
-          </h1>
+        <div className="grid gap-4 md:grid-cols-[1fr_auto_1fr] md:items-center">
+          <p className="text-lg font-medium uppercase tracking-wide text-base-content/70">
+            {formatIsoWeekMonthYear(weekSelection.weekNumber, weekSelection.weekReferenceDate)}
+          </p>
 
-          <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-end">
-            <div className="flex items-center gap-2">
-              <button
-                className="btn btn-outline btn-xs btn-primary"
-                onClick={goToPreviousWeek}
-                aria-label="Previous week"
-                disabled={weekIndex === 0}
-              >
-                &lt;
-              </button>
-              <p className="badge-md w-[100px] badge badge-outline badge-secondary font-semibold uppercase tracking-wide">
-                Vecka {weekNumber}
-              </p>
-              <button
-                className="btn btn-outline btn-xs btn-primary"
-                onClick={goToNextWeek}
-                aria-label="Next week"
-                disabled={
-                  weekIndex === viewWeeks.length - 1 || viewWeeks.length === 0
-                }
-              >
-                &gt;
-              </button>
-            </div>
+          <div className="flex justify-center">
+            <WeekSelector
+              weekOptions={weekOptions}
+              selectedWeekValue={selectedWeekValue}
+              currentWeekValue={currentWeekValue}
+              availableWeeks={availableWeeks}
+              onChange={setSelectedWeekValue}
+              onPrevious={goToPreviousWeek}
+              onNext={goToNextWeek}
+              className="md:flex-row md:items-center md:gap-4"
+              showMonthLabel={false}
+            />
           </div>
 
-          <div className="flex w-full max-w-sm items-center gap-2">
+          <div className="flex w-full max-w-sm items-center gap-2 md:justify-end md:justify-self-end">
             <span className="whitespace-nowrap text-sm">Atlet:</span>
 
             <select
@@ -233,22 +278,18 @@ export default function AthleteSchedulePage() {
 
         {error && <div className="alert alert-error">{error}</div>}
 
-        {viewWeeks.length === 0 ? (
-          <WeekScheduleView
-            week={undefined}
-            weekNumber={weekNumber}
-            emptyWeekTitle="Inget schema"
-            emptyWeekDescription="Det finns inget schema för den här veckan."
-            viewerRole="coach"
-            athleteId={selectedAthlete}
-            coachId={profile?.id}
-          />
-        ) : (
+        <div className="relative">
+          {isWeekLoading && (
+            <div className="absolute inset-0 z-10 flex items-center justify-center rounded-lg bg-base-100/70 backdrop-blur-sm">
+              <span className="loading loading-spinner" aria-label="Laddar vecka" />
+            </div>
+          )}
+
           <WeekScheduleView
             week={activeWeek}
             weekNumber={weekNumber}
-            emptyWeekTitle="Inget program"
-            emptyWeekDescription="Ingen data för veckan."
+            emptyWeekTitle="Inget schema"
+            emptyWeekDescription="Det finns inget schema för den här veckan."
             headerAction={
               <button
                 className="btn btn-primary btn-soft btn-sm"
@@ -264,13 +305,14 @@ export default function AthleteSchedulePage() {
                 >
                   <path d="M12.8995 6.85453L17.1421 11.0972L7.24264 20.9967H3V16.754L12.8995 6.85453ZM14.3137 5.44032L16.435 3.319C16.8256 2.92848 17.4587 2.92848 17.8492 3.319L20.6777 6.14743C21.0682 6.53795 21.0682 7.17112 20.6777 7.56164L18.5563 9.68296L14.3137 5.44032Z"></path>
                 </svg>
-                <span className="sr-only sm:not-sr-only sm:inline">
-                  Redigera schema
-                </span>
+                <span className="sr-only sm:not-sr-only sm:inline">Redigera schema</span>
               </button>
             }
+            viewerRole="coach"
+            athleteId={selectedAthlete}
+            coachId={profile?.id}
           />
-        )}
+        </div>
       </div>
     </div>
   );
