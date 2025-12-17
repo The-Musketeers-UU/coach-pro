@@ -126,7 +126,7 @@ const FEEDBACK_FIELDS: Record<
     min: 0,
   },
   duration: {
-    label: "Tid (mm:ss.hh)",
+    label: "Tid",
     placeholder: "",
     type: "text",
   },
@@ -886,7 +886,7 @@ export function WeekScheduleView({
               <div className="flex h-full flex-col space-y-3 rounded-2xl border border-base-300 bg-base-100 p-4">
                 <div className="flex items-center justify-between gap-2">
                   <p className="text-xs uppercase tracking-wide text-neutral">
-                    Din feedback
+                    Atletens feedback
                   </p>
 
                   {hasSelectedModulePendingFeedback && (
@@ -969,7 +969,7 @@ export function WeekScheduleView({
 
                       const renderSingleField = (
                         item: { kind: "single"; field: FeedbackFormState[string] },
-                        options?: { compact?: boolean },
+                        options?: { padded?: boolean },
                       ) => {
                         const fieldMeta = FEEDBACK_FIELDS[item.field.type];
                         const label = item.field.label?.trim() || fieldMeta.label;
@@ -978,10 +978,10 @@ export function WeekScheduleView({
                           return (
                             <label
                               key={item.field.id}
-                              className="flex flex-col gap-1 text-xs"
+                              className="flex flex-col gap-1 text-[11px]"
                             >
                               <div className="flex items-center justify-between gap-2">
-                                <span className="text-xs text-base-content/70">{label}</span>
+                                <span className="text-[11px] text-base-content/70">{label}</span>
                               </div>
                               <textarea
                                 className="textarea textarea-bordered w-full"
@@ -1005,9 +1005,9 @@ export function WeekScheduleView({
                           return (
                             <label
                               key={item.field.id}
-                              className="flex items-center justify-between gap-3 text-xs"
+                              className="flex w-full items-center justify-between gap-3 text-[11px]"
                             >
-                              <span className="text-xs text-base-content/70">{label}</span>
+                              <span className="text-[11px] text-base-content/70">{label}</span>
                               <select
                                 className="select select-bordered select-sm w-28"
                                 value={item.field.value}
@@ -1033,13 +1033,11 @@ export function WeekScheduleView({
                         return (
                           <label
                             key={item.field.id}
-                            className={`flex items-center justify-between gap-3 text-xs ${
-                              options?.compact
-                                ? "rounded-lg bg-base-100 px-3 py-2"
-                                : ""
+                            className={`flex w-full items-center justify-between gap-3 text-[11px] ${
+                              options?.padded ? "rounded-lg bg-base-100 px-3 py-2" : ""
                             }`}
                           >
-                            <span className="text-xs text-base-content/70">{label}</span>
+                            <span className="text-[11px] text-base-content/70">{label}</span>
                             <input
                               className="input input-bordered input-sm w-28 text-right"
                               type={fieldMeta.type}
@@ -1062,22 +1060,22 @@ export function WeekScheduleView({
                       };
 
                       return (
-                        <div className="space-y-3">
+                        <div className="space-y-2">
                           {distanceItems.length > 0 && (
-                            <div className="flex flex-wrap gap-3">
+                            <div className="flex flex-wrap gap-2">
                               {distanceItems.map((item) => {
                                 const durationLabel =
                                   item.duration?.label?.trim() || FEEDBACK_FIELDS.duration.label;
 
                                 return (
-                          <div
-                            key={item.distance.id}
-                            className="flex min-w-[280px] flex-1 flex-wrap items-center gap-4 rounded-lg bg-base-100 p-3"
-                          >
-                            <label className="flex items-center justify-between gap-2 text-xs">
-                              <span className="text-xs text-base-content/70">Distans</span>
-                              <input
-                                className="input input-bordered input-sm w-28"
+                                  <div
+                                    key={item.distance.id}
+                                    className="flex min-w-[280px] flex-1 flex-wrap items-center gap-3 rounded-lg bg-base-100 p-3"
+                                  >
+                                    <label className="flex flex-1 items-center justify-between gap-2 text-[11px]">
+                                      <span className="text-[11px] text-base-content/70">Distans</span>
+                                      <input
+                                        className="input input-bordered input-sm w-28"
                                         type="number"
                                         step={FEEDBACK_FIELDS.distance.step}
                                         min={FEEDBACK_FIELDS.distance.min}
@@ -1097,37 +1095,44 @@ export function WeekScheduleView({
                                       />
                                     </label>
 
-                            {item.duration && (
-                              <label className="flex items-center justify-between gap-2 text-xs">
-                                <span className="text-xs text-base-content/70">{durationLabel}</span>
-                                <input
-                                  className="input input-bordered input-sm w-28"
-                                  type="text"
-                                  placeholder={FEEDBACK_FIELDS.duration.placeholder}
-                                  value={item.duration.value}
-                                  readOnly={!isAthlete}
-                                  disabled={!isAthlete}
-                                  onChange={(event) =>
-                                    handleFeedbackChange(
-                                      item.duration.id,
-                                      (current) => ({
-                                        ...current,
-                                        value: event.target.value,
-                                      }),
-                                    )
-                                  }
-                                />
-                              </label>
-                            )}
-                          </div>
-                        );
-                      })}
+                                    {item.duration && (
+                                      <label className="flex flex-1 items-center justify-between gap-2 text-[11px]">
+                                        <span className="text-[11px] text-base-content/70">{durationLabel}</span>
+                                        <input
+                                          className="input input-bordered input-sm w-28"
+                                          type="text"
+                                          placeholder={FEEDBACK_FIELDS.duration.placeholder}
+                                          value={item.duration.value}
+                                          readOnly={!isAthlete}
+                                          disabled={!isAthlete}
+                                          onChange={(event) =>
+                                            handleFeedbackChange(
+                                              item.duration.id,
+                                              (current) => ({
+                                                ...current,
+                                                value: event.target.value,
+                                              }),
+                                            )
+                                          }
+                                        />
+                                      </label>
+                                    )}
+                                  </div>
+                                );
+                              })}
                             </div>
                           )}
 
                           {weightItems.length > 0 && (
-                            <div className="flex flex-wrap gap-3">
-                              {weightItems.map((item) => renderSingleField(item, { compact: true }))}
+                            <div className="flex flex-wrap gap-2">
+                              {weightItems.map((item) => (
+                                <div
+                                  key={item.field.id}
+                                  className="flex min-w-[240px] flex-1 items-center"
+                                >
+                                  {renderSingleField(item, { padded: true })}
+                                </div>
+                              ))}
                             </div>
                           )}
 
