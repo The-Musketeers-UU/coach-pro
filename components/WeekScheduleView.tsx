@@ -176,6 +176,8 @@ export function WeekScheduleView({
   const [feedbackForm, setFeedbackForm] = useState<FeedbackFormState | null>(
     null
   );
+  const [reviewedFeedbackSignatures, setReviewedFeedbackSignatures] =
+    useState<Map<string, string>>(() => new Map());
   const [feedbackError, setFeedbackError] = useState<string | null>(null);
   const [isSubmittingFeedback, setIsSubmittingFeedback] = useState(false);
   const [selectedDayId, setSelectedDayId] = useState<string | null>(
@@ -595,6 +597,29 @@ export function WeekScheduleView({
     });
   };
 
+  const getFeedbackSignature = (module: ProgramModule) =>
+    JSON.stringify(
+      (module.feedbackResponses ?? []).map((response) => ({
+        id: response.fieldId,
+        type: response.type,
+        value:
+          typeof response.value === "string"
+            ? response.value.trim()
+            : response.value,
+      }))
+    );
+
+  const hasUnreadFeedbackForCoach = (
+    module: ProgramModule,
+    moduleKey: string,
+  ) => {
+    const signature = getFeedbackSignature(module);
+    if (signature === "[]") return false;
+
+    const seenSignature = reviewedFeedbackSignatures.get(moduleKey);
+    return seenSignature !== signature;
+  };
+
   const selectedDay =
     daysToRender.find((day) => day.id === selectedDayId) ?? daysToRender[0];
 
@@ -605,7 +630,7 @@ export function WeekScheduleView({
   }, [dayDateById, selectedModule?.module.scheduleDayId]);
 
   const hasSelectedModulePendingFeedback = useMemo(() => {
-    if (!selectedModule) return false;
+    if (!selectedModule || !isAthlete) return false;
 
     const isPastDay = selectedModuleDayDate
       ? selectedModuleDayDate.getTime() <= today.getTime()
@@ -646,6 +671,16 @@ export function WeekScheduleView({
               type="button"
               onClick={() => {
                 const moduleKey = module.id ?? `${day.id}-${index}`;
+
+                if (viewerRole === "coach") {
+                  const signature = getFeedbackSignature(module);
+                  setReviewedFeedbackSignatures((current) => {
+                    const next = new Map(current);
+                    next.set(moduleKey, signature);
+                    return next;
+                  });
+                }
+
                 setSelectedModule({ module, key: moduleKey });
               }}
               className="group w-full text-left"
@@ -656,14 +691,24 @@ export function WeekScheduleView({
                   const isPastDay = dayDate
                     ? dayDate.getTime() <= today.getTime()
                     : false;
-                  const showPending = isPastDay && hasPendingFeedback(module);
+                  const moduleKey = module.id ?? `${day.id}-${index}`;
 
-                  if (!showPending) return null;
+                  const showPending =
+                    isAthlete && isPastDay && hasPendingFeedback(module);
+
+                  const showUnreadForCoach =
+                    !isAthlete && hasUnreadFeedbackForCoach(module, moduleKey);
+
+                  if (!showPending && !showUnreadForCoach) return null;
+
+                  const indicatorLabel = showPending
+                    ? "Feedback saknas"
+                    : "Ny feedback";
 
                   return (
                     <span
                       className="indicator-item indicator-top indicator-end translate-x-0 translate-y-0 status status-info"
-                      aria-label="Feedback saknas"
+                      aria-label={indicatorLabel}
                     />
                   );
                 })()}

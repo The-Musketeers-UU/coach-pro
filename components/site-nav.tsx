@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { ThemeToggle } from "@/components/theme_toggle";
 import { useAuth } from "@/components/auth-provider";
 
@@ -16,13 +16,35 @@ const athleteLinks = [{ href: "/athlete", label: "Mina scheman" }];
 export function SiteNav() {
   const pathname = usePathname();
   const { user, signOut, isLoading, profile } = useAuth();
-  const isCoach =
-    typeof profile?.isCoach === "boolean"
-      ? profile.isCoach
-      : Boolean(user?.user_metadata?.isCoach);
-  const navLinks = isCoach ? coachLinks : athleteLinks;
+  const [storedRole] = useState<"coach" | "athlete">(() => {
+    if (typeof window === "undefined") return "coach";
+
+    const stored = window.sessionStorage.getItem("navRole");
+    return stored === "coach" ? "coach" : "athlete";
+  });
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement | null>(null);
+
+  const resolvedRole = useMemo(() => {
+    if (typeof profile?.isCoach === "boolean") {
+      return profile.isCoach ? "coach" : "athlete";
+    }
+
+    if (typeof user?.user_metadata?.isCoach === "boolean") {
+      return user.user_metadata.isCoach ? "coach" : "athlete";
+    }
+
+    return storedRole;
+  }, [profile?.isCoach, storedRole, user?.user_metadata?.isCoach]);
+
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      window.sessionStorage.setItem("navRole", resolvedRole);
+    }
+  }, [resolvedRole]);
+
+  const isCoach = resolvedRole === "coach";
+  const navLinks = isCoach ? coachLinks : athleteLinks;
 
   const handleSignOut = async () => {
     await signOut();
@@ -43,6 +65,8 @@ export function SiteNav() {
       document.removeEventListener("mousedown", handleClickOutside);
     };
   }, [isDropdownOpen]);
+
+  const showAuthenticatedShell = Boolean(user) || isLoading;
 
   return (
     <header className="border-b border-base-300 bg-base-200 z-40 sticky top-0">
@@ -73,7 +97,7 @@ export function SiteNav() {
             );
           })}
 
-          {user ? (
+          {showAuthenticatedShell ? (
             <div
               className={`dropdown dropdown-end ${isDropdownOpen ? "dropdown-open" : ""}`}
               ref={dropdownRef}
@@ -85,6 +109,7 @@ export function SiteNav() {
                 aria-label="Visa kontoinformation"
                 aria-expanded={isDropdownOpen}
                 onClick={() => setIsDropdownOpen(true)}
+                disabled={!user}
               >
                 <svg
                   xmlns="http://www.w3.org/2000/svg"
@@ -99,7 +124,7 @@ export function SiteNav() {
               <div className="dropdown-content z-[1] mt-3 w-64 rounded-box border border-base-300 bg-base-100 p-4 shadow">
                 <div className="flex flex-col gap-2 text-sm" onClick={(event) => event.stopPropagation()}>
                   <div className="font-semibold">
-                    {profile?.name?.split(" ")[0] ?? user.email}
+                    {profile?.name?.split(" ")[0] ?? user?.email ?? "Profil"}
                     {profile?.name?.includes(" ") && (
                       <>
                         {" "}
@@ -107,8 +132,8 @@ export function SiteNav() {
                       </>
                     )}
                   </div>
-                  <div className="text-xs text-base-content/70">{user.email}</div>
-                  <div className="text-xs">Kontotyp: {profile?.isCoach ? "Coach" : "Atlet"}</div>
+                  <div className="text-xs text-base-content/70">{user?.email ?? "Laddar..."}</div>
+                  <div className="text-xs">Kontotyp: {isCoach ? "Coach" : "Atlet"}</div>
                   <div>
                     <div className="divider my-1" />
                     <div className="flex items-center justify-between text-xs">
@@ -118,7 +143,7 @@ export function SiteNav() {
                   <button
                     className="btn btn-sm btn-ghost justify-start gap-2 py-0 sm:py-2"
                     onClick={handleSignOut}
-                    disabled={isLoading}
+                    disabled={isLoading || !user}
                   >
                     <svg
                       xmlns="http://www.w3.org/2000/svg"
