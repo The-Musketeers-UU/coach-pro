@@ -872,10 +872,13 @@ export function WeekScheduleView({
                           item.kind === "single" && item.field.type === "weight",
                       );
 
-                      const otherItems = items.filter(
-                        (item): item is { kind: "single"; field: FeedbackFormState[string] } =>
-                          item.kind === "single" && item.field.type !== "weight",
-                      );
+                        const otherItems = items.filter(
+                          (item): item is { kind: "single"; field: FeedbackFormState[string] } =>
+                            item.kind === "single" && item.field.type !== "weight",
+                        );
+
+                        const commentItems = otherItems.filter((item) => item.field.type === "comment");
+                        const miscItems = otherItems.filter((item) => item.field.type !== "comment");
 
                       const renderSingleField = (
                         item: { kind: "single"; field: FeedbackFormState[string] },
@@ -890,7 +893,7 @@ export function WeekScheduleView({
                               key={item.field.id}
                               className="flex flex-col gap-1 text-sm"
                             >
-                              <span className="text-sm">{label}</span>
+                              <span className="text-sm text-base-content/80">{label}</span>
                               <textarea
                                 className="textarea textarea-bordered w-full"
                                 placeholder={fieldMeta.placeholder}
@@ -915,7 +918,7 @@ export function WeekScheduleView({
                               key={item.field.id}
                               className="flex items-center justify-between gap-3 text-sm"
                             >
-                              <span className="text-sm">{label}</span>
+                              <span className="text-sm text-base-content/80">{label}</span>
                               <select
                                 className="select select-bordered select-sm w-28"
                                 value={item.field.value}
@@ -947,7 +950,7 @@ export function WeekScheduleView({
                                 : ""
                             }`}
                           >
-                            <span className="text-sm">{label}</span>
+                            <span className="text-sm text-base-content/80">{label}</span>
                             <input
                               className="input input-bordered input-sm w-28 text-right"
                               type={fieldMeta.type}
@@ -980,23 +983,44 @@ export function WeekScheduleView({
                                 return (
                                   <div
                                     key={item.distance.id}
-                                    className="flex min-w-[260px] flex-1 flex-col gap-2 rounded-lg bg-base-100 p-3"
+                                    className="flex min-w-[280px] flex-1 flex-wrap items-center gap-3 rounded-lg bg-base-100 p-3"
                                   >
-                                    <div className="flex flex-wrap items-center gap-2">
-                                      <label className="flex min-w-[120px] items-center gap-2 text-sm">
-                                        <span className="text-xs text-base-content/70">Distans</span>
+                                    <label className="flex items-center gap-2 text-sm">
+                                      <span className="text-sm text-base-content/80">Distans</span>
+                                      <input
+                                        className="input input-bordered input-sm w-28"
+                                        type="number"
+                                        step={FEEDBACK_FIELDS.distance.step}
+                                        min={FEEDBACK_FIELDS.distance.min}
+                                        placeholder={FEEDBACK_FIELDS.distance.placeholder}
+                                        value={item.distance.value}
+                                        readOnly={!isAthlete}
+                                        disabled={!isAthlete}
+                                        onChange={(event) =>
+                                          handleFeedbackChange(
+                                            item.distance.id,
+                                            (current) => ({
+                                              ...current,
+                                              value: event.target.value,
+                                            }),
+                                          )
+                                        }
+                                      />
+                                    </label>
+
+                                    {item.duration && (
+                                      <label className="flex items-center gap-2 text-sm">
+                                        <span className="text-sm text-base-content/80">{durationLabel}</span>
                                         <input
                                           className="input input-bordered input-sm w-28"
-                                          type="number"
-                                          step={FEEDBACK_FIELDS.distance.step}
-                                          min={FEEDBACK_FIELDS.distance.min}
-                                          placeholder={FEEDBACK_FIELDS.distance.placeholder}
-                                          value={item.distance.value}
+                                          type="text"
+                                          placeholder={FEEDBACK_FIELDS.duration.placeholder}
+                                          value={item.duration.value}
                                           readOnly={!isAthlete}
                                           disabled={!isAthlete}
                                           onChange={(event) =>
                                             handleFeedbackChange(
-                                              item.distance.id,
+                                              item.duration.id,
                                               (current) => ({
                                                 ...current,
                                                 value: event.target.value,
@@ -1005,32 +1029,7 @@ export function WeekScheduleView({
                                           }
                                         />
                                       </label>
-
-                                      {item.duration && (
-                                        <label className="flex min-w-[140px] items-center gap-2 text-sm">
-                                          <span className="text-xs text-base-content/70">
-                                            {durationLabel}
-                                          </span>
-                                          <input
-                                            className="input input-bordered input-sm w-28"
-                                            type="text"
-                                            placeholder={FEEDBACK_FIELDS.duration.placeholder}
-                                            value={item.duration.value}
-                                            readOnly={!isAthlete}
-                                            disabled={!isAthlete}
-                                            onChange={(event) =>
-                                              handleFeedbackChange(
-                                                item.duration.id,
-                                                (current) => ({
-                                                  ...current,
-                                                  value: event.target.value,
-                                                }),
-                                              )
-                                            }
-                                          />
-                                        </label>
-                                      )}
-                                    </div>
+                                    )}
                                   </div>
                                 );
                               })}
@@ -1043,7 +1042,9 @@ export function WeekScheduleView({
                             </div>
                           )}
 
-                          {otherItems.map((item) => renderSingleField(item))}
+                          {miscItems.map((item) => renderSingleField(item))}
+
+                          {commentItems.map((item) => renderSingleField(item))}
                         </div>
                       );
                     })()}

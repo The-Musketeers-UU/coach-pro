@@ -23,6 +23,7 @@ import {
   getScheduleWeeksWithModules,
 } from "@/lib/supabase/training-modules";
 import {
+  formatIsoWeekMonthYear,
   findClosestWeekIndex,
   getIsoWeekNumber,
 } from "@/lib/week";
@@ -235,10 +236,12 @@ export default function AthleteSchedulePage() {
   return (
     <div className="min-h-screen">
       <div className="mx-auto max-w-full space-y-5 px-5 py-5">
-        <div className="flex flex-col gap-4 md:flex-row md:items-center md:gap-6">
-          <div className="hidden flex-1 md:block" aria-hidden />
+        <div className="grid gap-4 md:grid-cols-[1fr_auto_1fr] md:items-center">
+          <p className="text-lg font-medium uppercase tracking-wide text-base-content/70">
+            {formatIsoWeekMonthYear(weekSelection.weekNumber, weekSelection.weekReferenceDate)}
+          </p>
 
-          <div className="flex flex-1 justify-center md:order-2">
+          <div className="flex justify-center">
             <WeekSelector
               weekOptions={weekOptions}
               selectedWeekValue={selectedWeekValue}
@@ -248,10 +251,11 @@ export default function AthleteSchedulePage() {
               onPrevious={goToPreviousWeek}
               onNext={goToNextWeek}
               className="md:flex-row md:items-center md:gap-4"
+              showMonthLabel={false}
             />
           </div>
 
-          <div className="flex w-full max-w-sm items-center gap-2 md:order-3 md:flex-1 md:justify-end">
+          <div className="flex w-full max-w-sm items-center gap-2 md:justify-end md:justify-self-end">
             <span className="whitespace-nowrap text-sm">Atlet:</span>
 
             <select

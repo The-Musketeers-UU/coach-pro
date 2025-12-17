@@ -136,6 +136,7 @@ type WeekSelectorProps = {
   onPrevious: () => void;
   onNext: () => void;
   className?: string;
+  showMonthLabel?: boolean;
 };
 
 export function WeekSelector({
@@ -147,6 +148,7 @@ export function WeekSelector({
   onPrevious,
   onNext,
   className,
+  showMonthLabel = true,
 }: WeekSelectorProps) {
   const selection = useMemo(
     () => getWeekSelection({ weekOptions, selectedWeekValue, currentWeekValue }),
@@ -159,9 +161,11 @@ export function WeekSelector({
 
   return (
     <div className={containerClassName}>
-      <p className="text-md self-start text-left font-medium uppercase tracking-wide text-base-content/60">
-        {formatIsoWeekMonthYear(selection.weekNumber, selection.weekReferenceDate)}
-      </p>
+      {showMonthLabel && (
+        <p className="text-md self-start text-left font-medium uppercase tracking-wide text-base-content/60">
+          {formatIsoWeekMonthYear(selection.weekNumber, selection.weekReferenceDate)}
+        </p>
+      )}
       <div className="flex items-center gap-3">
         <button
           className="btn btn-outline btn-xs btn-primary"
@@ -174,7 +178,7 @@ export function WeekSelector({
 
         <div className="flex flex-col items-center gap-1">
           <select
-            className="select select-bordered select-sm min-w-[110px] uppercase tracking-wide"
+            className="select select-bordered select-sm w-40 uppercase tracking-wide"
             value={selection.activeWeekOption?.value ?? currentWeekValue}
             onChange={(event) => onChange(event.target.value)}
           >
