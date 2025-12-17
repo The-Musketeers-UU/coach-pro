@@ -1099,19 +1099,24 @@ export function WeekScheduleView({
                                       />
                                     </label>
 
-                                    {item.duration && (
+                                    {item.duration && (() => {
+                                      const duration = item.duration;
+
+                                      if (!duration) return null;
+
+                                      return (
                                       <label className="flex items-center justify-between gap-2 text-[13px]">
                                         <span className="text-[13px] text-base-content/70">{durationLabel}</span>
                                         <input
                                           className="input input-bordered input-sm w-full"
                                           type="text"
                                           placeholder={FEEDBACK_FIELDS.duration.placeholder}
-                                          value={item.duration.value}
+                                          value={duration.value}
                                           readOnly={!isAthlete}
                                           disabled={!isAthlete}
                                           onChange={(event) =>
                                             handleFeedbackChange(
-                                              item.duration.id,
+                                              duration.id,
                                               (current) => ({
                                                 ...current,
                                                 value: event.target.value,
@@ -1120,7 +1125,8 @@ export function WeekScheduleView({
                                           }
                                         />
                                       </label>
-                                    )}
+                                      );
+                                    })()}
                                   </div>
                                 );
                               })}
