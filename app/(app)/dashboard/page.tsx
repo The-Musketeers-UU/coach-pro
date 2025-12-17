@@ -40,7 +40,6 @@ const dayLabels = [
 const toProgramWeek = (week: ScheduleWeekWithModules): ProgramWeek => ({
   id: week.id,
   label: week.title || `Vecka ${week.week}`,
-  focus: `Ägare: ${week.owner}`,
   days: week.days.map((day) => ({
     id: day.id,
     label: dayLabels[day.day - 1] ?? `Dag ${day.day}`,
@@ -212,8 +211,7 @@ export default function AthleteSchedulePage() {
     void loadWeeks();
   }, [currentWeekNumber, profile?.isCoach, selectedAthlete, weekOptions]);
 
-  const isInitialLoad =
-    isLoading || isLoadingProfile || (!selectedAthlete && athletes.length === 0);
+  const isInitialLoad = isLoading || isLoadingProfile;
   const isWeekLoading = isFetching;
 
   if (isInitialLoad) {

@@ -794,7 +794,7 @@ export function WeekScheduleView({
 
               <div className="space-y-3 rounded-2xl border border-base-300 bg-base-100 p-4">
                 <div className="flex items-center justify-between gap-2">
-                  <p className="text-xs uppercase font-semibold tracking-wide text-neutral">
+                  <p className="text-xs uppercase tracking-wide text-neutral">
                     Din feedback
                   </p>
 
@@ -859,77 +859,28 @@ export function WeekScheduleView({
                         items.push({ kind: "single", field: fieldState });
                       }
 
-                      return items.map((item) => {
-                        if (item.kind === "distanceDuration") {
-                          const distanceLabel =
-                            item.distance.label?.trim() || FEEDBACK_FIELDS.distance.label;
-                          const durationLabel =
-                            item.duration?.label?.trim() ||
-                            FEEDBACK_FIELDS.duration.label;
+                      const distanceItems = items.filter(
+                        (item): item is {
+                          kind: "distanceDuration";
+                          distance: FeedbackFormState[string];
+                          duration?: FeedbackFormState[string];
+                        } => item.kind === "distanceDuration",
+                      );
 
-                          return (
-                            <div
-                              key={item.distance.id}
-                              className="flex flex-col gap-2 rounded-lg bg-base-100"
-                            >
-                              <span className="text-sm font-semibold">
-                                {distanceLabel}
-                              </span>
-                              <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
-                                <label className="flex items-center gap-2 text-sm">
-                                  <span className="text-xs text-base-content/70">
-                                    Distans
-                                  </span>
-                                  <input
-                                    className="input input-bordered input-sm w-full"
-                                    type="number"
-                                    step={FEEDBACK_FIELDS.distance.step}
-                                    min={FEEDBACK_FIELDS.distance.min}
-                                    placeholder={FEEDBACK_FIELDS.distance.placeholder}
-                                    value={item.distance.value}
-                                    readOnly={!isAthlete}
-                                    disabled={!isAthlete}
-                                    onChange={(event) =>
-                                      handleFeedbackChange(
-                                        item.distance.id,
-                                        (current) => ({
-                                          ...current,
-                                          value: event.target.value,
-                                        })
-                                      )
-                                    }
-                                  />
-                                </label>
+                      const weightItems = items.filter(
+                        (item): item is { kind: "single"; field: FeedbackFormState[string] } =>
+                          item.kind === "single" && item.field.type === "weight",
+                      );
 
-                                {item.duration && (
-                                  <label className="flex items-center gap-2 text-sm">
-                                    <span className="text-xs text-base-content/70">
-                                      {durationLabel}
-                                    </span>
-                                    <input
-                                      className="input input-bordered input-sm w-full"
-                                      type="text"
-                                      placeholder={FEEDBACK_FIELDS.duration.placeholder}
-                                      value={item.duration.value}
-                                      readOnly={!isAthlete}
-                                      disabled={!isAthlete}
-                                      onChange={(event) =>
-                                        handleFeedbackChange(
-                                          item.duration.id,
-                                          (current) => ({
-                                            ...current,
-                                            value: event.target.value,
-                                          })
-                                        )
-                                      }
-                                    />
-                                  </label>
-                                )}
-                              </div>
-                            </div>
-                          );
-                        }
+                      const otherItems = items.filter(
+                        (item): item is { kind: "single"; field: FeedbackFormState[string] } =>
+                          item.kind === "single" && item.field.type !== "weight",
+                      );
 
+                      const renderSingleField = (
+                        item: { kind: "single"; field: FeedbackFormState[string] },
+                        options?: { compact?: boolean },
+                      ) => {
                         const fieldMeta = FEEDBACK_FIELDS[item.field.type];
                         const label = item.field.label?.trim() || fieldMeta.label;
 
@@ -939,7 +890,7 @@ export function WeekScheduleView({
                               key={item.field.id}
                               className="flex flex-col gap-1 text-sm"
                             >
-                              <span className="text-sm font-semibold">{label}</span>
+                              <span className="text-sm">{label}</span>
                               <textarea
                                 className="textarea textarea-bordered w-full"
                                 placeholder={fieldMeta.placeholder}
@@ -964,7 +915,7 @@ export function WeekScheduleView({
                               key={item.field.id}
                               className="flex items-center justify-between gap-3 text-sm"
                             >
-                              <span className="text-sm font-semibold">{label}</span>
+                              <span className="text-sm">{label}</span>
                               <select
                                 className="select select-bordered select-sm w-28"
                                 value={item.field.value}
@@ -990,9 +941,13 @@ export function WeekScheduleView({
                         return (
                           <label
                             key={item.field.id}
-                            className="flex items-center justify-between gap-3 text-sm"
+                            className={`flex items-center justify-between gap-3 text-sm ${
+                              options?.compact
+                                ? "rounded-lg bg-base-100 px-3 py-2"
+                                : ""
+                            }`}
                           >
-                            <span className="text-sm font-semibold">{label}</span>
+                            <span className="text-sm">{label}</span>
                             <input
                               className="input input-bordered input-sm w-28 text-right"
                               type={fieldMeta.type}
@@ -1012,7 +967,85 @@ export function WeekScheduleView({
                             />
                           </label>
                         );
-                      });
+                      };
+
+                      return (
+                        <div className="space-y-3">
+                          {distanceItems.length > 0 && (
+                            <div className="flex flex-wrap gap-3">
+                              {distanceItems.map((item) => {
+                                const durationLabel =
+                                  item.duration?.label?.trim() || FEEDBACK_FIELDS.duration.label;
+
+                                return (
+                                  <div
+                                    key={item.distance.id}
+                                    className="flex min-w-[260px] flex-1 flex-col gap-2 rounded-lg bg-base-100 p-3"
+                                  >
+                                    <div className="flex flex-wrap items-center gap-2">
+                                      <label className="flex min-w-[120px] items-center gap-2 text-sm">
+                                        <span className="text-xs text-base-content/70">Distans</span>
+                                        <input
+                                          className="input input-bordered input-sm w-28"
+                                          type="number"
+                                          step={FEEDBACK_FIELDS.distance.step}
+                                          min={FEEDBACK_FIELDS.distance.min}
+                                          placeholder={FEEDBACK_FIELDS.distance.placeholder}
+                                          value={item.distance.value}
+                                          readOnly={!isAthlete}
+                                          disabled={!isAthlete}
+                                          onChange={(event) =>
+                                            handleFeedbackChange(
+                                              item.distance.id,
+                                              (current) => ({
+                                                ...current,
+                                                value: event.target.value,
+                                              }),
+                                            )
+                                          }
+                                        />
+                                      </label>
+
+                                      {item.duration && (
+                                        <label className="flex min-w-[140px] items-center gap-2 text-sm">
+                                          <span className="text-xs text-base-content/70">
+                                            {durationLabel}
+                                          </span>
+                                          <input
+                                            className="input input-bordered input-sm w-28"
+                                            type="text"
+                                            placeholder={FEEDBACK_FIELDS.duration.placeholder}
+                                            value={item.duration.value}
+                                            readOnly={!isAthlete}
+                                            disabled={!isAthlete}
+                                            onChange={(event) =>
+                                              handleFeedbackChange(
+                                                item.duration.id,
+                                                (current) => ({
+                                                  ...current,
+                                                  value: event.target.value,
+                                                }),
+                                              )
+                                            }
+                                          />
+                                        </label>
+                                      )}
+                                    </div>
+                                  </div>
+                                );
+                              })}
+                            </div>
+                          )}
+
+                          {weightItems.length > 0 && (
+                            <div className="flex flex-wrap gap-3">
+                              {weightItems.map((item) => renderSingleField(item, { compact: true }))}
+                            </div>
+                          )}
+
+                          {otherItems.map((item) => renderSingleField(item))}
+                        </div>
+                      );
                     })()}
                 </div>
 

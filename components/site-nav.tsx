@@ -53,25 +53,21 @@ export function SiteNav() {
         </div>
 
         <nav className="flex flex-wrap items-center gap-3">
-          {isLoading && user ? (
-            <span className="loading loading-spinner" aria-label="Laddar meny" />
-          ) : (
-            navLinks.map((link) => {
-              const isActive =
-                link.href === "/" ? pathname === link.href : pathname.startsWith(link.href);
-              return (
-                <Link
-                  key={link.href}
-                  href={link.href}
-                  className={`btn btn-sm ${
-                    isActive ? "btn-primary" : "btn-ghost border-base-200"
-                  } rounded-full px-4`}
-                >
-                  {link.label}
-                </Link>
-              );
-            })
-          )}
+          {navLinks.map((link) => {
+            const isActive =
+              link.href === "/" ? pathname === link.href : pathname.startsWith(link.href);
+            return (
+              <Link
+                key={link.href}
+                href={link.href}
+                className={`btn btn-sm ${
+                  isActive ? "btn-primary" : "btn-ghost border-base-200"
+                } rounded-full px-4`}
+              >
+                {link.label}
+              </Link>
+            );
+          })}
 
           {user ? (
             <div
