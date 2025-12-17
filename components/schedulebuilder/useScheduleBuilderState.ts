@@ -69,6 +69,7 @@ export const useScheduleBuilderState = ({
   const [isAssignModalOpen, setIsAssignModalOpen] = useState(false);
   const [selectedAthletes, setSelectedAthletes] = useState<string[]>([]);
   const [isSavingModule, setIsSavingModule] = useState(false);
+  const [isSavingEditedModule, setIsSavingEditedModule] = useState(false);
   const [editingContext, setEditingContext] = useState<EditingContext | null>(
     null
   );
@@ -494,10 +495,10 @@ export const useScheduleBuilderState = ({
     }
   };
 
-  const handleSaveEditedModule = (event: FormEvent<HTMLFormElement>) => {
+  const handleSaveEditedModule = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
 
-    if (!editingContext || !editingModuleForm) return;
+    if (!editingContext || !editingModuleForm || isSavingEditedModule) return;
     const result = prepareModuleToSave(
       editingModuleForm,
       editingContext.moduleId
@@ -510,31 +511,46 @@ export const useScheduleBuilderState = ({
 
     if (!result.module) return;
 
-    if (editingContext.type === "library") {
-      setModuleLibrary((prev) =>
-        prev.map((module) =>
-          module.id === editingContext.moduleId ? result.module! : module
-        )
+    setIsSavingEditedModule(true);
+
+    try {
+      let savedModule = result.module;
+
+      if (editingContext.type === "library") {
+        savedModule = await persistModule(result.module);
+
+        setModuleLibrary((prev) =>
+          prev.map((module) =>
+            module.id === editingContext.moduleId ? savedModule : module
+          )
+        );
+      }
+
+      if (editingContext.type === "schedule") {
+        setSchedule((prev) => ({
+          ...prev,
+          [editingContext.dayId]: prev[editingContext.dayId].map(
+            (module, index) =>
+              index === editingContext.moduleIndex
+                ? {
+                    ...savedModule,
+                    id: module.id,
+                    sourceModuleId: module.sourceModuleId ?? savedModule.id,
+                  }
+                : module
+          ),
+        }));
+      }
+
+      setEditFormError(null);
+      closeEditModal();
+    } catch (persistError) {
+      setEditFormError(
+        persistError instanceof Error ? persistError.message : String(persistError)
       );
+    } finally {
+      setIsSavingEditedModule(false);
     }
-
-    if (editingContext.type === "schedule") {
-      setSchedule((prev) => ({
-        ...prev,
-        [editingContext.dayId]: prev[editingContext.dayId].map(
-          (module, index) =>
-            index === editingContext.moduleIndex
-              ? {
-                  ...result.module!,
-                  id: module.id,
-                  sourceModuleId: module.sourceModuleId ?? result.module?.id,
-                }
-              : module
-        ),
-      }));
-    }
-
-    closeEditModal();
   };
 
   const toggleAthleteSelection = (athleteId: string) => {
@@ -590,6 +606,7 @@ export const useScheduleBuilderState = ({
       editFormError,
       setEditingModuleForm,
       startEditingModule,
+      isSavingEditedModule,
       handleSaveEditedModule,
       closeEditModal,
     },

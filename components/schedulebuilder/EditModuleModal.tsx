@@ -12,6 +12,7 @@ type EditModuleModalProps = {
   setEditingModuleForm: Dispatch<SetStateAction<ModuleForm | null>>;
   onClose: () => void;
   onSave: (event: FormEvent<HTMLFormElement>) => void;
+  isSaving?: boolean;
 };
 
 export function EditModuleModal({
@@ -22,6 +23,7 @@ export function EditModuleModal({
   setEditingModuleForm,
   onClose,
   onSave,
+  isSaving = false,
 }: EditModuleModalProps) {
   if (!isOpen || !editingModuleForm) return null;
 
@@ -61,7 +63,11 @@ export function EditModuleModal({
               <button type="button" className="btn flex-1" onClick={onClose}>
                 Avbryt
               </button>
-              <button type="submit" className="btn btn-secondary flex-1">
+              <button
+                type="submit"
+                className={`btn btn-secondary flex-1 ${isSaving ? "loading" : ""}`}
+                disabled={isSaving}
+              >
                 Spara ändringar
               </button>
             </div>

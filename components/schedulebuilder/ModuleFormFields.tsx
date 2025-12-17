@@ -211,18 +211,18 @@ export function ModuleFormFields({ formState, onChange }: ModuleFormFieldsProps)
         </div>
       </div>
 
-      <div className="rounded-lg border border-base-300 p-3">
+      <div className="rounded-lg border border-base-300 p-3 text-xs">
         <div className="flex flex-col gap-4">
           <div>
-            <p className="font-medium">Valfria feedbackfält</p>
-            <p className="text-sm text-base-content/70">
+            <p className="text-sm font-medium">Valfria feedbackfält</p>
+            <p className="text-[11px] text-base-content/70">
               Välj vilka uppföljningsfrågor som ska samlas in efter passet.
             </p>
           </div>
 
           <div className="flex flex-col divide-y divide-base-200 rounded-md border border-base-200">
             {(["comment", "feeling", "sleepHours"] as const).map((type) => (
-              <label key={type} className="flex items-center gap-3 px-3 py-3 text-sm">
+              <label key={type} className="flex items-center gap-2 px-3 py-2 text-xs">
                 <input
                   type="checkbox"
                   className="checkbox checkbox-sm"
@@ -230,19 +230,21 @@ export function ModuleFormFields({ formState, onChange }: ModuleFormFieldsProps)
                   onChange={() => toggleFeedbackField(type)}
                 />
                 <div className="flex flex-col">
-                  <span className="font-medium">{feedbackFieldLabels[type]}</span>
-                  <span className="text-xs text-base-content/70">
+                  <span className="text-xs font-semibold sm:text-[13px]">
+                    {feedbackFieldLabels[type]}
+                  </span>
+                  <span className="text-[11px] text-base-content/70">
                     {feedbackFieldDescriptions[type]}
                   </span>
                 </div>
               </label>
             ))}
 
-            <div className="flex flex-col gap-3 px-3 py-3 text-sm">
-              <div className="flex items-start justify-between gap-3">
+            <div className="flex flex-col gap-3 px-3 py-3 text-xs">
+              <div className="flex items-start justify-between gap-2">
                 <div className="flex flex-col">
-                  <span className="font-medium">Distans &amp; tid</span>
-                  <span className="text-xs text-base-content/70">
+                  <span className="text-xs font-semibold sm:text-[13px]">Distans &amp; tid</span>
+                  <span className="text-[11px] text-base-content/70">
                     {feedbackFieldDescriptions.distance} {feedbackFieldDescriptions.duration}
                   </span>
                 </div>
@@ -256,7 +258,7 @@ export function ModuleFormFields({ formState, onChange }: ModuleFormFieldsProps)
               </div>
 
               {distanceFields.length === 0 && durationFields.length === 0 ? (
-                <p className="text-xs text-base-content/70">Inga distans+tid-par tillagda.</p>
+                <p className="text-[11px] text-base-content/70">Inga distans+tid-par tillagda.</p>
               ) : (
                 <div className="flex flex-col gap-2">
                   {distanceFields.map((distanceField, index) => {
@@ -265,7 +267,7 @@ export function ModuleFormFields({ formState, onChange }: ModuleFormFieldsProps)
                     return (
                       <div
                         key={distanceField.id}
-                        className="flex items-center justify-between rounded-md bg-base-200/60 px-3 py-2"
+                        className="flex items-center justify-between rounded-md bg-base-200/60 px-3 py-2 text-xs"
                       >
                         <span className="text-xs font-medium">
                           Distans &amp; tid #{index + 1}
@@ -285,11 +287,13 @@ export function ModuleFormFields({ formState, onChange }: ModuleFormFieldsProps)
               )}
             </div>
 
-            <div className="flex flex-col gap-3 px-3 py-3 text-sm">
-              <div className="flex items-start justify-between gap-3">
+            <div className="flex flex-col gap-3 px-3 py-3 text-xs">
+              <div className="flex items-start justify-between gap-2">
                 <div className="flex flex-col">
-                  <span className="font-medium">{feedbackFieldLabels.weight}</span>
-                  <span className="text-xs text-base-content/70">
+                  <span className="text-xs font-semibold sm:text-[13px]">
+                    {feedbackFieldLabels.weight}
+                  </span>
+                  <span className="text-[11px] text-base-content/70">
                     {feedbackFieldDescriptions.weight}
                   </span>
                 </div>
@@ -303,13 +307,13 @@ export function ModuleFormFields({ formState, onChange }: ModuleFormFieldsProps)
               </div>
 
               {weightFields.length === 0 ? (
-                <p className="text-xs text-base-content/70">Inga viktfält tillagda.</p>
+                <p className="text-[11px] text-base-content/70">Inga viktfält tillagda.</p>
               ) : (
                 <div className="flex flex-col gap-2">
                   {weightFields.map((field, index) => (
                     <div
                       key={field.id}
-                      className="flex items-center justify-between rounded-md bg-base-200/60 px-3 py-2"
+                      className="flex items-center justify-between rounded-md bg-base-200/60 px-3 py-2 text-xs"
                     >
                       <span className="text-xs font-medium">Vikt #{index + 1}</span>
                       <button
