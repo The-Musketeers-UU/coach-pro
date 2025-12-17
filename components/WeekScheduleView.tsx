@@ -168,8 +168,8 @@ export function WeekScheduleView({
   emptyWeekTitle = "Inget program",
   emptyWeekDescription = "Ingen data for veckan.",
   viewerRole,
-  athleteId: _athleteId,
-  coachId: _coachId,
+  athleteId,
+  coachId,
 }: WeekScheduleViewProps) {
   const [selectedModule, setSelectedModule] =
     useState<SelectedModuleState | null>(null);
@@ -184,6 +184,14 @@ export function WeekScheduleView({
   const [selectedDayId, setSelectedDayId] = useState<string | null>(
     week?.days[0]?.id ?? null
   );
+
+  const feedbackSignatureStorageKey = useMemo(() => {
+    const roleKey = viewerRole ?? "unknown";
+    const athleteKey = athleteId ?? "any";
+    const coachKey = coachId ?? "self";
+
+    return `reviewedFeedbackSignatures:${roleKey}:${coachKey}:${athleteKey}`;
+  }, [athleteId, coachId, viewerRole]);
 
   const weekDateRange = useMemo(
     () => getDateRangeForIsoWeek(weekNumber, new Date()),
@@ -217,19 +225,33 @@ export function WeekScheduleView({
 
   const isAthlete = viewerRole === "athlete";
 
-  void _athleteId;
-  void _coachId;
-
   useEffect(() => {
     setWeekState(week);
   }, [week]);
 
-  void _athleteId;
-  void _coachId;
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+
+    const stored = window.localStorage.getItem(feedbackSignatureStorageKey);
+    if (!stored) return;
+
+    try {
+      const entries = JSON.parse(stored) as [string, string][];
+      setReviewedFeedbackSignatures(new Map(entries));
+    } catch (error) {
+      console.error("Failed to parse feedback signatures", error);
+    }
+  }, [feedbackSignatureStorageKey]);
 
   useEffect(() => {
-    setWeekState(week);
-  }, [week]);
+    if (typeof window === "undefined") return;
+
+    const entries = Array.from(reviewedFeedbackSignatures.entries());
+    window.localStorage.setItem(
+      feedbackSignatureStorageKey,
+      JSON.stringify(entries)
+    );
+  }, [feedbackSignatureStorageKey, reviewedFeedbackSignatures]);
 
   useEffect(() => {
     if (daysToRender.length === 0) {
