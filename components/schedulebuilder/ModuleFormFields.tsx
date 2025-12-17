@@ -72,20 +72,14 @@ export function ModuleFormFields({ formState, onChange }: ModuleFormFieldsProps)
     });
   };
 
-  const toggleDistanceDurationPair = () => {
+  const distanceFields = formState.feedbackFields.filter(
+    (field) => field.type === "distance",
+  );
+  const durationFields = formState.feedbackFields.filter((field) => field.type === "duration");
+  const weightFields = formState.feedbackFields.filter((field) => field.type === "weight");
+
+  const addDistanceDurationPair = () => {
     onChange((prev) => {
-      const hasDistance = prev.feedbackFields.some((field) => field.type === "distance");
-      const hasDuration = prev.feedbackFields.some((field) => field.type === "duration");
-
-      if (hasDistance || hasDuration) {
-        return {
-          ...prev,
-          feedbackFields: prev.feedbackFields.filter(
-            (field) => field.type !== "distance" && field.type !== "duration",
-          ),
-        };
-      }
-
       const nextFields: FeedbackFieldDefinition[] = [];
       nextFields.push(...prev.feedbackFields);
       nextFields.push(createFeedbackField("distance", nextFields));
@@ -93,6 +87,49 @@ export function ModuleFormFields({ formState, onChange }: ModuleFormFieldsProps)
 
       return { ...prev, feedbackFields: nextFields };
     });
+  };
+
+  const removeDistanceDurationPair = (pairIndex: number) => {
+    onChange((prev) => {
+      const distanceList = prev.feedbackFields.filter(
+        (field) => field.type === "distance",
+      );
+      const durationList = prev.feedbackFields.filter(
+        (field) => field.type === "duration",
+      );
+
+      const distanceToRemove = distanceList[pairIndex];
+      const durationToRemove = durationList[pairIndex];
+
+      if (!distanceToRemove && !durationToRemove) {
+        return prev;
+      }
+
+      return {
+        ...prev,
+        feedbackFields: prev.feedbackFields.filter(
+          (field) =>
+            field.id !== distanceToRemove?.id && field.id !== durationToRemove?.id,
+        ),
+      };
+    });
+  };
+
+  const addWeightField = () => {
+    onChange((prev) => ({
+      ...prev,
+      feedbackFields: [
+        ...prev.feedbackFields,
+        createFeedbackField("weight", prev.feedbackFields),
+      ],
+    }));
+  };
+
+  const removeWeightField = (fieldId: string) => {
+    onChange((prev) => ({
+      ...prev,
+      feedbackFields: prev.feedbackFields.filter((field) => field.id !== fieldId),
+    }));
   };
 
   return (
@@ -201,35 +238,92 @@ export function ModuleFormFields({ formState, onChange }: ModuleFormFieldsProps)
               </label>
             ))}
 
-            <label className="flex items-center gap-3 px-3 py-3 text-sm">
-              <input
-                type="checkbox"
-                className="checkbox checkbox-sm"
-                checked={hasFieldType("distance") && hasFieldType("duration")}
-                onChange={toggleDistanceDurationPair}
-              />
-              <div className="flex flex-col">
-                <span className="font-medium">Distans &amp; tid</span>
-                <span className="text-xs text-base-content/70">
-                  {feedbackFieldDescriptions.distance} {feedbackFieldDescriptions.duration}
-                </span>
+            <div className="flex flex-col gap-3 px-3 py-3 text-sm">
+              <div className="flex items-start justify-between gap-3">
+                <div className="flex flex-col">
+                  <span className="font-medium">Distans &amp; tid</span>
+                  <span className="text-xs text-base-content/70">
+                    {feedbackFieldDescriptions.distance} {feedbackFieldDescriptions.duration}
+                  </span>
+                </div>
+                <button
+                  type="button"
+                  className="btn btn-ghost btn-xs whitespace-nowrap"
+                  onClick={addDistanceDurationPair}
+                >
+                  + Lägg till par
+                </button>
               </div>
-            </label>
 
-            <label className="flex items-center gap-3 px-3 py-3 text-sm">
-              <input
-                type="checkbox"
-                className="checkbox checkbox-sm"
-                checked={hasFieldType("weight")}
-                onChange={() => toggleFeedbackField("weight")}
-              />
-              <div className="flex flex-col">
-                <span className="font-medium">{feedbackFieldLabels.weight}</span>
-                <span className="text-xs text-base-content/70">
-                  {feedbackFieldDescriptions.weight}
-                </span>
+              {distanceFields.length === 0 && durationFields.length === 0 ? (
+                <p className="text-xs text-base-content/70">Inga distans+tid-par tillagda.</p>
+              ) : (
+                <div className="flex flex-col gap-2">
+                  {distanceFields.map((distanceField, index) => {
+                    const durationField = durationFields[index];
+
+                    return (
+                      <div
+                        key={distanceField.id}
+                        className="flex items-center justify-between rounded-md bg-base-200/60 px-3 py-2"
+                      >
+                        <span className="text-xs font-medium">
+                          Distans &amp; tid #{index + 1}
+                        </span>
+                        <button
+                          type="button"
+                          className="btn btn-ghost btn-xs"
+                          onClick={() => removeDistanceDurationPair(index)}
+                          disabled={!durationField}
+                        >
+                          Ta bort
+                        </button>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+
+            <div className="flex flex-col gap-3 px-3 py-3 text-sm">
+              <div className="flex items-start justify-between gap-3">
+                <div className="flex flex-col">
+                  <span className="font-medium">{feedbackFieldLabels.weight}</span>
+                  <span className="text-xs text-base-content/70">
+                    {feedbackFieldDescriptions.weight}
+                  </span>
+                </div>
+                <button
+                  type="button"
+                  className="btn btn-ghost btn-xs whitespace-nowrap"
+                  onClick={addWeightField}
+                >
+                  + Lägg till vikt
+                </button>
               </div>
-            </label>
+
+              {weightFields.length === 0 ? (
+                <p className="text-xs text-base-content/70">Inga viktfält tillagda.</p>
+              ) : (
+                <div className="flex flex-col gap-2">
+                  {weightFields.map((field, index) => (
+                    <div
+                      key={field.id}
+                      className="flex items-center justify-between rounded-md bg-base-200/60 px-3 py-2"
+                    >
+                      <span className="text-xs font-medium">Vikt #{index + 1}</span>
+                      <button
+                        type="button"
+                        className="btn btn-ghost btn-xs"
+                        onClick={() => removeWeightField(field.id)}
+                      >
+                        Ta bort
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
           </div>
         </div>
       </div>
