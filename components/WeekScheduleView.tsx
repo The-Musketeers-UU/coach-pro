@@ -792,7 +792,7 @@ export function WeekScheduleView({
                 </div>
               </div>
 
-              <div className="space-y-4 rounded-2xl border border-base-300 bg-base-100 p-4">
+              <div className="space-y-3 rounded-2xl border border-base-300 bg-base-100 p-4">
                 <div className="flex items-center justify-between gap-2">
                   <p className="text-xs uppercase font-semibold tracking-wide text-neutral">
                     Din feedback
@@ -808,7 +808,7 @@ export function WeekScheduleView({
                   )}
                 </div>
 
-                <div className="space-y-3">
+                <div className="space-y-2">
                   {feedbackForm &&
                     (selectedModule.module.feedbackFields ?? []).length ===
                       0 && (
@@ -818,86 +818,80 @@ export function WeekScheduleView({
                     )}
 
                   {feedbackForm &&
-                    (selectedModule.module.feedbackFields ?? []).map(
-                      (field) => {
+                    (() => {
+                      const fields = selectedModule.module.feedbackFields ?? [];
+                      const items: (
+                        | {
+                            kind: "distanceDuration";
+                            distance: FeedbackFormState[string];
+                            duration?: FeedbackFormState[string];
+                          }
+                        | { kind: "single"; field: FeedbackFormState[string] }
+                      )[] = [];
+
+                      for (let index = 0; index < fields.length; index += 1) {
+                        const field = fields[index];
                         const fieldState = feedbackForm[field.id];
-                        if (!fieldState) return null;
+                        if (!fieldState) continue;
 
-                        if (viewerRole === "athlete" && !fieldState.active)
-                          return null;
+                        if (viewerRole === "athlete" && !fieldState.active) {
+                          continue;
+                        }
 
-                        const fieldMeta = FEEDBACK_FIELDS[field.type];
-                        const label =
-                          fieldState.label?.trim() || fieldMeta.label;
+                        if (field.type === "distance") {
+                          const nextField = fields[index + 1];
+                          const durationState =
+                            nextField?.type === "duration"
+                              ? feedbackForm[nextField.id]
+                              : undefined;
 
-                        return (
-                          <div
-                            key={field.id}
-                            className="rounded-lg border border-base-200 p-3 space-y-2"
-                          >
-                            <div className="flex items-center justify-between gap-3">
-                              <div className="flex items-center gap-2">
-                                <input
-                                  type="checkbox"
-                                  className="checkbox checkbox-sm"
-                                  checked={fieldState.active}
-                                  disabled={!isAthlete}
-                                  onChange={(event) =>
-                                    handleFeedbackChange(
-                                      field.id,
-                                      (current) => ({
-                                        ...current,
-                                        active: event.target.checked,
-                                        value: event.target.checked
-                                          ? current.value
-                                          : "",
-                                      })
-                                    )
-                                  }
-                                />
-                                <span className="text-sm font-semibold">
-                                  {label}
-                                </span>
-                              </div>
-                              <span className="text-xs text-base-content/70">
-                                {fieldState.active ? "Aktiverad" : "Av"}
+                          if (durationState) {
+                            items.push({
+                              kind: "distanceDuration",
+                              distance: fieldState,
+                              duration: durationState,
+                            });
+                            index += 1;
+                            continue;
+                          }
+                        }
+
+                        items.push({ kind: "single", field: fieldState });
+                      }
+
+                      return items.map((item) => {
+                        if (item.kind === "distanceDuration") {
+                          const distanceLabel =
+                            item.distance.label?.trim() || FEEDBACK_FIELDS.distance.label;
+                          const durationLabel =
+                            item.duration?.label?.trim() ||
+                            FEEDBACK_FIELDS.duration.label;
+
+                          return (
+                            <div
+                              key={item.distance.id}
+                              className="flex flex-col gap-2 rounded-lg bg-base-100"
+                            >
+                              <span className="text-sm font-semibold">
+                                {distanceLabel}
                               </span>
-                            </div>
-
-                            {fieldState.active && (
-                              <div>
-                                {fieldMeta.type === "textarea" ? (
-                                  <textarea
-                                    className="textarea textarea-bordered w-full"
-                                    placeholder={fieldMeta.placeholder}
-                                    value={fieldState.value}
-                                    readOnly={!isAthlete}
-                                    disabled={!isAthlete}
-                                    onChange={(event) =>
-                                      handleFeedbackChange(
-                                        field.id,
-                                        (current) => ({
-                                          ...current,
-                                          value: event.target.value,
-                                        })
-                                      )
-                                    }
-                                    rows={2}
-                                  />
-                                ) : (
+                              <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+                                <label className="flex items-center gap-2 text-sm">
+                                  <span className="text-xs text-base-content/70">
+                                    Distans
+                                  </span>
                                   <input
                                     className="input input-bordered input-sm w-full"
-                                    type={fieldMeta.type}
-                                    step={fieldMeta.step}
-                                    min={fieldMeta.min}
-                                    max={fieldMeta.max}
-                                    placeholder={fieldMeta.placeholder}
-                                    value={fieldState.value}
+                                    type="number"
+                                    step={FEEDBACK_FIELDS.distance.step}
+                                    min={FEEDBACK_FIELDS.distance.min}
+                                    placeholder={FEEDBACK_FIELDS.distance.placeholder}
+                                    value={item.distance.value}
                                     readOnly={!isAthlete}
                                     disabled={!isAthlete}
                                     onChange={(event) =>
                                       handleFeedbackChange(
-                                        field.id,
+                                        item.distance.id,
                                         (current) => ({
                                           ...current,
                                           value: event.target.value,
@@ -905,13 +899,121 @@ export function WeekScheduleView({
                                       )
                                     }
                                   />
+                                </label>
+
+                                {item.duration && (
+                                  <label className="flex items-center gap-2 text-sm">
+                                    <span className="text-xs text-base-content/70">
+                                      {durationLabel}
+                                    </span>
+                                    <input
+                                      className="input input-bordered input-sm w-full"
+                                      type="text"
+                                      placeholder={FEEDBACK_FIELDS.duration.placeholder}
+                                      value={item.duration.value}
+                                      readOnly={!isAthlete}
+                                      disabled={!isAthlete}
+                                      onChange={(event) =>
+                                        handleFeedbackChange(
+                                          item.duration.id,
+                                          (current) => ({
+                                            ...current,
+                                            value: event.target.value,
+                                          })
+                                        )
+                                      }
+                                    />
+                                  </label>
                                 )}
                               </div>
-                            )}
-                          </div>
+                            </div>
+                          );
+                        }
+
+                        const fieldMeta = FEEDBACK_FIELDS[item.field.type];
+                        const label = item.field.label?.trim() || fieldMeta.label;
+
+                        if (item.field.type === "comment") {
+                          return (
+                            <label
+                              key={item.field.id}
+                              className="flex flex-col gap-1 text-sm"
+                            >
+                              <span className="text-sm font-semibold">{label}</span>
+                              <textarea
+                                className="textarea textarea-bordered w-full"
+                                placeholder={fieldMeta.placeholder}
+                                value={item.field.value}
+                                readOnly={!isAthlete}
+                                disabled={!isAthlete}
+                                onChange={(event) =>
+                                  handleFeedbackChange(item.field.id, (current) => ({
+                                    ...current,
+                                    value: event.target.value,
+                                  }))
+                                }
+                                rows={2}
+                              />
+                            </label>
+                          );
+                        }
+
+                        if (fieldMeta.type === "select" && fieldMeta.options) {
+                          return (
+                            <label
+                              key={item.field.id}
+                              className="flex items-center justify-between gap-3 text-sm"
+                            >
+                              <span className="text-sm font-semibold">{label}</span>
+                              <select
+                                className="select select-bordered select-sm w-28"
+                                value={item.field.value}
+                                disabled={!isAthlete}
+                                onChange={(event) =>
+                                  handleFeedbackChange(item.field.id, (current) => ({
+                                    ...current,
+                                    value: event.target.value,
+                                  }))
+                                }
+                              >
+                                <option value="">-</option>
+                                {fieldMeta.options.map((option) => (
+                                  <option key={option.value} value={option.value}>
+                                    {option.label}
+                                  </option>
+                                ))}
+                              </select>
+                            </label>
+                          );
+                        }
+
+                        return (
+                          <label
+                            key={item.field.id}
+                            className="flex items-center justify-between gap-3 text-sm"
+                          >
+                            <span className="text-sm font-semibold">{label}</span>
+                            <input
+                              className="input input-bordered input-sm w-28 text-right"
+                              type={fieldMeta.type}
+                              step={fieldMeta.step}
+                              min={fieldMeta.min}
+                              max={fieldMeta.max}
+                              placeholder={fieldMeta.placeholder}
+                              value={item.field.value}
+                              readOnly={!isAthlete}
+                              disabled={!isAthlete}
+                              onChange={(event) =>
+                                handleFeedbackChange(item.field.id, (current) => ({
+                                  ...current,
+                                  value: event.target.value,
+                                }))
+                              }
+                            />
+                          </label>
                         );
-                      }
-                    )}
+                      });
+                    })()}
                 </div>
 
                 {feedbackError && (

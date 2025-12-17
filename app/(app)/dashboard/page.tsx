@@ -213,8 +213,8 @@ export default function AthleteSchedulePage() {
   }, [currentWeekNumber, profile?.isCoach, selectedAthlete, weekOptions]);
 
   const isInitialLoad =
-    isLoading || isLoadingProfile || (isFetching && rawWeeks.length === 0);
-  const isWeekLoading = isFetching && rawWeeks.length > 0;
+    isLoading || isLoadingProfile || (!selectedAthlete && athletes.length === 0);
+  const isWeekLoading = isFetching;
 
   if (isInitialLoad) {
     return (
