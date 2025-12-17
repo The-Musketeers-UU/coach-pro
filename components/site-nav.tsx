@@ -16,7 +16,11 @@ const athleteLinks = [{ href: "/athlete", label: "Mina scheman" }];
 export function SiteNav() {
   const pathname = usePathname();
   const { user, signOut, isLoading, profile } = useAuth();
-  const navLinks = profile?.isCoach ? coachLinks : athleteLinks;
+  const isCoach =
+    typeof profile?.isCoach === "boolean"
+      ? profile.isCoach
+      : Boolean(user?.user_metadata?.isCoach);
+  const navLinks = isCoach ? coachLinks : athleteLinks;
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement | null>(null);
 
@@ -41,15 +45,15 @@ export function SiteNav() {
   }, [isDropdownOpen]);
 
   return (
-    <header className="border-b border-base-300 bg-base-200 z-40">
+    <header className="border-b border-base-300 bg-base-200 z-40 sticky top-0">
       <div className="mx-auto flex max-w-7xl py-4 flex-row justify-center sm:justify-between">
         <div className="flex flex-wrap items-center gap-3">
-          <Link
-            href="/"
-            className="hidden text-2xl font-semibold tracking-tight text-primary pr-3 sm:inline-flex"
+          <div
+            aria-label="Coach Pro"
+            className="hidden text-2xl font-semibold tracking-tight text-primary pr-3 sm:inline-flex cursor-default"
           >
             Coach Pro
-          </Link>
+          </div>
         </div>
 
         <nav className="flex flex-wrap items-center gap-3">
