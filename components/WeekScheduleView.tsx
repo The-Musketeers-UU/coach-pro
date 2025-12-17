@@ -419,6 +419,7 @@ export function WeekScheduleView({
                   feeling: updated.feeling,
                   sleepHours: updated.sleepHours,
                 },
+                feedbackResponses: updated.responses,
               },
             }
           : prev
@@ -539,6 +540,7 @@ export function WeekScheduleView({
                       ? {
                           ...module,
                           feedback: updatedFeedback,
+                          feedbackResponses: updatedFeedback.responses,
                         }
                       : module
                   ),
@@ -552,7 +554,11 @@ export function WeekScheduleView({
         current
           ? {
               ...current,
-              module: { ...current.module, feedback: updatedFeedback },
+              module: {
+                ...current.module,
+                feedback: updatedFeedback,
+                feedbackResponses: updatedFeedback.responses,
+              },
             }
           : current
       );
@@ -572,9 +578,10 @@ export function WeekScheduleView({
       : emptyWeekTitle || `Vecka ${weekNumber}`);
 
   const hasPendingFeedback = (module: ProgramModule) => {
-    const selectedTypes = new Set(
-      (module.feedbackFields ?? []).map((f) => f.type)
-    );
+    const selectedFields = module.feedbackFields ?? [];
+    if (selectedFields.length === 0) return false;
+
+    const selectedTypes = new Set(selectedFields.map((f) => f.type));
 
     const responsesByType = new Map(
       (module.feedbackResponses ?? []).map((r) => [r.type, r.value] as const)
@@ -582,11 +589,7 @@ export function WeekScheduleView({
 
     const relevantFields = (
       Object.keys(FEEDBACK_FIELDS) as FeedbackFieldKey[]
-    ).filter(
-      (field) => selectedTypes.has(field) || module[field] !== undefined
-    );
-
-    if (relevantFields.length === 0) return false;
+    ).filter((field) => selectedTypes.has(field));
 
     // Om det finns relevanta fält men inga responses alls: pending
     if ((module.feedbackResponses ?? []).length === 0) return true;
@@ -876,14 +879,6 @@ export function WeekScheduleView({
 
                 <div className="space-y-2 flex-1">
                   {feedbackForm &&
-                    (selectedModule.module.feedbackFields ?? []).length ===
-                      0 && (
-                      <p className="text-sm text-base-content/70">
-                        Inga feedbackfält valda för detta pass.
-                      </p>
-                    )}
-
-                  {feedbackForm &&
                     (() => {
                       const fields = selectedModule.module.feedbackFields ?? [];
                       const items: (
@@ -938,13 +933,17 @@ export function WeekScheduleView({
                           item.kind === "single" && item.field.type === "weight",
                       );
 
-                        const otherItems = items.filter(
-                          (item): item is { kind: "single"; field: FeedbackFormState[string] } =>
-                            item.kind === "single" && item.field.type !== "weight",
-                        );
+                      const otherItems = items.filter(
+                        (item): item is { kind: "single"; field: FeedbackFormState[string] } =>
+                          item.kind === "single" && item.field.type !== "weight",
+                      );
 
-                        const commentItems = otherItems.filter((item) => item.field.type === "comment");
-                        const miscItems = otherItems.filter((item) => item.field.type !== "comment");
+                      const commentItems = otherItems.filter(
+                        (item) => item.field.type === "comment",
+                      );
+                      const miscItems = otherItems.filter(
+                        (item) => item.field.type !== "comment",
+                      );
 
                       const renderSingleField = (
                         item: { kind: "single"; field: FeedbackFormState[string] },
@@ -957,9 +956,11 @@ export function WeekScheduleView({
                           return (
                             <label
                               key={item.field.id}
-                              className="flex flex-col gap-1 text-sm"
+                              className="flex flex-col gap-1 text-xs"
                             >
-                              <span className="text-sm text-base-content/80">{label}</span>
+                              <div className="flex items-center justify-between gap-2">
+                                <span className="text-xs text-base-content/70">{label}</span>
+                              </div>
                               <textarea
                                 className="textarea textarea-bordered w-full"
                                 placeholder={fieldMeta.placeholder}
@@ -982,9 +983,9 @@ export function WeekScheduleView({
                           return (
                             <label
                               key={item.field.id}
-                              className="flex items-center justify-between gap-3 text-sm"
+                              className="flex items-center justify-between gap-3 text-xs"
                             >
-                              <span className="text-sm text-base-content/80">{label}</span>
+                              <span className="text-xs text-base-content/70">{label}</span>
                               <select
                                 className="select select-bordered select-sm w-28"
                                 value={item.field.value}
@@ -1010,13 +1011,13 @@ export function WeekScheduleView({
                         return (
                           <label
                             key={item.field.id}
-                            className={`flex items-center justify-between gap-3 text-sm ${
+                            className={`flex items-center justify-between gap-3 text-xs ${
                               options?.compact
                                 ? "rounded-lg bg-base-100 px-3 py-2"
                                 : ""
                             }`}
                           >
-                            <span className="text-sm text-base-content/80">{label}</span>
+                            <span className="text-xs text-base-content/70">{label}</span>
                             <input
                               className="input input-bordered input-sm w-28 text-right"
                               type={fieldMeta.type}
@@ -1047,14 +1048,14 @@ export function WeekScheduleView({
                                   item.duration?.label?.trim() || FEEDBACK_FIELDS.duration.label;
 
                                 return (
-                                  <div
-                                    key={item.distance.id}
-                                    className="flex min-w-[280px] flex-1 flex-wrap items-center gap-3 rounded-lg bg-base-100 p-3"
-                                  >
-                                    <label className="flex items-center gap-2 text-sm">
-                                      <span className="text-sm text-base-content/80">Distans</span>
-                                      <input
-                                        className="input input-bordered input-sm w-28"
+                          <div
+                            key={item.distance.id}
+                            className="flex min-w-[280px] flex-1 flex-wrap items-center gap-4 rounded-lg bg-base-100 p-3"
+                          >
+                            <label className="flex items-center justify-between gap-2 text-xs">
+                              <span className="text-xs text-base-content/70">Distans</span>
+                              <input
+                                className="input input-bordered input-sm w-28"
                                         type="number"
                                         step={FEEDBACK_FIELDS.distance.step}
                                         min={FEEDBACK_FIELDS.distance.min}
@@ -1074,31 +1075,31 @@ export function WeekScheduleView({
                                       />
                                     </label>
 
-                                    {item.duration && (
-                                      <label className="flex items-center gap-2 text-sm">
-                                        <span className="text-sm text-base-content/80">{durationLabel}</span>
-                                        <input
-                                          className="input input-bordered input-sm w-28"
-                                          type="text"
-                                          placeholder={FEEDBACK_FIELDS.duration.placeholder}
-                                          value={item.duration.value}
-                                          readOnly={!isAthlete}
-                                          disabled={!isAthlete}
-                                          onChange={(event) =>
-                                            handleFeedbackChange(
-                                              item.duration.id,
-                                              (current) => ({
-                                                ...current,
-                                                value: event.target.value,
-                                              }),
-                                            )
-                                          }
-                                        />
-                                      </label>
-                                    )}
-                                  </div>
-                                );
-                              })}
+                            {item.duration && (
+                              <label className="flex items-center justify-between gap-2 text-xs">
+                                <span className="text-xs text-base-content/70">{durationLabel}</span>
+                                <input
+                                  className="input input-bordered input-sm w-28"
+                                  type="text"
+                                  placeholder={FEEDBACK_FIELDS.duration.placeholder}
+                                  value={item.duration.value}
+                                  readOnly={!isAthlete}
+                                  disabled={!isAthlete}
+                                  onChange={(event) =>
+                                    handleFeedbackChange(
+                                      item.duration.id,
+                                      (current) => ({
+                                        ...current,
+                                        value: event.target.value,
+                                      }),
+                                    )
+                                  }
+                                />
+                              </label>
+                            )}
+                          </div>
+                        );
+                      })}
                             </div>
                           )}
 
