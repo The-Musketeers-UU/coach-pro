@@ -23,6 +23,7 @@ export function SiteNav() {
     return stored === "coach" ? "coach" : "athlete";
   });
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+  const [isSigningOut, setIsSigningOut] = useState(false);
   const dropdownRef = useRef<HTMLDivElement | null>(null);
 
   const resolvedRole = useMemo(() => {
@@ -47,7 +48,13 @@ export function SiteNav() {
   const navLinks = isCoach ? coachLinks : athleteLinks;
 
   const handleSignOut = async () => {
-    await signOut();
+    setIsSigningOut(true);
+    setIsDropdownOpen(false);
+    try {
+      await signOut();
+    } finally {
+      setIsSigningOut(false);
+    }
   };
 
   useEffect(() => {
@@ -66,7 +73,7 @@ export function SiteNav() {
     };
   }, [isDropdownOpen]);
 
-  const showAuthenticatedShell = Boolean(user) || isLoading;
+  const showAuthenticatedShell = Boolean(user) || isLoading || isSigningOut;
 
   return (
     <header className="border-b border-base-300 bg-base-200 z-40 sticky top-0">

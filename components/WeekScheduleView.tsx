@@ -41,6 +41,7 @@ export type ProgramWeek = {
 type SelectedModuleState = {
   module: ProgramModule;
   key: string;
+  hadUnreadFeedback?: boolean;
 };
 
 type WeekScheduleViewProps = {
@@ -639,6 +640,11 @@ export function WeekScheduleView({
     return isPastDay && hasPendingFeedback(selectedModule.module);
   }, [hasPendingFeedback, selectedModule, selectedModuleDayDate, today]);
 
+  const hasSelectedModuleUnreadFeedbackForCoach = useMemo(
+    () => Boolean(!isAthlete && selectedModule?.hadUnreadFeedback),
+    [isAthlete, selectedModule?.hadUnreadFeedback],
+  );
+
   const renderDayColumn = (day: ProgramDay) => {
     const dayDate = dayDateById.get(day.id);
     const dayNumberLabel = dayDate ? dayDate.getUTCDate().toString() : "";
@@ -671,6 +677,10 @@ export function WeekScheduleView({
               type="button"
               onClick={() => {
                 const moduleKey = module.id ?? `${day.id}-${index}`;
+                const hadUnreadFeedback =
+                  viewerRole === "coach"
+                    ? hasUnreadFeedbackForCoach(module, moduleKey)
+                    : false;
 
                 if (viewerRole === "coach") {
                   const signature = getFeedbackSignature(module);
@@ -681,7 +691,11 @@ export function WeekScheduleView({
                   });
                 }
 
-                setSelectedModule({ module, key: moduleKey });
+                setSelectedModule({
+                  module,
+                  key: moduleKey,
+                  hadUnreadFeedback,
+                });
               }}
               className="group w-full text-left"
             >
@@ -790,10 +804,17 @@ export function WeekScheduleView({
         >
           <div className="modal-box max-w-3xl space-y-4">
             <div className="flex items-start justify-between gap-4">
-              <div>
+              <div className="space-y-1">
                 <h3 className="text-xl font-semibold">
                   {selectedModule.module.title}
                 </h3>
+
+                {hasSelectedModuleUnreadFeedbackForCoach && (
+                  <div className="flex items-center gap-2 text-sm font-semibold text-info">
+                    <span className="status status-info" aria-hidden />
+                    <span>Ny feedback</span>
+                  </div>
+                )}
               </div>
               <button
                 className="btn btn-circle btn-ghost btn-sm"
@@ -837,7 +858,7 @@ export function WeekScheduleView({
                 </div>
               </div>
 
-              <div className="space-y-3 rounded-2xl border border-base-300 bg-base-100 p-4">
+              <div className="flex h-full flex-col space-y-3 rounded-2xl border border-base-300 bg-base-100 p-4">
                 <div className="flex items-center justify-between gap-2">
                   <p className="text-xs uppercase tracking-wide text-neutral">
                     Din feedback
@@ -853,7 +874,7 @@ export function WeekScheduleView({
                   )}
                 </div>
 
-                <div className="space-y-2">
+                <div className="space-y-2 flex-1">
                   {feedbackForm &&
                     (selectedModule.module.feedbackFields ?? []).length ===
                       0 && (
@@ -1102,7 +1123,7 @@ export function WeekScheduleView({
                 )}
 
                 {isAthlete && (
-                  <div className="flex items-center justify-end">
+                  <div className="mt-auto flex items-center justify-end">
                     <button
                       className="btn btn-primary btn-sm"
                       onClick={persistFeedback}
