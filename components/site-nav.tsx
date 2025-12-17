@@ -16,15 +16,28 @@ const athleteLinks = [{ href: "/athlete", label: "Mina scheman" }];
 export function SiteNav() {
   const pathname = usePathname();
   const { user, signOut, isLoading, profile } = useAuth();
-  const [storedRole] = useState<"coach" | "athlete">(() => {
-    if (typeof window === "undefined") return "coach";
-
-    const stored = window.sessionStorage.getItem("navRole");
-    return stored === "coach" ? "coach" : "athlete";
-  });
+  const fallbackRole: "coach" | "athlete" = useMemo(() => {
+    if (pathname.startsWith("/dashboard") || pathname.startsWith("/schedule_builder")) {
+      return "coach";
+    }
+    return "athlete";
+  }, [pathname]);
+  const [storedRole, setStoredRole] = useState<"coach" | "athlete">(fallbackRole);
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [isSigningOut, setIsSigningOut] = useState(false);
   const dropdownRef = useRef<HTMLDivElement | null>(null);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+
+    const saved = window.sessionStorage.getItem("navRole");
+    if (saved === "coach" || saved === "athlete") {
+      setStoredRole(saved);
+    } else {
+      window.sessionStorage.setItem("navRole", fallbackRole);
+      setStoredRole(fallbackRole);
+    }
+  }, [fallbackRole]);
 
   const resolvedRole = useMemo(() => {
     if (typeof profile?.isCoach === "boolean") {
