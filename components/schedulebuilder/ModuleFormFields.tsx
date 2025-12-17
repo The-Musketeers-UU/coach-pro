@@ -29,14 +29,7 @@ type ModuleFormFieldsProps = {
   onChange: Dispatch<SetStateAction<ModuleForm>>;
 };
 
-const optionalFields: FeedbackFieldType[] = [
-  "distance",
-  "duration",
-  "weight",
-  "comment",
-  "feeling",
-  "sleepHours",
-];
+const toggleFields: FeedbackFieldType[] = ["comment", "feeling", "sleepHours"];
 
 const createFeedbackField = (
   type: FeedbackFieldType,
@@ -57,6 +50,9 @@ const createFeedbackField = (
 };
 
 export function ModuleFormFields({ formState, onChange }: ModuleFormFieldsProps) {
+  const hasFieldType = (type: FeedbackFieldType) =>
+    formState.feedbackFields.some((field) => field.type === type);
+
   const addFeedbackField = (type: FeedbackFieldType) => {
     onChange((prev) => ({
       ...prev,
@@ -64,10 +60,51 @@ export function ModuleFormFields({ formState, onChange }: ModuleFormFieldsProps)
     }));
   };
 
+  const addDistanceDurationPair = () => {
+    onChange((prev) => {
+      const nextFields = [...prev.feedbackFields];
+      nextFields.push(createFeedbackField("distance", nextFields));
+      nextFields.push(createFeedbackField("duration", nextFields));
+
+      return {
+        ...prev,
+        feedbackFields: nextFields,
+      };
+    });
+  };
+
+  const toggleFeedbackField = (type: FeedbackFieldType) => {
+    onChange((prev) => {
+      const hasField = prev.feedbackFields.some((field) => field.type === type);
+
+      if (hasField) {
+        return {
+          ...prev,
+          feedbackFields: prev.feedbackFields.filter((field) => field.type !== type),
+        };
+      }
+
+      return {
+        ...prev,
+        feedbackFields: [
+          ...prev.feedbackFields,
+          createFeedbackField(type, prev.feedbackFields),
+        ],
+      };
+    });
+  };
+
   const removeFeedbackField = (fieldId: string) => {
     onChange((prev) => ({
       ...prev,
       feedbackFields: prev.feedbackFields.filter((field) => field.id !== fieldId),
+    }));
+  };
+
+  const removeFeedbackFields = (fieldIds: string[]) => {
+    onChange((prev) => ({
+      ...prev,
+      feedbackFields: prev.feedbackFields.filter((field) => !fieldIds.includes(field.id)),
     }));
   };
 
@@ -160,7 +197,8 @@ export function ModuleFormFields({ formState, onChange }: ModuleFormFieldsProps)
       </div>
 
       <div className="rounded-lg border border-base-300 p-3">
-          <div className="flex items-start justify-between gap-4">
+        <div className="flex flex-col gap-4">
+          <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
             <div>
               <p className="font-medium">Valfria feedbackfält</p>
               <p className="text-sm text-base-content/70">
@@ -168,63 +206,141 @@ export function ModuleFormFields({ formState, onChange }: ModuleFormFieldsProps)
                 Avmarkera ett fält om du inte vill be om det.
               </p>
             </div>
-            <div className="flex flex-wrap gap-1">
-              {optionalFields.map((type) => {
-                return (
-                  <button
-                    key={type}
-                    type="button"
-                    className="btn btn-ghost btn-xs"
-                  onClick={() => addFeedbackField(type)}
-                  >
-                    + {feedbackFieldLabels[type]}
-                  </button>
-                );
-              })}
+            <div className="flex flex-wrap gap-2">
+              <button
+                type="button"
+                className="btn btn-outline btn-xs"
+                onClick={addDistanceDurationPair}
+              >
+                + Distans + tid
+              </button>
+              <button
+                type="button"
+                className="btn btn-ghost btn-xs"
+                onClick={() => addFeedbackField("weight")}
+              >
+                + {feedbackFieldLabels.weight}
+              </button>
             </div>
           </div>
 
-          <div className="mt-3 space-y-3">
-          {formState.feedbackFields.length === 0 && (
-            <p className="text-sm text-base-content/70">
-              Inga valfria fält tillagda ännu.
-            </p>
-          )}
-
-          {formState.feedbackFields.map((field) => (
-            <div
-              key={field.id}
-              className="flex flex-col gap-2 rounded-md border border-base-200 p-3"
-            >
-              <div className="flex items-center justify-between gap-2">
-                <div className="text-sm font-semibold">
-                  {feedbackFieldLabels[field.type]}
-                </div>
-                <button
-                  type="button"
-                  className="btn btn-ghost btn-xs"
-                onClick={() => removeFeedbackField(field.id)}
-                >
-                  Ta bort
-                </button>
-              </div>
-
-              <label className="form-control gap-1">
-                <span className="label-text text-xs text-base-content/70">
-                  Egen etikett (valfritt)
-                </span>
+          <div className="flex flex-wrap gap-3">
+            {toggleFields.map((type) => (
+              <label
+                key={type}
+                className="flex items-center gap-2 rounded-full border border-base-200 px-3 py-1 text-sm"
+              >
                 <input
-                  className="input input-sm input-bordered"
-                  type="text"
-                  value={field.label ?? ""}
-                  onChange={(event) => updateFeedbackLabel(field.id, event.target.value)}
-                  placeholder=""
+                  type="checkbox"
+                  className="checkbox checkbox-sm"
+                  checked={hasFieldType(type)}
+                  onChange={() => toggleFeedbackField(type)}
                 />
+                <span>{feedbackFieldLabels[type]}</span>
               </label>
-            </div>
-          ))}
+            ))}
+          </div>
+
+          <div className="space-y-3">
+            {formState.feedbackFields.length === 0 && (
+              <p className="text-sm text-base-content/70">
+                Inga valfria fält tillagda ännu.
+              </p>
+            )}
+
+            {(() => {
+              const items: JSX.Element[] = [];
+
+              for (let index = 0; index < formState.feedbackFields.length; index += 1) {
+                const field = formState.feedbackFields[index];
+                const nextField = formState.feedbackFields[index + 1];
+
+                if (field.type === "distance" && nextField?.type === "duration") {
+                  items.push(
+                    <div
+                      key={`pair-${field.id}-${nextField.id}`}
+                      className="space-y-2 rounded-md border border-base-200 p-3"
+                    >
+                      <div className="flex items-center justify-between">
+                        <div className="text-sm font-semibold">Distans &amp; tid</div>
+                        <button
+                          type="button"
+                          className="btn btn-ghost btn-xs"
+                          onClick={() => removeFeedbackFields([field.id, nextField.id])}
+                        >
+                          Ta bort paret
+                        </button>
+                      </div>
+
+                      <div className="grid gap-3 sm:grid-cols-2">
+                        {[field, nextField].map((pairedField) => (
+                          <div key={pairedField.id} className="flex flex-col gap-2 rounded-md border border-base-200 p-3">
+                            <div className="text-sm font-semibold">
+                              {feedbackFieldLabels[pairedField.type]}
+                            </div>
+                            <label className="form-control gap-1">
+                              <span className="label-text text-xs text-base-content/70">
+                                Egen etikett (valfritt)
+                              </span>
+                              <input
+                                className="input input-sm input-bordered"
+                                type="text"
+                                value={pairedField.label ?? ""}
+                                onChange={(event) =>
+                                  updateFeedbackLabel(pairedField.id, event.target.value)
+                                }
+                                placeholder=""
+                              />
+                            </label>
+                          </div>
+                        ))}
+                      </div>
+                    </div>,
+                  );
+
+                  index += 1;
+                  continue;
+                }
+
+                items.push(
+                  <div
+                    key={field.id}
+                    className="flex flex-col gap-2 rounded-md border border-base-200 p-3"
+                  >
+                    <div className="flex items-center justify-between gap-2">
+                      <div className="text-sm font-semibold">
+                        {feedbackFieldLabels[field.type]}
+                      </div>
+                      <button
+                        type="button"
+                        className="btn btn-ghost btn-xs"
+                        onClick={() => removeFeedbackField(field.id)}
+                      >
+                        Ta bort
+                      </button>
+                    </div>
+
+                    <label className="form-control gap-1">
+                      <span className="label-text text-xs text-base-content/70">
+                        Egen etikett (valfritt)
+                      </span>
+                      <input
+                        className="input input-sm input-bordered"
+                        type="text"
+                        value={field.label ?? ""}
+                        onChange={(event) => updateFeedbackLabel(field.id, event.target.value)}
+                        placeholder=""
+                      />
+                    </label>
+                  </div>,
+                );
+              }
+
+              return items;
+            })()}
           </div>
         </div>
+      </div>
     </div>
   );
 }
