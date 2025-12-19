@@ -1,0 +1,146 @@
+{
+  "modules": [
+    {
+      "name": "Aerobic Base Run",
+      "category": "Running",
+      "subCategory": "Base",
+      "description": "Easy conversational run to build aerobic capacity.",
+      "feedbackFields": [
+        { "id": "distance-km", "type": "distance", "label": "Distance (km)" },
+        { "id": "duration-min", "type": "duration", "label": "Duration (min)" },
+        { "id": "session-notes", "type": "comment", "label": "Notes" },
+        { "id": "session-feeling", "type": "feeling", "label": "Feeling" }
+      ]
+    },
+    {
+      "name": "Mobility Reset",
+      "category": "Mobility",
+      "subCategory": "Hips & Thoracic",
+      "description": "Short mobility routine to prime movement quality.",
+      "feedbackFields": [
+        { "id": "mobility-duration", "type": "duration", "label": "Minutes" },
+        { "id": "mobility-notes", "type": "comment", "label": "Notes" },
+        { "id": "mobility-feeling", "type": "feeling", "label": "Feeling" }
+      ]
+    },
+    {
+      "name": "Strength Circuit",
+      "category": "Strength",
+      "subCategory": "Full Body",
+      "description": "Bodyweight and dumbbell circuit for general strength.",
+      "feedbackFields": [
+        { "id": "strength-load", "type": "weight", "label": "Total load (kg)" },
+        { "id": "strength-duration", "type": "duration", "label": "Duration (min)" },
+        { "id": "strength-notes", "type": "comment", "label": "Notes" },
+        { "id": "strength-feeling", "type": "feeling", "label": "Feeling" }
+      ]
+    }
+  ],
+  "schedules": [
+    {
+      "week": 1,
+      "title": "Foundation Week",
+      "days": [
+        {
+          "day": 1,
+          "modules": ["Aerobic Base Run", "Mobility Reset"],
+          "feedback": {
+            "Aerobic Base Run": {
+              "distance": { "distance-km": 8 },
+              "duration": { "duration-min": 45 },
+              "comment": "Keep pace comfortable and nasal breathing where possible.",
+              "feeling": 4,
+              "sleepHours": 8
+            },
+            "Mobility Reset": {
+              "duration": { "mobility-duration": 12 },
+              "comment": "Focus on hip openers after the run.",
+              "feeling": 4
+            }
+          }
+        },
+        {
+          "day": 3,
+          "modules": ["Strength Circuit", "Mobility Reset"],
+          "feedback": {
+            "Strength Circuit": {
+              "weight": { "strength-load": 1500 },
+              "duration": { "strength-duration": 30 },
+              "comment": "Three rounds with 60s rest.",
+              "feeling": 3,
+              "sleepHours": 7
+            },
+            "Mobility Reset": {
+              "duration": { "mobility-duration": 10 },
+              "comment": "Light flow to cool down.",
+              "feeling": 4
+            }
+          }
+        },
+        {
+          "day": 5,
+          "modules": ["Aerobic Base Run"],
+          "feedback": {
+            "Aerobic Base Run": {
+              "distance": { "distance-km": 10 },
+              "duration": { "duration-min": 55 },
+              "comment": "Negative split the second half.",
+              "feeling": 5,
+              "sleepHours": 8
+            }
+          }
+        }
+      ]
+    },
+    {
+      "week": 2,
+      "title": "Consistency Week",
+      "days": [
+        {
+          "day": 2,
+          "modules": ["Aerobic Base Run"],
+          "feedback": {
+            "Aerobic Base Run": {
+              "distance": { "distance-km": 9 },
+              "duration": { "duration-min": 50 },
+              "comment": "Steady state run with strides in the last 10 minutes.",
+              "feeling": 4,
+              "sleepHours": 7
+            }
+          }
+        },
+        {
+          "day": 4,
+          "modules": ["Strength Circuit"],
+          "feedback": {
+            "Strength Circuit": {
+              "weight": { "strength-load": 1800 },
+              "duration": { "strength-duration": 35 },
+              "comment": "Add an extra round if feeling strong.",
+              "feeling": 4,
+              "sleepHours": 7
+            }
+          }
+        },
+        {
+          "day": 6,
+          "modules": ["Aerobic Base Run", "Mobility Reset"],
+          "feedback": {
+            "Aerobic Base Run": {
+              "distance": { "distance-km": 11 },
+              "duration": { "duration-min": 60 },
+              "comment": "Finish with relaxed cadence focus.",
+              "feeling": 4,
+              "sleepHours": 8
+            },
+            "Mobility Reset": {
+              "duration": { "mobility-duration": 15 },
+              "comment": "Include thoracic extension drills.",
+              "feeling": 5
+            }
+          }
+        }
+      ]
+    }
+  ]
+}
