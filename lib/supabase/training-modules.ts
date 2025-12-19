@@ -27,6 +27,8 @@ export type FeedbackResponse = {
   value: number | string | null;
 };
 
+type FeedbackMetricMap = Record<string, number | null>;
+
 type DbModuleRow = {
   id: number | string;
   owner: string;
@@ -49,19 +51,27 @@ type DbScheduleModuleFeedbackRow = {
   id: number | string;
   moduleId: number | string;
   scheduleDayId: number | string;
-  distance: number | null;
-  duration: number | null;
-  weight: number | null;
+  distance: unknown;
+  duration: unknown;
+  weight: unknown;
   comment: string | null;
   feeling: number | null;
   sleepHours: number | null;
-  responses: unknown;
 };
 
-export type ScheduleModuleFeedbackRow = DbScheduleModuleFeedbackRow & {
+export type ScheduleModuleFeedbackRow = {
   id: string;
   moduleId: string;
   scheduleDayId: string;
+  distance: number | null;
+  duration: number | null;
+  weight: number | null;
+  distanceEntries: FeedbackMetricMap;
+  durationEntries: FeedbackMetricMap;
+  weightEntries: FeedbackMetricMap;
+  comment: string | null;
+  feeling: number | null;
+  sleepHours: number | null;
   responses: FeedbackResponse[];
 };
 
@@ -143,30 +153,35 @@ const parseFeedbackFields = (raw: unknown): FeedbackFieldDefinition[] => {
     .filter(Boolean) as FeedbackFieldDefinition[];
 };
 
-const parseFeedbackResponses = (raw: unknown): FeedbackResponse[] => {
-  if (!Array.isArray(raw)) return [];
+const parseFeedbackMetricMap = (raw: unknown): FeedbackMetricMap => {
+  if (!raw || typeof raw !== "object" || Array.isArray(raw)) return {};
 
-  return raw
-    .map((item) => {
-      if (!item || typeof item !== "object") return null;
+  const entries = Object.entries(raw as Record<string, unknown>);
 
-      const candidate = item as { fieldId?: unknown; type?: unknown; value?: unknown };
-      if (typeof candidate.fieldId !== "string" || typeof candidate.type !== "string") {
-        return null;
-      }
+  return entries.reduce((acc, [key, value]) => {
+    if (typeof key !== "string") return acc;
 
-      return {
-        fieldId: candidate.fieldId,
-        type: candidate.type as FeedbackFieldType,
-        value:
-          typeof candidate.value === "number" ||
-          typeof candidate.value === "string" ||
-          candidate.value === null
-            ? candidate.value
-            : null,
-      } satisfies FeedbackResponse;
-    })
-    .filter(Boolean) as FeedbackResponse[];
+    if (typeof value === "number" && Number.isFinite(value)) {
+      acc[key] = value;
+      return acc;
+    }
+
+    if (value === null) {
+      acc[key] = null;
+    }
+
+    return acc;
+  }, {} as FeedbackMetricMap);
+};
+
+const calculateMetricTotal = (metric: FeedbackMetricMap): number | null => {
+  const values = Object.values(metric).filter(
+    (value): value is number => typeof value === "number" && Number.isFinite(value),
+  );
+
+  if (values.length === 0) return null;
+
+  return values.reduce((sum, value) => sum + value, 0);
 };
 
 const coerceModuleRow = (row: DbModuleRow): ModuleRow => ({
@@ -177,13 +192,87 @@ const coerceModuleRow = (row: DbModuleRow): ModuleRow => ({
 
 const coerceScheduleModuleFeedbackRow = (
   row: DbScheduleModuleFeedbackRow,
-): ScheduleModuleFeedbackRow => ({
-  ...row,
-  id: toId(row.id),
-  moduleId: toId(row.moduleId),
-  scheduleDayId: toId(row.scheduleDayId),
-  responses: parseFeedbackResponses(row.responses),
-});
+): ScheduleModuleFeedbackRow => {
+  const distanceEntries = parseFeedbackMetricMap(row.distance);
+  const durationEntries = parseFeedbackMetricMap(row.duration);
+  const weightEntries = parseFeedbackMetricMap(row.weight);
+
+  return {
+    id: toId(row.id),
+    moduleId: toId(row.moduleId),
+    scheduleDayId: toId(row.scheduleDayId),
+    distance: calculateMetricTotal(distanceEntries),
+    duration: calculateMetricTotal(durationEntries),
+    weight: calculateMetricTotal(weightEntries),
+    distanceEntries,
+    durationEntries,
+    weightEntries,
+    comment: row.comment,
+    feeling: row.feeling,
+    sleepHours: row.sleepHours,
+    responses: [],
+  } satisfies ScheduleModuleFeedbackRow;
+};
+
+const buildFeedbackResponses = (
+  fields: FeedbackFieldDefinition[],
+  feedback: ScheduleModuleFeedbackRow,
+): FeedbackResponse[] => {
+  const responses: FeedbackResponse[] = [];
+  const fieldsByType = new Map<FeedbackFieldType, FeedbackFieldDefinition[]>();
+
+  fields.forEach((field) => {
+    const existing = fieldsByType.get(field.type) ?? [];
+    existing.push(field);
+    fieldsByType.set(field.type, existing);
+  });
+
+  const addMetricResponses = (
+    type: Extract<FeedbackFieldType, "distance" | "duration" | "weight">,
+    entries: FeedbackMetricMap,
+  ) => {
+    const definitions = fieldsByType.get(type) ?? [];
+    const definitionsById = new Set(definitions.map((field) => field.id));
+
+    definitions.forEach((field) => {
+      responses.push({
+        fieldId: field.id,
+        type,
+        value: entries[field.id] ?? null,
+      });
+    });
+
+    Object.entries(entries).forEach(([fieldId, value]) => {
+      if (definitionsById.has(fieldId)) return;
+
+      responses.push({ fieldId, type, value });
+    });
+  };
+
+  addMetricResponses("distance", feedback.distanceEntries);
+  addMetricResponses("duration", feedback.durationEntries);
+  addMetricResponses("weight", feedback.weightEntries);
+
+  const addSingletonResponse = (
+    type: Extract<FeedbackFieldType, "comment" | "feeling" | "sleepHours">,
+    value: number | string | null,
+  ) => {
+    const definition = fieldsByType.get(type)?.[0];
+    if (!definition) return;
+
+    responses.push({
+      fieldId: definition.id,
+      type,
+      value,
+    });
+  };
+
+  addSingletonResponse("comment", feedback.comment ?? null);
+  addSingletonResponse("feeling", feedback.feeling ?? null);
+  addSingletonResponse("sleepHours", feedback.sleepHours ?? null);
+
+  return responses;
+};
 
 const coerceScheduleWeekRow = (row: DbScheduleWeekRow): ScheduleWeekRow => ({
   ...row,
@@ -215,10 +304,16 @@ const mergeModuleFeedback = (
   modulesByDayId.forEach((modules, dayId) => {
     const enriched = modules.map((module) => {
       const feedback = feedbackByKey.get(`${dayId}:${module.id}`);
+      const responses = feedback
+        ? buildFeedbackResponses(module.activeFeedbackFields ?? [], feedback)
+        : [];
+      const enrichedFeedback = feedback
+        ? { ...feedback, responses }
+        : undefined;
       return {
         ...module,
         scheduleDayId: dayId,
-        feedback,
+        feedback: enrichedFeedback,
       } satisfies ScheduleDayModule;
     });
 
@@ -226,6 +321,47 @@ const mergeModuleFeedback = (
   });
 
   return result;
+};
+
+const formatFeedbackPayloadFromResponses = (responses: FeedbackResponse[]) => {
+  const distance: FeedbackMetricMap = {};
+  const duration: FeedbackMetricMap = {};
+  const weight: FeedbackMetricMap = {};
+  let comment: string | null = null;
+  let feeling: number | null = null;
+  let sleepHours: number | null = null;
+
+  const toNumberOrNull = (value: number | string | null) => {
+    if (typeof value === "number" && Number.isFinite(value)) return value;
+    return null;
+  };
+
+  responses.forEach((response) => {
+    switch (response.type) {
+      case "distance":
+        distance[response.fieldId] = toNumberOrNull(response.value);
+        break;
+      case "duration":
+        duration[response.fieldId] = toNumberOrNull(response.value);
+        break;
+      case "weight":
+        weight[response.fieldId] = toNumberOrNull(response.value);
+        break;
+      case "comment":
+        comment = typeof response.value === "string" ? response.value : null;
+        break;
+      case "feeling":
+        feeling = toNumberOrNull(response.value);
+        break;
+      case "sleepHours":
+        sleepHours = toNumberOrNull(response.value);
+        break;
+      default:
+        break;
+    }
+  });
+
+  return { distance, duration, weight, comment, feeling, sleepHours };
 };
 
 export const getModulesByOwner = async (ownerId: string): Promise<ModuleRow[]> => {
@@ -367,25 +503,23 @@ export const getCoaches = async (): Promise<AthleteRow[]> => {
 export const upsertScheduleModuleFeedback = async (
   input: UpsertScheduleModuleFeedbackInput,
 ): Promise<ScheduleModuleFeedbackRow> => {
+  const formatted = formatFeedbackPayloadFromResponses(input.responses ?? []);
   const payload = {
     moduleId: toDbNumericId(input.moduleId),
     scheduleDayId: toDbNumericId(input.scheduleDayId),
-    responses: input.responses ?? [],
-    distance: null,
-    duration: null,
-    weight: null,
-    comment: null,
-    feeling: null,
-    sleepHours: null,
+    distance: formatted.distance,
+    duration: formatted.duration,
+    weight: formatted.weight,
+    comment: formatted.comment,
+    feeling: formatted.feeling,
+    sleepHours: formatted.sleepHours,
   } satisfies Omit<DbScheduleModuleFeedbackRow, "id">;
 
   try {
     const { data, error } = await supabase
       .from("scheduleModuleFeedback")
       .upsert(payload, { onConflict: "moduleId,scheduleDayId" })
-      .select(
-        "id,moduleId,scheduleDayId,distance,duration,weight,comment,feeling,sleepHours,responses",
-      )
+      .select("id,moduleId,scheduleDayId,distance,duration,weight,comment,feeling,sleepHours")
       .single();
 
     if (error) {
@@ -393,11 +527,13 @@ export const upsertScheduleModuleFeedback = async (
       throw toReadableError(error);
     }
 
-    return coerceScheduleModuleFeedbackRow({
+    const coerced = coerceScheduleModuleFeedbackRow({
       ...data,
       moduleId: data.moduleId ?? payload.moduleId,
       scheduleDayId: data.scheduleDayId ?? payload.scheduleDayId,
     } as DbScheduleModuleFeedbackRow);
+
+    return { ...coerced, responses: input.responses ?? [] };
   } catch (error) {
     console.error("Error persisting schedule module feedback via SQL query:", error);
     throw toReadableError(error);
@@ -502,9 +638,7 @@ const getScheduleDaysWithModules = async (
     if (dayIdsForQuery.length > 0) {
       const { data: feedbackData, error: feedbackError } = await supabase
         .from("scheduleModuleFeedback")
-        .select(
-          "id,moduleId,scheduleDayId,distance,duration,weight,comment,feeling,sleepHours,responses",
-        )
+        .select("id,moduleId,scheduleDayId,distance,duration,weight,comment,feeling,sleepHours")
         .in("scheduleDayId", dayIdsForQuery);
 
       if (feedbackError) {
@@ -643,9 +777,7 @@ export const getScheduleWeeksWithModules = async (
   if (dayIdsForQuery.length > 0) {
     const { data: feedbackData, error: feedbackError } = await supabase
       .from("scheduleModuleFeedback")
-      .select(
-        "id,moduleId,scheduleDayId,distance,duration,weight,comment,feeling,sleepHours,responses",
-      )
+      .select("id,moduleId,scheduleDayId,distance,duration,weight,comment,feeling,sleepHours")
       .in("scheduleDayId", dayIdsForQuery);
 
     if (feedbackError) {

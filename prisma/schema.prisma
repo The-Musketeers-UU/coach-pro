@@ -88,13 +88,12 @@ model ScheduleModuleFeedback {
   module        Module      @relation(fields: [moduleId], references: [id])
   scheduleDay   ScheduleDay @relation(fields: [scheduleDayId], references: [id])
 
-  distance   Int?
-  duration   Int?
-  weight     Int?
+  distance   Json @default("{}")
+  duration   Json @default("{}")
+  weight     Json @default("{}")
   comment    String? @db.Text
   feeling    Int?
   sleepHours Int?
-  responses  Json @default("[]")
 
   @@unique([moduleId, scheduleDayId])
   @@map("scheduleModuleFeedback")
