@@ -4,6 +4,12 @@ import process from "node:process";
 import { fileURLToPath } from "node:url";
 
 import { createClient } from "@supabase/supabase-js";
+import { loadEnvConfig } from "@next/env";
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+const projectRoot = path.resolve(__dirname, "..");
+loadEnvConfig(projectRoot);
 
 const SUPABASE_URL =
   process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.SUPABASE_URL || "http://localhost:54321";
@@ -15,9 +21,6 @@ if (!SERVICE_ROLE_KEY) {
   );
   process.exit(1);
 }
-
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
 const defaultSeedPath = path.resolve(__dirname, "../data/seed-data.json");
 const seedFilePath = process.argv[2] ? path.resolve(process.argv[2]) : defaultSeedPath;
 
