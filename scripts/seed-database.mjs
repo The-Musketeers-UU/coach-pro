@@ -75,6 +75,7 @@ const ensureModuleForCoach = async (coachId, moduleTemplate) => {
     category: moduleTemplate.category,
     subCategory: moduleTemplate.subCategory ?? null,
     description: moduleTemplate.description ?? null,
+    visibleToAllCoaches: true,
     activeFeedbackFields: Array.isArray(moduleTemplate.feedbackFields)
       ? moduleTemplate.feedbackFields
       : [],

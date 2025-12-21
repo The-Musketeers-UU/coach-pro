@@ -36,6 +36,7 @@ type DbModuleRow = {
   category: string;
   subCategory: string | null;
   description: string | null;
+  visibleToAllCoaches: boolean;
   activeFeedbackFields: unknown;
 };
 
@@ -45,7 +46,7 @@ export type ModuleRow = Omit<DbModuleRow, "activeFeedbackFields"> & {
 };
 
 const moduleSelectColumns =
-  "id,owner,name,category,subCategory,description,activeFeedbackFields";
+  "id,owner,name,category,subCategory,description,visibleToAllCoaches,activeFeedbackFields";
 
 type DbScheduleModuleFeedbackRow = {
   id: number | string;
@@ -369,7 +370,7 @@ export const getModulesByOwner = async (ownerId: string): Promise<ModuleRow[]> =
     const { data, error } = await supabase
       .from("module")
       .select(moduleSelectColumns)
-      .eq("owner", ownerId)
+      .or(`owner.eq.${ownerId},visibleToAllCoaches.eq.true`)
       .order("name", { ascending: true });
 
     if (error) {
@@ -399,6 +400,7 @@ export type CreateModuleInput = {
   subCategory?: string;
   description?: string;
   feedbackFields?: FeedbackFieldDefinition[];
+  visibleToAllCoaches?: boolean;
 };
 
 export type UpdateModuleInput = {
@@ -408,6 +410,7 @@ export type UpdateModuleInput = {
   subCategory?: string;
   description?: string;
   feedbackFields?: FeedbackFieldDefinition[];
+  visibleToAllCoaches?: boolean;
 };
 
 export type CreateScheduleWeekInput = {
@@ -972,6 +975,7 @@ export const createModule = async (input: CreateModuleInput): Promise<ModuleRow>
     category: input.category,
     subCategory: input.subCategory?.trim() || null,
     description: input.description?.trim() || null,
+    visibleToAllCoaches: Boolean(input.visibleToAllCoaches),
     activeFeedbackFields: Array.isArray(input.feedbackFields)
       ? input.feedbackFields
       : [],
@@ -998,6 +1002,7 @@ export const updateModule = async (input: UpdateModuleInput): Promise<ModuleRow>
     category: input.category,
     subCategory: input.subCategory?.trim() || null,
     description: input.description?.trim() || null,
+    visibleToAllCoaches: input.visibleToAllCoaches,
     activeFeedbackFields: Array.isArray(input.feedbackFields)
       ? input.feedbackFields
       : [],

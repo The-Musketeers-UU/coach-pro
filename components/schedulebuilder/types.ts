@@ -6,6 +6,7 @@ export type Module = {
   description: string;
   category: Category;
   subcategory?: string;
+  visibleToAllCoaches?: boolean;
   distance?: number | null;
   duration?: number | null;
   weight?: number | null;
@@ -34,6 +35,7 @@ export type ModuleForm = {
   description: string;
   category: string;
   subcategory: string;
+  visibleToAllCoaches: boolean;
   distance: string;
   duration: string;
   weight: string;

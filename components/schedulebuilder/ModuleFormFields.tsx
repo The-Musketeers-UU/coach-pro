@@ -184,6 +184,26 @@ export function ModuleFormFields({ formState, onChange }: ModuleFormFieldsProps)
           />
         </label>
 
+        <label className="form-control flex flex-row items-center gap-2">
+          <input
+            type="checkbox"
+            className="checkbox checkbox-primary checkbox-sm"
+            checked={formState.visibleToAllCoaches}
+            onChange={(event) =>
+              onChange((prev) => ({
+                ...prev,
+                visibleToAllCoaches: event.target.checked,
+              }))
+            }
+          />
+          <div className="flex flex-col">
+            <span className="label-text text-sm">Synlig för alla coacher</span>
+            <span className="text-xs text-base-content/70">
+              Låt andra coacher använda det här blocket i sina scheman.
+            </span>
+          </div>
+        </label>
+
         <label className="form-control flex flex-col gap-1">
           <div className="flex flex-row">
             <span className="label-text text-sm">Kategori:</span>

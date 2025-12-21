@@ -175,6 +175,7 @@ const mapModuleRow = (row: ModuleRow): Module => ({
   description: row.description ?? "",
   category: (row.category as Module["category"]) ?? "kondition",
   subcategory: row.subCategory ?? undefined,
+  visibleToAllCoaches: row.visibleToAllCoaches,
   sourceModuleId: row.id,
   feedbackFields: mapFeedbackFields(row.activeFeedbackFields),
 });
@@ -220,6 +221,7 @@ function ScheduleBuilderPage() {
       category: module.category,
       subCategory: module.subcategory,
       description: module.description,
+      visibleToAllCoaches: module.visibleToAllCoaches,
       feedbackFields: module.feedbackFields ?? [],
     } as const;
 
@@ -230,6 +232,7 @@ function ScheduleBuilderPage() {
         category: payload.category,
         subCategory: payload.subCategory,
         description: payload.description,
+        visibleToAllCoaches: payload.visibleToAllCoaches,
         feedbackFields: payload.feedbackFields,
       });
 
