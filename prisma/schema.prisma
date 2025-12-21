@@ -21,9 +21,12 @@ model User {
   email   String  @unique @db.Text
   isCoach Boolean @default(false)
 
-  modules      Module[]       @relation("UserModules")
-  ownedWeeks   ScheduleWeek[] @relation("CoachWeeks")
-  athleteWeeks ScheduleWeek[] @relation("AthleteWeeks")
+  modules                   Module[]               @relation("UserModules")
+  ownedWeeks                ScheduleWeek[]         @relation("CoachWeeks")
+  athleteWeeks              ScheduleWeek[]         @relation("AthleteWeeks")
+  headCoachGroups           TrainingGroup[]        @relation("HeadCoachGroups")
+  assistantCoachMemberships TrainingGroupCoach[]   @relation("GroupCoaches")
+  athleteGroupMemberships   TrainingGroupAthlete[] @relation("GroupAthletes")
 
   @@map("user")
 }
@@ -34,12 +37,12 @@ model Module {
   ownerId String @map("owner") @db.Uuid
   owner   User   @relation("UserModules", fields: [ownerId], references: [id])
 
-  name        String  @db.Text
-  category    String  @db.Text
-  subCategory String? @db.Text
-  description String? @db.Text
-  visibleToAllCoaches Boolean @default(false)
-  activeFeedbackFields Json @default("[]")
+  name                 String  @db.Text
+  category             String  @db.Text
+  subCategory          String? @db.Text
+  description          String? @db.Text
+  visibleToAllCoaches  Boolean @default(false)
+  activeFeedbackFields Json    @default("[]")
 
   scheduleDays            ScheduleDay[]
   scheduleModuleFeedbacks ScheduleModuleFeedback[]
@@ -89,13 +92,50 @@ model ScheduleModuleFeedback {
   module        Module      @relation(fields: [moduleId], references: [id])
   scheduleDay   ScheduleDay @relation(fields: [scheduleDayId], references: [id])
 
-  distance   Json @default("{}")
-  duration   Json @default("{}")
-  weight     Json @default("{}")
+  distance   Json    @default("{}")
+  duration   Json    @default("{}")
+  weight     Json    @default("{}")
   comment    String? @db.Text
   feeling    Int?
   sleepHours Int?
 
   @@unique([moduleId, scheduleDayId])
   @@map("scheduleModuleFeedback")
+}
+
+model TrainingGroup {
+  id BigInt @id @default(autoincrement()) @db.BigInt
+
+  name        String @db.Text
+  headCoachId String @map("headCoach") @db.Uuid
+  headCoach   User   @relation("HeadCoachGroups", fields: [headCoachId], references: [id])
+
+  coaches  TrainingGroupCoach[]
+  athletes TrainingGroupAthlete[]
+
+  @@map("trainingGroup")
+}
+
+model TrainingGroupCoach {
+  id BigInt @id @default(autoincrement()) @db.BigInt
+
+  groupId BigInt        @map("group") @db.BigInt
+  group   TrainingGroup @relation(fields: [groupId], references: [id])
+  coachId String        @map("coach") @db.Uuid
+  coach   User          @relation("GroupCoaches", fields: [coachId], references: [id])
+
+  @@unique([groupId, coachId])
+  @@map("trainingGroupCoach")
+}
+
+model TrainingGroupAthlete {
+  id BigInt @id @default(autoincrement()) @db.BigInt
+
+  groupId   BigInt        @map("group") @db.BigInt
+  group     TrainingGroup @relation(fields: [groupId], references: [id])
+  athleteId String        @map("athlete") @db.Uuid
+  athlete   User          @relation("GroupAthletes", fields: [athleteId], references: [id])
+
+  @@unique([groupId, athleteId])
+  @@map("trainingGroupAthlete")
 }
