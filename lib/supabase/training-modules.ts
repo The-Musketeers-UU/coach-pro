@@ -600,7 +600,9 @@ const getTrainingGroupsByIds = async (
       throw toReadableError(error);
     }
 
-    return (data ?? []).map(coerceTrainingGroupRow);
+    const rows = (data ?? []) as unknown as DbTrainingGroupRow[];
+
+    return rows.map(coerceTrainingGroupRow);
   } catch (error) {
     console.error("Error retrieving training groups via SQL query:", error);
     throw toReadableError(error);
