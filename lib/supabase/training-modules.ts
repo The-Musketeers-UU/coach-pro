@@ -581,6 +581,60 @@ export const searchUsers = async (
   }
 };
 
+const getTrainingGroupsForCoach = async (
+  coachId: string,
+): Promise<TrainingGroupWithMembers[]> => {
+  const groupIds = new Set<string>();
+
+  const { data: headCoachGroups, error: headCoachError } = await supabase
+    .from("trainingGroup")
+    .select("id")
+    .eq("headCoach", coachId);
+
+  if (headCoachError) {
+    console.error("Error fetching groups for head coach:", headCoachError);
+    throw toReadableError(headCoachError);
+  }
+
+  headCoachGroups?.forEach((group) => groupIds.add(toId(group.id)));
+
+  const { data: assistantGroups, error: assistantError } = await supabase
+    .from("trainingGroupCoach")
+    .select("group")
+    .eq("coach", coachId);
+
+  if (assistantError) {
+    console.error("Error fetching groups for assistant coach:", assistantError);
+    throw toReadableError(assistantError);
+  }
+
+  assistantGroups?.forEach((group) => groupIds.add(toId(group.group)));
+
+  return getTrainingGroupsByIds(Array.from(groupIds));
+};
+
+export const getCoachAthletes = async (
+  coachId: string,
+): Promise<AthleteRow[]> => {
+  try {
+    const trainingGroups = await getTrainingGroupsForCoach(coachId);
+    const athletesById = new Map<string, AthleteRow>();
+
+    trainingGroups.forEach((group) => {
+      group.athletes.forEach((athlete) => {
+        athletesById.set(athlete.id, athlete);
+      });
+    });
+
+    const athletes = Array.from(athletesById.values());
+
+    return athletes.sort((a, b) => a.name.localeCompare(b.name, "sv"));
+  } catch (error) {
+    console.error("Error retrieving coach athletes via SQL query:", error);
+    throw toReadableError(error);
+  }
+};
+
 const getTrainingGroupsByIds = async (
   groupIds: string[],
 ): Promise<TrainingGroupWithMembers[]> => {
