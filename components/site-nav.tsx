@@ -7,14 +7,20 @@ import { ThemeToggle } from "@/components/theme_toggle";
 import { useAuth } from "@/components/auth-provider";
 
 const statsLink = { href: "/stats", label: "Statistik" };
+const trainingGroupsLink = { href: "/training-groups", label: "Träningsgrupper" };
 
 const coachLinks = [
   { href: "/schedule_builder", label: "Schemabyggare" },
   { href: "/dashboard", label: "Träningsöversikt" },
+  trainingGroupsLink,
   statsLink,
 ];
 
-const athleteLinks = [{ href: "/athlete", label: "Mina scheman" }, statsLink];
+const athleteLinks = [
+  { href: "/athlete", label: "Mina scheman" },
+  trainingGroupsLink,
+  statsLink,
+];
 
 export function SiteNav() {
   const pathname = usePathname();

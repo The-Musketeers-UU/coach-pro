@@ -114,6 +114,21 @@ export type AthleteRow = {
   isCoach: boolean;
 };
 
+export type TrainingGroupWithMembers = {
+  id: string;
+  name: string;
+  headCoach: AthleteRow;
+  assistantCoaches: AthleteRow[];
+  athletes: AthleteRow[];
+};
+
+export type CreateTrainingGroupInput = {
+  name: string;
+  headCoachId: string;
+  athleteIds?: string[];
+  assistantCoachIds?: string[];
+};
+
 const toId = (value: number | string) => String(value);
 
 const toIds = (values: Array<number | string>) => values.map((value) => toId(value));
@@ -499,6 +514,207 @@ export const getCoaches = async (): Promise<AthleteRow[]> => {
     return data ?? [];
   } catch (error) {
     console.error("Error retrieving coaches via SQL query:", error);
+    throw toReadableError(error);
+  }
+};
+
+type DbTrainingGroupRow = {
+  id: number | string;
+  name: string;
+  headCoach: AthleteRow | null;
+  coaches?: { coach: AthleteRow | null }[];
+  athletes?: { athlete: AthleteRow | null }[];
+};
+
+const coerceTrainingGroupRow = (row: DbTrainingGroupRow): TrainingGroupWithMembers => {
+  if (!row.headCoach) {
+    throw new Error("Training group is missing head coach data.");
+  }
+
+  return {
+    id: toId(row.id),
+    name: row.name,
+    headCoach: row.headCoach,
+    assistantCoaches: (row.coaches ?? [])
+      .map((coachRow) => coachRow.coach)
+      .filter(Boolean) as AthleteRow[],
+    athletes: (row.athletes ?? [])
+      .map((athleteRow) => athleteRow.athlete)
+      .filter(Boolean) as AthleteRow[],
+  } satisfies TrainingGroupWithMembers;
+};
+
+const uniqueIds = (ids: string[]) => Array.from(new Set(ids.filter(Boolean)));
+
+export const searchUsers = async (
+  query: string,
+  role?: "coach" | "athlete",
+): Promise<AthleteRow[]> => {
+  const trimmedQuery = query.trim();
+
+  try {
+    let request = supabase
+      .from("user")
+      .select("id,name,email,isCoach")
+      .order("name", { ascending: true })
+      .limit(20);
+
+    if (role) {
+      request = request.eq("isCoach", role === "coach");
+    }
+
+    if (trimmedQuery) {
+      request = request.or(`name.ilike.%${trimmedQuery}%,email.ilike.%${trimmedQuery}%`);
+    }
+
+    const { data, error } = await request;
+
+    if (error) {
+      console.error("Error searching users:", error);
+      throw toReadableError(error);
+    }
+
+    return data ?? [];
+  } catch (error) {
+    console.error("Error performing user search:", error);
+    throw toReadableError(error);
+  }
+};
+
+const getTrainingGroupsByIds = async (
+  groupIds: string[],
+): Promise<TrainingGroupWithMembers[]> => {
+  if (groupIds.length === 0) return [];
+
+  try {
+    const { data, error } = await supabase
+      .from("trainingGroup")
+      .select(
+        `id,name,headCoach:headCoach (id,name,email,isCoach),coaches:trainingGroupCoach (coach:coach (id,name,email,isCoach)),athletes:trainingGroupAthlete (athlete:athlete (id,name,email,isCoach))`,
+      )
+      .in("id", toDbNumericIds(groupIds))
+      .order("name", { ascending: true });
+
+    if (error) {
+      console.error("Error fetching training groups:", error);
+      throw toReadableError(error);
+    }
+
+    return (data ?? []).map(coerceTrainingGroupRow);
+  } catch (error) {
+    console.error("Error retrieving training groups via SQL query:", error);
+    throw toReadableError(error);
+  }
+};
+
+export const getTrainingGroupsForUser = async (
+  userId: string,
+): Promise<TrainingGroupWithMembers[]> => {
+  try {
+    const groupIds = new Set<string>();
+
+    const { data: headCoachGroups, error: headCoachError } = await supabase
+      .from("trainingGroup")
+      .select("id")
+      .eq("headCoach", userId);
+
+    if (headCoachError) {
+      console.error("Error fetching groups for head coach:", headCoachError);
+      throw toReadableError(headCoachError);
+    }
+
+    headCoachGroups?.forEach((group) => groupIds.add(toId(group.id)));
+
+    const { data: assistantGroups, error: assistantError } = await supabase
+      .from("trainingGroupCoach")
+      .select("group")
+      .eq("coach", userId);
+
+    if (assistantError) {
+      console.error("Error fetching assistant coach groups:", assistantError);
+      throw toReadableError(assistantError);
+    }
+
+    assistantGroups?.forEach((group) => groupIds.add(toId(group.group)));
+
+    const { data: athleteGroups, error: athleteError } = await supabase
+      .from("trainingGroupAthlete")
+      .select("group")
+      .eq("athlete", userId);
+
+    if (athleteError) {
+      console.error("Error fetching athlete groups:", athleteError);
+      throw toReadableError(athleteError);
+    }
+
+    athleteGroups?.forEach((group) => groupIds.add(toId(group.group)));
+
+    return getTrainingGroupsByIds(Array.from(groupIds));
+  } catch (error) {
+    console.error("Error retrieving training groups:", error);
+    throw toReadableError(error);
+  }
+};
+
+export const createTrainingGroup = async (
+  input: CreateTrainingGroupInput,
+): Promise<TrainingGroupWithMembers> => {
+  const payload = { name: input.name.trim(), headCoach: input.headCoachId };
+
+  if (!payload.name) {
+    throw new Error("Gruppen måste ha ett namn.");
+  }
+
+  try {
+    const { data: group, error: groupError } = await supabase
+      .from("trainingGroup")
+      .insert(payload)
+      .select("id")
+      .single();
+
+    if (groupError) {
+      console.error("Error creating training group:", groupError);
+      throw toReadableError(groupError);
+    }
+
+    const groupId = toId(group?.id);
+    const assistantCoachIds = uniqueIds(input.assistantCoachIds ?? []).filter(
+      (coachId) => coachId !== input.headCoachId,
+    );
+
+    if (assistantCoachIds.length > 0) {
+      const { error: coachesError } = await supabase.from("trainingGroupCoach").insert(
+        assistantCoachIds.map((coachId) => ({ group: toDbNumericId(groupId), coach: coachId })),
+      );
+
+      if (coachesError) {
+        console.error("Error linking assistant coaches:", coachesError);
+        throw toReadableError(coachesError);
+      }
+    }
+
+    const athleteIds = uniqueIds(input.athleteIds ?? []);
+    if (athleteIds.length > 0) {
+      const { error: athletesError } = await supabase.from("trainingGroupAthlete").insert(
+        athleteIds.map((athleteId) => ({ group: toDbNumericId(groupId), athlete: athleteId })),
+      );
+
+      if (athletesError) {
+        console.error("Error linking athletes to group:", athletesError);
+        throw toReadableError(athletesError);
+      }
+    }
+
+    const groups = await getTrainingGroupsByIds([groupId]);
+    const createdGroup = groups[0];
+
+    if (!createdGroup) {
+      throw new Error("Kunde inte läsa in den skapade träningsgruppen.");
+    }
+
+    return createdGroup;
+  } catch (error) {
+    console.error("Error creating training group via SQL query:", error);
     throw toReadableError(error);
   }
 };
