@@ -26,9 +26,8 @@ export default function SettingsPage() {
   const [passwordError, setPasswordError] = useState<string | null>(null);
   const [isUpdatingPassword, setIsUpdatingPassword] = useState(false);
 
-  const [deleteConfirmation, setDeleteConfirmation] = useState("");
-  const [deleteError, setDeleteError] = useState<string | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
 
   const isLoadingAuthState = useMemo(() => isLoading || isLoadingProfile, [isLoading, isLoadingProfile]);
 
@@ -124,10 +123,8 @@ export default function SettingsPage() {
 
     setDeleteError(null);
 
-    if (user.email && deleteConfirmation.trim().toLowerCase() !== user.email.toLowerCase()) {
-      setDeleteError("Skriv in din e-postadress för att bekräfta.");
-      return;
-    }
+    const confirmed = window.confirm("Är du säker på att du vill radera kontot? Det går inte att ångra.");
+    if (!confirmed) return;
 
     setIsDeleting(true);
 
@@ -161,13 +158,7 @@ export default function SettingsPage() {
   return (
     <main className="mx-auto flex max-w-5xl flex-col gap-6 px-4 py-8">
       <div className="flex flex-wrap items-start justify-between gap-4">
-        <div className="space-y-1">
-          <p className="text-sm uppercase tracking-wide text-base-content/60">Konto</p>
-          <h1 className="text-3xl font-bold">Inställningar</h1>
-          <p className="text-base text-base-content/70">
-            Hantera dina uppgifter, temaval och säkerhet.
-          </p>
-        </div>
+        <h1 className="text-3xl font-bold">Inställningar</h1>
         <button className="btn btn-ghost" onClick={() => void signOut()} type="button">
           Logga ut
         </button>
@@ -176,12 +167,7 @@ export default function SettingsPage() {
       <div className="grid gap-6 lg:grid-cols-2">
         <section className="card bg-base-100 shadow">
           <div className="card-body space-y-4">
-            <div>
-              <h2 className="card-title">Profil</h2>
-              <p className="text-sm text-base-content/70">
-                Uppdatera ditt namn och din e-postadress.
-              </p>
-            </div>
+            <h2 className="card-title">Profil</h2>
 
             {profileMessage && <div className="alert alert-success">{profileMessage}</div>}
             {profileError && <div className="alert alert-error">{profileError}</div>}
@@ -227,12 +213,7 @@ export default function SettingsPage() {
 
         <section className="card bg-base-100 shadow">
           <div className="card-body space-y-4">
-            <div>
-              <h2 className="card-title">Lösenord</h2>
-              <p className="text-sm text-base-content/70">
-                Välj ett nytt lösenord för ditt konto.
-              </p>
-            </div>
+            <h2 className="card-title">Lösenord</h2>
 
             {passwordMessage && <div className="alert alert-success">{passwordMessage}</div>}
             {passwordError && <div className="alert alert-error">{passwordError}</div>}
@@ -285,12 +266,9 @@ export default function SettingsPage() {
           <div className="card-body space-y-4">
             <div>
               <h2 className="card-title">Utseende</h2>
-              <p className="text-sm text-base-content/70">
-                Byt färgtema för Coach Pro.
-              </p>
             </div>
             <div className="flex flex-wrap items-center gap-3">
-              <ThemeToggle />
+              <ThemeToggle key="settings-theme-toggle" />
               <span className="text-sm text-base-content/70">
                 Dina val sparas i webbläsaren och gäller på alla sidor.
               </span>
