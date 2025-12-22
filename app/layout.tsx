@@ -3,12 +3,13 @@ import { cookies } from "next/headers";
 import { AuthProvider } from "@/components/auth-provider";
 import { sanitizeTheme } from "@/lib/themes";
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
-  const theme = sanitizeTheme(cookies().get("theme")?.value);
+  const cookieStore = await cookies();
+  const theme = sanitizeTheme(cookieStore.get("theme")?.value);
 
   return (
     <html lang="en" data-theme={theme}>
