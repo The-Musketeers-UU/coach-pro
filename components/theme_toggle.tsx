@@ -79,7 +79,7 @@ export function ThemeToggle({ compact = false }: ThemeToggleProps) {
         tabIndex={-1}
         className="dropdown-content bg-base-300 rounded-box z-50 w-56 p-2 shadow-2xl max-h-[50vh] overflow-y-auto left-0 right-auto"
       >
-        {/* --- Light & Dark först --- */}
+        {/* --- Utvalda teman --- */}
         {FEATURED_THEMES.map((theme) => (
           <li key={theme.value}>
             <input
@@ -96,7 +96,7 @@ export function ThemeToggle({ compact = false }: ThemeToggleProps) {
 
         <div className="divider my-1"></div>
 
-        {/* --- Resten i alfabetisk ordning --- */}
+        {/* --- Övriga teman --- */}
         {ADDITIONAL_THEMES.map((theme) => (
           <li key={theme}>
             <input
