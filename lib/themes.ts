@@ -2,7 +2,6 @@ export const DEFAULT_THEME = "light" as const;
 
 export const SUPPORTED_THEMES = [
   "light",
-  "dim",
   "dracula",
   "nord",
   "valentine",
@@ -16,17 +15,14 @@ export const SUPPORTED_THEMES = [
 export type ThemeName = (typeof SUPPORTED_THEMES)[number];
 
 export const FEATURED_THEMES: { label: string; value: ThemeName }[] = [
-  { label: "Light", value: "light" },
-  { label: "Dim", value: "dim" },
+  { label: "Ljus", value: "light" },
+  { label: "Mörk", value: "dracula" },
 ];
 
 export const ADDITIONAL_THEMES: ThemeName[] = [
-  "dracula",
   "nord",
   "valentine",
-  "synthwave",
   "retro",
-  "cupcake",
   "caramellatte",
   "aqua",
 ];

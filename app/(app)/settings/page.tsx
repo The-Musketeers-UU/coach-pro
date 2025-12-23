@@ -29,7 +29,10 @@ export default function SettingsPage() {
   const [isDeleting, setIsDeleting] = useState(false);
   const [deleteError, setDeleteError] = useState<string | null>(null);
 
-  const isLoadingAuthState = useMemo(() => isLoading || isLoadingProfile, [isLoading, isLoadingProfile]);
+  const isLoadingAuthState = useMemo(
+    () => isLoading || isLoadingProfile,
+    [isLoading, isLoadingProfile]
+  );
 
   useEffect(() => {
     if (isLoadingAuthState) return;
@@ -39,7 +42,8 @@ export default function SettingsPage() {
   }, [isLoadingAuthState, router, user]);
 
   useEffect(() => {
-    const nextName = profile?.name ?? user?.user_metadata?.name ?? user?.email ?? "";
+    const nextName =
+      profile?.name ?? user?.user_metadata?.name ?? user?.email ?? "";
     setName(nextName);
     setEmail(user?.email ?? profile?.email ?? "");
   }, [profile?.email, profile?.name, user?.email, user?.user_metadata?.name]);
@@ -75,7 +79,7 @@ export default function SettingsPage() {
       setProfileError(
         updateProfileError instanceof Error
           ? updateProfileError.message
-          : String(updateProfileError),
+          : String(updateProfileError)
       );
     } finally {
       setIsSavingProfile(false);
@@ -95,7 +99,9 @@ export default function SettingsPage() {
     }
 
     if (password.length < MIN_PASSWORD_LENGTH) {
-      setPasswordError(`Lösenordet måste vara minst ${MIN_PASSWORD_LENGTH} tecken.`);
+      setPasswordError(
+        `Lösenordet måste vara minst ${MIN_PASSWORD_LENGTH} tecken.`
+      );
       return;
     }
 
@@ -111,7 +117,7 @@ export default function SettingsPage() {
       setPasswordError(
         updatePasswordError instanceof Error
           ? updatePasswordError.message
-          : String(updatePasswordError),
+          : String(updatePasswordError)
       );
     } finally {
       setIsUpdatingPassword(false);
@@ -123,7 +129,9 @@ export default function SettingsPage() {
 
     setDeleteError(null);
 
-    const confirmed = window.confirm("Är du säker på att du vill radera kontot? Det går inte att ångra.");
+    const confirmed = window.confirm(
+      "Är du säker på att du vill radera kontot? Det går inte att ångra."
+    );
     if (!confirmed) return;
 
     setIsDeleting(true);
@@ -140,7 +148,9 @@ export default function SettingsPage() {
       router.replace("/login");
     } catch (deleteAccountError) {
       setDeleteError(
-        deleteAccountError instanceof Error ? deleteAccountError.message : String(deleteAccountError),
+        deleteAccountError instanceof Error
+          ? deleteAccountError.message
+          : String(deleteAccountError)
       );
     } finally {
       setIsDeleting(false);
@@ -150,30 +160,37 @@ export default function SettingsPage() {
   if (!user && isLoadingAuthState) {
     return (
       <div className="flex min-h-[50vh] items-center justify-center">
-        <span className="loading loading-spinner" aria-label="Laddar användare" />
+        <span
+          className="loading loading-spinner"
+          aria-label="Laddar användare"
+        />
       </div>
     );
   }
 
   return (
-    <main className="mx-auto flex max-w-5xl flex-col gap-6 px-4 py-8">
+    <main className="mx-auto flex-1 flex max-w-5xl flex-col gap-6 px-4 py-8">
       <div className="flex flex-wrap items-start justify-between gap-4">
         <h1 className="text-3xl font-bold">Inställningar</h1>
-        <button className="btn btn-ghost" onClick={() => void signOut()} type="button">
+        <button className="btn" onClick={() => void signOut()} type="button">
           Logga ut
         </button>
       </div>
 
       <div className="grid gap-6 lg:grid-cols-2">
-        <section className="card bg-base-100 shadow">
+        <section className="card bg-base-200 shadow">
           <div className="card-body space-y-4">
             <h2 className="card-title">Profil</h2>
 
-            {profileMessage && <div className="alert alert-success">{profileMessage}</div>}
-            {profileError && <div className="alert alert-error">{profileError}</div>}
+            {profileMessage && (
+              <div className="alert alert-success">{profileMessage}</div>
+            )}
+            {profileError && (
+              <div className="alert alert-error">{profileError}</div>
+            )}
 
             <form className="space-y-4" onSubmit={handleProfileSubmit}>
-              <div className="form-control">
+              <div className="form-control flex flex-col gap-1">
                 <label className="label" htmlFor="name">
                   <span className="label-text">Namn</span>
                 </label>
@@ -187,7 +204,7 @@ export default function SettingsPage() {
                 />
               </div>
 
-              <div className="form-control">
+              <div className="form-control flex flex-col gap-1">
                 <label className="label" htmlFor="email">
                   <span className="label-text">E-post</span>
                 </label>
@@ -203,7 +220,11 @@ export default function SettingsPage() {
               </div>
 
               <div className="form-control">
-                <button className="btn btn-primary" type="submit" disabled={isSavingProfile}>
+                <button
+                  className="btn btn-primary btn-md mt-4"
+                  type="submit"
+                  disabled={isSavingProfile}
+                >
                   {isSavingProfile ? "Sparar..." : "Spara ändringar"}
                 </button>
               </div>
@@ -211,15 +232,19 @@ export default function SettingsPage() {
           </div>
         </section>
 
-        <section className="card bg-base-100 shadow">
+        <section className="card bg-base-200 shadow">
           <div className="card-body space-y-4">
             <h2 className="card-title">Lösenord</h2>
 
-            {passwordMessage && <div className="alert alert-success">{passwordMessage}</div>}
-            {passwordError && <div className="alert alert-error">{passwordError}</div>}
+            {passwordMessage && (
+              <div className="alert alert-success">{passwordMessage}</div>
+            )}
+            {passwordError && (
+              <div className="alert alert-error">{passwordError}</div>
+            )}
 
             <form className="space-y-4" onSubmit={handlePasswordSubmit}>
-              <div className="form-control">
+              <div className="form-control flex flex-col gap-1">
                 <label className="label" htmlFor="new-password">
                   <span className="label-text">Nytt lösenord</span>
                 </label>
@@ -235,7 +260,7 @@ export default function SettingsPage() {
                 />
               </div>
 
-              <div className="form-control">
+              <div className="form-control flex flex-col gap-1">
                 <label className="label" htmlFor="confirm-password">
                   <span className="label-text">Bekräfta nytt lösenord</span>
                 </label>
@@ -252,7 +277,11 @@ export default function SettingsPage() {
               </div>
 
               <div className="form-control">
-                <button className="btn btn-primary" type="submit" disabled={isUpdatingPassword}>
+                <button
+                  className="btn btn-primary mt-4"
+                  type="submit"
+                  disabled={isUpdatingPassword}
+                >
                   {isUpdatingPassword ? "Uppdaterar..." : "Byt lösenord"}
                 </button>
               </div>
@@ -262,30 +291,19 @@ export default function SettingsPage() {
       </div>
 
       <div className="grid gap-6 lg:grid-cols-3">
-        <section className="card bg-base-100 shadow lg:col-span-2">
-          <div className="card-body space-y-4">
-            <div>
-              <h2 className="card-title">Utseende</h2>
-            </div>
-            <div className="flex flex-wrap items-center gap-3">
-              <ThemeToggle key="settings-theme-toggle" groupName="settings-theme-dropdown" />
-              <span className="text-sm text-base-content/70">
-                Dina val sparas i webbläsaren och gäller på alla sidor.
-              </span>
-            </div>
-          </div>
-        </section>
-
-        <section className="card bg-base-100 shadow">
+        <section className="card bg-base-200 shadow lg:col-span-2">
           <div className="card-body space-y-4">
             <div>
               <h2 className="card-title">Radera konto</h2>
               <p className="text-sm text-base-content/70">
-                Detta tar bort din profil i Coach Pro. Du loggas ut när det är klart.
+                Detta tar bort din profil i Coach Pro. Du loggas ut när det är
+                klart.
               </p>
             </div>
 
-            {deleteError && <div className="alert alert-error">{deleteError}</div>}
+            {deleteError && (
+              <div className="alert alert-error">{deleteError}</div>
+            )}
 
             <div className="space-y-3">
               <button
@@ -296,6 +314,21 @@ export default function SettingsPage() {
               >
                 {isDeleting ? "Raderar..." : "Radera konto"}
               </button>
+            </div>
+          </div>
+        </section>
+
+        <section className="card bg-base-200 shadow">
+          <div className="card-body space-y-4">
+            <div>
+              <h2 className="card-title">Utseende</h2>
+            </div>
+            <div className="flex flex-wrap items-center gap-3">
+              <ThemeToggle
+                key="settings-theme-toggle"
+                groupName="settings-theme-dropdown"
+                dropdownRight={true}
+              />
             </div>
           </div>
         </section>

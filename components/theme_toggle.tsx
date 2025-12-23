@@ -12,6 +12,7 @@ import {
 type ThemeToggleProps = {
   compact?: boolean;
   groupName?: string;
+  dropdownRight?: boolean;
 };
 
 const THEME_COOKIE_NAME = "theme";
@@ -35,14 +36,21 @@ const applyTheme = (theme: ThemeName) => {
 
   document.documentElement.setAttribute("data-theme", theme);
   document.cookie = `${THEME_COOKIE_NAME}=${encodeURIComponent(
-    theme,
+    theme
   )}; path=/; max-age=${ONE_YEAR_IN_SECONDS}; SameSite=Lax`;
 };
 
-export function ThemeToggle({ compact = false, groupName = "theme-dropdown" }: ThemeToggleProps) {
+export function ThemeToggle({
+  compact = false,
+  groupName = "theme-dropdown",
+  dropdownRight = false,
+}: ThemeToggleProps) {
   const [selectedTheme, setSelectedTheme] = useState<ThemeName>(() => {
     const storedTheme = readThemeCookie();
-    const htmlTheme = typeof document !== "undefined" ? document.documentElement.getAttribute("data-theme") : undefined;
+    const htmlTheme =
+      typeof document !== "undefined"
+        ? document.documentElement.getAttribute("data-theme")
+        : undefined;
 
     return sanitizeTheme(storedTheme ?? htmlTheme ?? DEFAULT_THEME);
   });
@@ -54,11 +62,16 @@ export function ThemeToggle({ compact = false, groupName = "theme-dropdown" }: T
 
     const syncFromDom = () => {
       const current = sanitizeTheme(target.getAttribute("data-theme"));
-      setSelectedTheme((previous) => (previous === current ? previous : current));
+      setSelectedTheme((previous) =>
+        previous === current ? previous : current
+      );
     };
 
     const observer = new MutationObserver(syncFromDom);
-    observer.observe(target, { attributes: true, attributeFilter: ["data-theme"] });
+    observer.observe(target, {
+      attributes: true,
+      attributeFilter: ["data-theme"],
+    });
 
     return () => observer.disconnect();
   }, []);
@@ -72,7 +85,11 @@ export function ThemeToggle({ compact = false, groupName = "theme-dropdown" }: T
   };
 
   return (
-    <div className="dropdown">
+    <div
+      className={`dropdown ${
+        dropdownRight ? "dropdown-top dropdown-end" : ""
+      }`}
+    >
       <div
         tabIndex={0}
         role="button"
