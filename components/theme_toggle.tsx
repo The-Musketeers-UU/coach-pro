@@ -48,6 +48,22 @@ export function ThemeToggle({ compact = false, groupName = "theme-dropdown" }: T
   });
 
   useEffect(() => {
+    if (typeof document === "undefined") return;
+
+    const target = document.documentElement;
+
+    const syncFromDom = () => {
+      const current = sanitizeTheme(target.getAttribute("data-theme"));
+      setSelectedTheme((previous) => (previous === current ? previous : current));
+    };
+
+    const observer = new MutationObserver(syncFromDom);
+    observer.observe(target, { attributes: true, attributeFilter: ["data-theme"] });
+
+    return () => observer.disconnect();
+  }, []);
+
+  useEffect(() => {
     applyTheme(selectedTheme);
   }, [selectedTheme]);
 
