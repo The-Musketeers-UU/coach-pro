@@ -29,7 +29,7 @@ import {
   createScheduleWeek,
   updateScheduleWeek,
   clearScheduleWeek,
-  getAthletes,
+  getCoachAthletes,
   getModulesByOwner,
   getScheduleWeekByAthleteAndWeek,
   getScheduleWeekWithModulesById,
@@ -439,7 +439,7 @@ function ScheduleBuilderPage() {
       try {
         const [moduleRows, athleteRows] = await Promise.all([
           getModulesByOwner(profile.id),
-          getAthletes(),
+          getCoachAthletes(profile.id),
         ]);
 
         setModules(moduleRows.map(mapModuleRow));
