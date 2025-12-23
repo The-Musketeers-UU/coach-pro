@@ -268,7 +268,7 @@ export default function SettingsPage() {
               <h2 className="card-title">Utseende</h2>
             </div>
             <div className="flex flex-wrap items-center gap-3">
-              <ThemeToggle key="settings-theme-toggle" />
+              <ThemeToggle key="settings-theme-toggle" groupName="settings-theme-dropdown" />
               <span className="text-sm text-base-content/70">
                 Dina val sparas i webbläsaren och gäller på alla sidor.
               </span>
@@ -288,18 +288,6 @@ export default function SettingsPage() {
             {deleteError && <div className="alert alert-error">{deleteError}</div>}
 
             <div className="space-y-3">
-              <label className="form-control">
-                <div className="label">
-                  <span className="label-text text-sm">Skriv din e-postadress för att bekräfta</span>
-                </div>
-                <input
-                  className="input input-bordered"
-                  placeholder="du@exempel.se"
-                  value={deleteConfirmation}
-                  onChange={(event) => setDeleteConfirmation(event.target.value)}
-                />
-              </label>
-
               <button
                 type="button"
                 className="btn btn-error"

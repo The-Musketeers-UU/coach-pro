@@ -11,6 +11,7 @@ import {
 
 type ThemeToggleProps = {
   compact?: boolean;
+  groupName?: string;
 };
 
 const THEME_COOKIE_NAME = "theme";
@@ -38,7 +39,7 @@ const applyTheme = (theme: ThemeName) => {
   )}; path=/; max-age=${ONE_YEAR_IN_SECONDS}; SameSite=Lax`;
 };
 
-export function ThemeToggle({ compact = false }: ThemeToggleProps) {
+export function ThemeToggle({ compact = false, groupName = "theme-dropdown" }: ThemeToggleProps) {
   const [selectedTheme, setSelectedTheme] = useState<ThemeName>(() => {
     const storedTheme = readThemeCookie();
     const htmlTheme = typeof document !== "undefined" ? document.documentElement.getAttribute("data-theme") : undefined;
@@ -84,7 +85,7 @@ export function ThemeToggle({ compact = false }: ThemeToggleProps) {
           <li key={theme.value}>
             <input
               type="radio"
-              name="theme-dropdown"
+              name={groupName}
               className="theme-controller w-full btn btn-sm btn-block btn-ghost justify-start"
               aria-label={theme.label}
               value={theme.value}
@@ -101,7 +102,7 @@ export function ThemeToggle({ compact = false }: ThemeToggleProps) {
           <li key={theme}>
             <input
               type="radio"
-              name="theme-dropdown"
+              name={groupName}
               className="theme-controller w-full btn btn-sm btn-block btn-ghost justify-start capitalize"
               aria-label={theme}
               value={theme}
