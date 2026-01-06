@@ -57,15 +57,34 @@ const metricOptions: MetricOption[] = [
 
 const dayLabels = ["Måndag", "Tisdag", "Onsdag", "Torsdag", "Fredag", "Lördag", "Söndag"];
 
-const getMetricValue = (module: ScheduleModule, metric: MetricKey): number => {
-  const feedbackValue = module.feedback ? (module.feedback as Record<string, unknown>)[metric] : undefined;
-  const plannedValue = (module as Record<string, unknown>)[metric];
-  const value = feedbackValue ?? plannedValue ?? 0;
-  return Number.isFinite(value) ? Number(value) : 0;
+const getFeedbackMetricValue = (module: ScheduleModule, metric: MetricKey) => {
+  if (!module.feedback) return null;
+
+  const value = module.feedback[metric];
+  if (typeof value !== "number" || !Number.isFinite(value)) {
+    return null;
+  }
+
+  return value;
 };
 
-const aggregateDayValue = (modules: ScheduleModule[], metric: MetricKey) =>
-  modules.reduce((sum, module) => sum + getMetricValue(module, metric), 0);
+const aggregateDayMetric = (modules: ScheduleModule[], metric: MetricKey) => {
+  const values = modules
+    .map((module) => getFeedbackMetricValue(module, metric))
+    .filter((value): value is number => value !== null);
+
+  if (values.length === 0) {
+    return { value: 0, hasFeedback: false };
+  }
+
+  const sum = values.reduce((total, value) => total + value, 0);
+  const useAverage = metric === "feeling" || metric === "sleepHours";
+
+  return {
+    value: useAverage ? sum / values.length : sum,
+    hasFeedback: true,
+  };
+};
 
 export default function WeekGraphPage() {
   const router = useRouter();
@@ -115,8 +134,7 @@ export default function WeekGraphPage() {
     if (!week) return [];
 
     return week.days.map((day) => {
-      const value = aggregateDayValue(day.modules, metric);
-      const hasFeedback = day.modules.some((module) => module.feedback);
+      const { value, hasFeedback } = aggregateDayMetric(day.modules, metric);
 
       return {
         id: day.id,
