@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import { useRouter } from "next/navigation";
 
 import {
   WeekSelector,
@@ -79,12 +80,12 @@ const toProgramWeek = (week: ScheduleWeekWithModules): ProgramWeek => ({
 });
 
 export default function AthleteSchedulePage() {
+  const router = useRouter();
   const { user, profile, isLoading, isLoadingProfile } = useAuth();
   const weekOptions = useMemo(() => createRollingWeekOptions(), []);
   const currentWeekValue = useMemo(() => getCurrentWeekValue(), []);
   const [selectedWeekValue, setSelectedWeekValue] = useState(currentWeekValue);
   const [rawWeeks, setRawWeeks] = useState<ScheduleWeekWithModules[]>([]);
-  const [isFetching, setIsFetching] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const currentWeekNumber = useMemo(() => getIsoWeekNumber(new Date()), []);
@@ -128,7 +129,6 @@ export default function AthleteSchedulePage() {
     if (!profile?.id) return;
 
     const loadWeeks = async () => {
-      setIsFetching(true);
       setError(null);
       try {
         const weeks = await getScheduleWeeksWithModules(profile.id);
@@ -139,13 +139,18 @@ export default function AthleteSchedulePage() {
             ? supabaseError.message
             : String(supabaseError)
         );
-      } finally {
-        setIsFetching(false);
       }
     };
 
     void loadWeeks();
   }, [currentWeekNumber, profile?.id]);
+
+  useEffect(() => {
+    if (isLoading || isLoadingProfile) return;
+    if (!user) {
+      router.replace("/login?redirectTo=/athlete");
+    }
+  }, [isLoading, isLoadingProfile, router, user]);
 
   if (isLoading || isLoadingProfile) {
     return (
@@ -155,7 +160,13 @@ export default function AthleteSchedulePage() {
     );
   }
 
-  if (!user) return null;
+  if (!user) {
+    return (
+      <div className="flex min-h-screen items-center justify-center">
+        <span className="loading loading-spinner" aria-label="Laddar program" />
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen">
@@ -186,11 +197,6 @@ export default function AthleteSchedulePage() {
         </div>
 
         {error && <div className="alert alert-error">{error}</div>}
-        {isFetching && (
-          <div className="flex justify-center">
-            <span className="loading loading-spinner" aria-label="Laddar program" />
-          </div>
-        )}
 
         <WeekScheduleView
           week={activeWeek}
