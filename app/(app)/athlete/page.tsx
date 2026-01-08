@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import { useRouter } from "next/navigation";
 
 import {
   WeekSelector,
@@ -79,6 +80,7 @@ const toProgramWeek = (week: ScheduleWeekWithModules): ProgramWeek => ({
 });
 
 export default function AthleteSchedulePage() {
+  const router = useRouter();
   const { user, profile, isLoading, isLoadingProfile } = useAuth();
   const weekOptions = useMemo(() => createRollingWeekOptions(), []);
   const currentWeekValue = useMemo(() => getCurrentWeekValue(), []);
@@ -143,6 +145,13 @@ export default function AthleteSchedulePage() {
     void loadWeeks();
   }, [currentWeekNumber, profile?.id]);
 
+  useEffect(() => {
+    if (isLoading || isLoadingProfile) return;
+    if (!user) {
+      router.replace("/login?redirectTo=/athlete");
+    }
+  }, [isLoading, isLoadingProfile, router, user]);
+
   if (isLoading || isLoadingProfile) {
     return (
       <div className="flex min-h-screen items-center justify-center">
@@ -151,7 +160,13 @@ export default function AthleteSchedulePage() {
     );
   }
 
-  if (!user) return null;
+  if (!user) {
+    return (
+      <div className="flex min-h-screen items-center justify-center">
+        <span className="loading loading-spinner" aria-label="Laddar program" />
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen">
