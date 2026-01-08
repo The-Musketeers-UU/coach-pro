@@ -84,6 +84,7 @@ export default function AthleteSchedulePage() {
   const currentWeekValue = useMemo(() => getCurrentWeekValue(), []);
   const [selectedWeekValue, setSelectedWeekValue] = useState(currentWeekValue);
   const [rawWeeks, setRawWeeks] = useState<ScheduleWeekWithModules[]>([]);
+  const [isFetching, setIsFetching] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const currentWeekNumber = useMemo(() => getIsoWeekNumber(new Date()), []);
@@ -127,6 +128,7 @@ export default function AthleteSchedulePage() {
     if (!profile?.id) return;
 
     const loadWeeks = async () => {
+      setIsFetching(true);
       setError(null);
       try {
         const weeks = await getScheduleWeeksWithModules(profile.id);
@@ -137,6 +139,8 @@ export default function AthleteSchedulePage() {
             ? supabaseError.message
             : String(supabaseError)
         );
+      } finally {
+        setIsFetching(false);
       }
     };
 
@@ -182,6 +186,11 @@ export default function AthleteSchedulePage() {
         </div>
 
         {error && <div className="alert alert-error">{error}</div>}
+        {isFetching && (
+          <div className="flex justify-center">
+            <span className="loading loading-spinner" aria-label="Laddar program" />
+          </div>
+        )}
 
         <WeekScheduleView
           week={activeWeek}
