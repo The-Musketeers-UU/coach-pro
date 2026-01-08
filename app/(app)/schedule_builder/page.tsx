@@ -674,7 +674,6 @@ function ScheduleBuilderPage() {
           isSubmitting={libraryControls.isSavingModule}
           onClose={libraryControls.closeCreateModal}
           onSubmit={libraryControls.handleAddModule}
-          onReset={libraryControls.resetModuleForm}
           onUpdate={libraryControls.setNewModule}
         />
 
