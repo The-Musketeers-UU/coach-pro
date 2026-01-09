@@ -11,6 +11,8 @@ import {
   getScheduleWeeksWithModules,
 } from "@/lib/supabase/training-modules";
 
+const athleteGraphLink=[  { href: "/graph", label: "graph" },
+]
 type ScheduleModule = ScheduleWeekWithModules["days"][number]["modules"][number];
 
 type WeekStats = {
@@ -201,6 +203,15 @@ export default function StatsPage() {
   const [isLoadingAthletes, setIsLoadingAthletes] = useState(false);
   const [isFetchingWeeks, setIsFetchingWeeks] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  const goToWeekGraph = (week: WeekStats) => {
+    const params = new URLSearchParams();
+    if (selectedAthlete) params.set("athleteId", selectedAthlete);
+    params.set("weekNumber", String(week.weekNumber));
+
+    const query = params.toString();
+    router.push(`/stats/${week.id}${query ? `?${query}` : ""}`);
+  };
 
   useEffect(() => {
     if (isLoading || isLoadingProfile) return;
@@ -577,6 +588,15 @@ export default function StatsPage() {
                             {week.comments > 0 ? `${week.comments} st` : "Inga anteckningar"}
                           </p>
                         </div>
+                      </div>
+
+                      <div className="flex justify-end">
+                        <button
+                          className="btn btn-primary btn-sm"
+                          onClick={() => goToWeekGraph(week)}
+                        >
+                          Visa grafer
+                        </button>
                       </div>
                     </div>
                   );
