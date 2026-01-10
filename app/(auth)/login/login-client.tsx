@@ -22,9 +22,25 @@ export default function LoginClient() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  const resolveRedirectTarget = (target: string, isCoach: boolean | null) => {
+    if (target === "/" && isCoach !== null) {
+      return isCoach ? "/dashboard" : "/athlete";
+    }
+
+    if (target === "/athlete" && isCoach) {
+      return "/dashboard";
+    }
+
+    return target;
+  };
+
   useEffect(() => {
     if (!isLoading && user) {
-      router.replace(redirectTo);
+      const isCoach =
+        typeof user.user_metadata?.isCoach === "boolean"
+          ? user.user_metadata.isCoach
+          : null;
+      router.replace(resolveRedirectTarget(redirectTo, isCoach));
     }
   }, [user, isLoading, router, redirectTo]);
 
@@ -45,9 +61,11 @@ export default function LoginClient() {
       const accessToken = signInData.session?.access_token ?? sessionResponse.data.session?.access_token;
 
       if (user) {
-        await ensureUserForAuth(user, accessToken);
+        const profile = await ensureUserForAuth(user, accessToken);
+        router.replace(resolveRedirectTarget(redirectTo, profile.isCoach));
+        return;
       }
-      router.replace(redirectTo);
+      router.replace(resolveRedirectTarget(redirectTo, null));
     } catch (authError) {
       setError(authError instanceof Error ? authError.message : String(authError));
     } finally {

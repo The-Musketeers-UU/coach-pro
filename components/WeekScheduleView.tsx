@@ -684,7 +684,7 @@ export function WeekScheduleView({
       >
         <div className="flex items-center gap-4 ml-1">
           <div>
-            <p className="text-sm uppercase tracking-wide text-neutral">
+            <p className="text-sm uppercase tracking-wide text-base-content">
               {day.label}
             </p>
           </div>

@@ -12,7 +12,7 @@ export default function HomePage() {
   useEffect(() => {
     if (isLoading) return;
 
-    const target = profile?.isCoach ? "/schedule_builder" : "/athlete";
+    const target = profile?.isCoach ? "/dashboard" : "/athlete";
     router.replace(target);
   }, [isLoading, profile?.isCoach, router]);
 
