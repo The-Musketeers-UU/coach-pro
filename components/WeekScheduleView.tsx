@@ -1,6 +1,7 @@
 "use client";
 
-import { ReactNode, useEffect, useMemo, useState } from "react";
+import { type ReactNode, useEffect, useMemo, useState } from "react";
+
 import { upsertScheduleModuleFeedback } from "@/lib/supabase/training-modules";
 import { formatCentiseconds, parseDurationToCentiseconds } from "@/lib/time";
 import { getDateRangeForIsoWeek } from "@/lib/week";

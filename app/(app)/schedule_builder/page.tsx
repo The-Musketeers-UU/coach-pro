@@ -61,7 +61,10 @@ const getIsoWeekInfo = (date: Date) => {
   const weekNumber =
     1 + Math.round((target.getTime() - firstThursday.getTime()) / MILLISECONDS_IN_WEEK);
 
-  return { weekNumber, year: target.getUTCFullYear() } as const;
+  const year = target.getUTCFullYear();
+  const yearNumber = parseInt(`${year}${weekNumber.toString().padStart(2, '0')}`);
+
+  return { weekNumber, year, yearNumber } as const;
 };
 
 const getStartOfIsoWeek = (date: Date) => {
@@ -200,11 +203,27 @@ const parseWeekNumber = (value: string): number | null => {
   return Number.isNaN(week) ? null : week;
 };
 
-const mapFeedbackFields = (fields: ModuleRow["activeFeedbackFields"] = []) =>
-  fields.map(({ label, ...field }) => ({
-    ...field,
-    label: label ?? undefined,
+// Parse just the year from YYYY-Www format
+const parseYearNumber = (value: string): number | null => {
+  const match = /^(\d{4})-W\d{1,2}$/.exec(value);
+  if (!match) return null;
+
+  const year = Number(match[1]);
+  return Number.isNaN(year) ? null : year;
+};
+
+
+const mapFeedbackFields = (
+  fields: ModuleRow["activeFeedbackFields"] = [],
+): NonNullable<Module["feedbackFields"]> =>
+  fields.map((field) => ({
+    id: field.id,
+    type: field.type,
+    label: field.label ?? undefined,
   }));
+
+
+
 
 const mapModuleRow = (row: ModuleRow): Module => ({
   id: row.id,
@@ -662,7 +681,9 @@ function ScheduleBuilderPage() {
     }
 
     const weekNumber = parseWeekNumber(selectedWeek);
-    if (!weekNumber) {
+    const year = parseYearNumber(selectedWeek);       // e.g., 2026
+
+    if (!weekNumber || !year) {
       setAssignError("Välj en giltig vecka att tilldela.");
       return;
     }
@@ -689,6 +710,7 @@ function ScheduleBuilderPage() {
           existingWeek: await getScheduleWeekByAthleteAndWeek({
             athleteId,
             week: weekNumber,
+
           }),
         })),
       );
@@ -722,14 +744,15 @@ function ScheduleBuilderPage() {
           );
         }
 
-        const weekRow = existingWeek
-          ? await updateScheduleWeek(existingWeek.id, { title: trimmedTitle })
-          : await createScheduleWeek({
-              ownerId: profile.id,
-              athleteId,
-              week: weekNumber,
-              title: trimmedTitle,
-            });
+   const weekRow = existingWeek
+  ? await updateScheduleWeek(existingWeek.id, { title: trimmedTitle })
+  : await createScheduleWeek({
+      ownerId: profile.id,
+      athleteId,
+      week: weekNumber,    // Store 34
+      year: year,        
+      title: trimmedTitle,
+    });
 
         await clearScheduleWeek(weekRow.id);
 
