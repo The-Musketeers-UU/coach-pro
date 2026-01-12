@@ -131,6 +131,19 @@ export type TrainingGroupInvite = {
   role: "assistantCoach" | "athlete";
 };
 
+export type TrainingGroupSearchResult = {
+  id: string;
+  name: string;
+  headCoach: AthleteRow;
+};
+
+export type TrainingGroupJoinRequest = {
+  groupId: string;
+  groupName: string;
+  headCoach: AthleteRow;
+  athlete: AthleteRow;
+};
+
 export type CreateTrainingGroupInput = {
   name: string;
   headCoachId: string;
@@ -601,6 +614,55 @@ export const searchUsers = async (
     return data ?? [];
   } catch (error) {
     console.error("Error performing user search:", error);
+    throw toReadableError(error);
+  }
+};
+
+export const searchTrainingGroups = async (
+  query: string,
+): Promise<TrainingGroupSearchResult[]> => {
+  const trimmedQuery = query.trim();
+
+  try {
+    let request = supabase
+      .from("trainingGroup")
+      .select("id,name,headCoach:headCoach (id,name,email,isCoach)")
+      .order("name", { ascending: true })
+      .limit(20);
+
+    if (trimmedQuery) {
+      request = request.ilike("name", `%${trimmedQuery}%`);
+    }
+
+    const { data, error } = await request;
+
+    if (error) {
+      console.error("Error searching training groups:", error);
+      throw toReadableError(error);
+    }
+
+    const rows = (data ?? []) as unknown as Array<{
+      id: number | string;
+      name: string;
+      headCoach:
+        | AthleteRow
+        | AthleteRow[]
+        | null;
+    }>;
+
+    const getHeadCoach = (headCoach: AthleteRow | AthleteRow[] | null) =>
+      (Array.isArray(headCoach) ? headCoach[0] : headCoach) ?? null;
+
+    return rows
+      .map((row) => ({ ...row, headCoach: getHeadCoach(row.headCoach) }))
+      .filter((row) => row.headCoach)
+      .map((row) => ({
+        id: toId(row.id),
+        name: row.name,
+        headCoach: row.headCoach as AthleteRow,
+      }));
+  } catch (error) {
+    console.error("Error retrieving training groups via SQL query:", error);
     throw toReadableError(error);
   }
 };
@@ -1172,6 +1234,179 @@ export const addTrainingGroupMember = async (
     }
   } catch (error) {
     console.error("Error adding training group member:", error);
+    throw toReadableError(error);
+  }
+};
+
+export const requestTrainingGroupJoin = async (
+  groupId: string,
+  athleteId: string,
+): Promise<void> => {
+  try {
+    const exists = await hasExistingMembership(groupId, "athlete", athleteId);
+    if (exists) return;
+
+    const { error } = await supabase.from("trainingGroupAthlete").insert({
+      group: toDbNumericId(groupId),
+      athlete: athleteId,
+      status: "requested",
+    });
+
+    if (error) {
+      console.error("Error requesting to join training group:", error);
+      throw toReadableError(error);
+    }
+  } catch (error) {
+    console.error("Error requesting training group join:", error);
+    throw toReadableError(error);
+  }
+};
+
+export const getTrainingGroupJoinRequestsForAthlete = async (
+  athleteId: string,
+): Promise<string[]> => {
+  try {
+    const { data, error } = await supabase
+      .from("trainingGroupAthlete")
+      .select("group")
+      .eq("athlete", athleteId)
+      .eq("status", "requested");
+
+    if (error) {
+      console.error("Error fetching athlete join requests:", error);
+      throw toReadableError(error);
+    }
+
+    return toIds((data ?? []).map((row) => row.group as number | string));
+  } catch (error) {
+    console.error("Error retrieving athlete join requests:", error);
+    throw toReadableError(error);
+  }
+};
+
+export const getTrainingGroupJoinRequestsForGroup = async (
+  groupId: string,
+): Promise<AthleteRow[]> => {
+  try {
+    const { data, error } = await supabase
+      .from("trainingGroupAthlete")
+      .select("athlete:athlete (id,name,email,isCoach),status")
+      .eq("group", toDbNumericId(groupId))
+      .eq("status", "requested");
+
+    if (error) {
+      console.error("Error fetching training group join requests:", error);
+      throw toReadableError(error);
+    }
+
+    const rows = (data ?? []) as unknown as Array<{
+      athlete: AthleteRow | AthleteRow[] | null;
+    }>;
+
+    const getAthlete = (athlete: AthleteRow | AthleteRow[] | null) =>
+      (Array.isArray(athlete) ? athlete[0] : athlete) ?? null;
+
+    return rows
+      .map((row) => getAthlete(row.athlete))
+      .filter(Boolean) as AthleteRow[];
+  } catch (error) {
+    console.error("Error retrieving training group join requests:", error);
+    throw toReadableError(error);
+  }
+};
+
+export const getTrainingGroupJoinRequestsForCoach = async (
+  coachId: string,
+): Promise<TrainingGroupJoinRequest[]> => {
+  try {
+    const { data, error } = await supabase
+      .from("trainingGroupAthlete")
+      .select(
+        "athlete:athlete (id,name,email,isCoach),group:group (id,name,headCoach:headCoach (id,name,email,isCoach)),status",
+      )
+      .eq("status", "requested")
+      .eq("group.headCoach", coachId);
+
+    if (error) {
+      console.error("Error fetching coach join requests:", error);
+      throw toReadableError(error);
+    }
+
+    const rows = (data ?? []) as unknown as Array<{
+      athlete: AthleteRow | AthleteRow[] | null;
+      group:
+        | { id: number | string; name: string; headCoach: AthleteRow | null }
+        | { id: number | string; name: string; headCoach: AthleteRow | null }[]
+        | null;
+    }>;
+
+    const getAthlete = (athlete: AthleteRow | AthleteRow[] | null) =>
+      (Array.isArray(athlete) ? athlete[0] : athlete) ?? null;
+    const getGroup = (
+      group:
+        | { id: number | string; name: string; headCoach: AthleteRow | null }
+        | { id: number | string; name: string; headCoach: AthleteRow | null }[]
+        | null,
+    ) => (Array.isArray(group) ? group[0] : group);
+
+    return rows.reduce<TrainingGroupJoinRequest[]>((acc, row) => {
+      const athlete = getAthlete(row.athlete);
+      const group = getGroup(row.group);
+      if (!athlete || !group?.headCoach) return acc;
+      acc.push({
+        groupId: toId(group.id),
+        groupName: group.name,
+        headCoach: group.headCoach,
+        athlete,
+      });
+      return acc;
+    }, []);
+  } catch (error) {
+    console.error("Error retrieving coach join requests:", error);
+    throw toReadableError(error);
+  }
+};
+
+export const approveTrainingGroupJoinRequest = async (
+  groupId: string,
+  athleteId: string,
+): Promise<void> => {
+  try {
+    const { error } = await supabase
+      .from("trainingGroupAthlete")
+      .update({ status: "accepted" })
+      .eq("group", toDbNumericId(groupId))
+      .eq("athlete", athleteId)
+      .eq("status", "requested");
+
+    if (error) {
+      console.error("Error approving training group join request:", error);
+      throw toReadableError(error);
+    }
+  } catch (error) {
+    console.error("Error approving training group join request:", error);
+    throw toReadableError(error);
+  }
+};
+
+export const declineTrainingGroupJoinRequest = async (
+  groupId: string,
+  athleteId: string,
+): Promise<void> => {
+  try {
+    const { error } = await supabase
+      .from("trainingGroupAthlete")
+      .delete()
+      .eq("group", toDbNumericId(groupId))
+      .eq("athlete", athleteId)
+      .eq("status", "requested");
+
+    if (error) {
+      console.error("Error declining training group join request:", error);
+      throw toReadableError(error);
+    }
+  } catch (error) {
+    console.error("Error declining training group join request:", error);
     throw toReadableError(error);
   }
 };
