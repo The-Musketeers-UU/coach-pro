@@ -25,6 +25,7 @@ import {
 import {
   formatIsoWeekMonthYear,
   findClosestWeekIndex,
+  getIsoWeekKey,
   getIsoWeekNumber,
 } from "@/lib/week";
 
@@ -96,8 +97,9 @@ export default function AthleteSchedulePage() {
   const [error, setError] = useState<string | null>(null);
 
   const currentWeekNumber = useMemo(() => getIsoWeekNumber(new Date()), []);
+  const currentWeekKey = useMemo(() => getIsoWeekKey(new Date()), []);
   const availableWeeks = useMemo(
-    () => new Set(rawWeeks.map((week) => week.week)),
+    () => new Set(rawWeeks.map((week) => `${week.year}-W${week.week}`)),
     [rawWeeks],
   );
   const weekSelection = useMemo(
@@ -105,9 +107,11 @@ export default function AthleteSchedulePage() {
     [currentWeekValue, selectedWeekValue, weekOptions],
   );
   const weekNumber = weekSelection.weekNumber ?? currentWeekNumber;
+  const weekYear = weekSelection.weekYear ?? new Date().getFullYear();
   const activeWeekData = useMemo(
-    () => rawWeeks.find((week) => week.week === weekNumber),
-    [rawWeeks, weekNumber],
+    () =>
+      rawWeeks.find((week) => week.week === weekNumber && week.year === weekYear),
+    [rawWeeks, weekNumber, weekYear],
   );
   const activeWeek = useMemo(
     () => (activeWeekData ? toProgramWeek(activeWeekData) : undefined),
@@ -186,15 +190,12 @@ export default function AthleteSchedulePage() {
       try {
         const weeks = await getScheduleWeeksWithModules(selectedAthlete);
         setRawWeeks(weeks);
-        const closestWeekIndex = findClosestWeekIndex(weeks, currentWeekNumber);
-        const closestWeekNumber = weeks[closestWeekIndex]?.week;
+        const closestWeekIndex = findClosestWeekIndex(weeks, currentWeekKey);
+        const closestWeek = weeks[closestWeekIndex];
 
-        if (closestWeekNumber) {
-          const closestWeekValue = weekOptions.find(
-            (option) => option.weekNumber === closestWeekNumber,
-          )?.value;
-
-          if (closestWeekValue) {
+        if (closestWeek) {
+          const closestWeekValue = `${closestWeek.year}-W${closestWeek.week}`;
+          if (weekOptions.some((option) => option.value === closestWeekValue)) {
             setSelectedWeekValue(closestWeekValue);
           }
         }

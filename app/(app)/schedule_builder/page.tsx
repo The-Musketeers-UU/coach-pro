@@ -710,7 +710,7 @@ function ScheduleBuilderPage() {
           existingWeek: await getScheduleWeekByAthleteAndWeek({
             athleteId,
             week: weekNumber,
-
+            year,
           }),
         })),
       );
@@ -744,15 +744,15 @@ function ScheduleBuilderPage() {
           );
         }
 
-   const weekRow = existingWeek
-  ? await updateScheduleWeek(existingWeek.id, { title: trimmedTitle })
-  : await createScheduleWeek({
-      ownerId: profile.id,
-      athleteId,
-      week: weekNumber,    // Store 34
-      year: year,        
-      title: trimmedTitle,
-    });
+        const weekRow = existingWeek
+          ? await updateScheduleWeek(existingWeek.id, { title: trimmedTitle })
+          : await createScheduleWeek({
+              ownerId: profile.id,
+              athleteId,
+              week: weekNumber,
+              year,
+              title: trimmedTitle,
+            });
 
         await clearScheduleWeek(weekRow.id);
 

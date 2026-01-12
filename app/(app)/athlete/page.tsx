@@ -90,18 +90,21 @@ export default function AthleteSchedulePage() {
 
   const currentWeekNumber = useMemo(() => getIsoWeekNumber(new Date()), []);
   const availableWeeks = useMemo(
-    () => new Set(rawWeeks.map((week) => week.week)),
-    [rawWeeks]
+    () => new Set(rawWeeks.map((week) => `${week.year}-W${week.week}`)),
+    [rawWeeks],
   );
   const weekSelection = useMemo(
     () => getWeekSelection({ weekOptions, selectedWeekValue, currentWeekValue }),
     [currentWeekValue, selectedWeekValue, weekOptions],
   );
   const weekNumber = weekSelection.weekNumber ?? currentWeekNumber;
+  const weekYear = weekSelection.weekYear ?? new Date().getFullYear();
   const activeWeek = useMemo(() => {
-    const weekWithData = rawWeeks.find((week) => week.week === weekNumber);
+    const weekWithData = rawWeeks.find(
+      (week) => week.week === weekNumber && week.year === weekYear,
+    );
     return weekWithData ? toProgramWeek(weekWithData) : undefined;
-  }, [rawWeeks, weekNumber]);
+  }, [rawWeeks, weekNumber, weekYear]);
 
   const goToPreviousWeek = () =>
     setSelectedWeekValue((previous) => {
