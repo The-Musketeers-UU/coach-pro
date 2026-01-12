@@ -65,6 +65,12 @@ export type Athlete = {
   sport: string;
 };
 
+export type TrainingGroup = {
+  id: string;
+  name: string;
+  athletes: Athlete[];
+};
+
 export type Day = { id: string; label: string };
 
 export type DropPreviewLocation = { dayId: string; index: number };
