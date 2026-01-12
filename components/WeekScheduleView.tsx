@@ -225,6 +225,7 @@ export function WeekScheduleView({
   }, [daysToRender, weekDateRange.start]);
 
   const isAthlete = viewerRole === "athlete";
+  const canEditFeedback = viewerRole === "athlete" || viewerRole === "coach";
 
   useEffect(() => {
     setWeekState(week);
@@ -526,7 +527,7 @@ export function WeekScheduleView({
   };
 
   const persistFeedback = async () => {
-    if (!isAthlete) return;
+    if (!canEditFeedback) return;
 
     const prepared = prepareFeedbackPayload();
     if (!prepared) return;
@@ -887,7 +888,7 @@ export function WeekScheduleView({
               <div className="flex h-full flex-col space-y-3 rounded-2xl border border-base-300 bg-base-100 p-4">
                 <div className="flex items-center justify-between gap-2">
                   <p className="text-xs uppercase tracking-wide text-neutral">
-                    Atletens feedback
+                    {isAthlete ? "Din feedback" : "Atletens feedback"}
                   </p>
 
                   {hasSelectedModulePendingFeedback && (
@@ -918,7 +919,7 @@ export function WeekScheduleView({
                         const fieldState = feedbackForm[field.id];
                         if (!fieldState) continue;
 
-                        if (viewerRole === "athlete" && !fieldState.active) {
+                        if (isAthlete && !fieldState.active) {
                           continue;
                         }
 
@@ -991,8 +992,8 @@ export function WeekScheduleView({
                                 className="textarea textarea-bordered w-full"
                                 placeholder={fieldMeta.placeholder}
                                 value={item.field.value}
-                                readOnly={!isAthlete}
-                                disabled={!isAthlete}
+                                readOnly={!canEditFeedback}
+                                disabled={!canEditFeedback}
                                 onChange={(event) =>
                                   handleFeedbackChange(item.field.id, (current) => ({
                                     ...current,
@@ -1015,7 +1016,7 @@ export function WeekScheduleView({
                               <select
                                 className="select select-bordered select-sm w-28"
                                 value={item.field.value}
-                                disabled={!isAthlete}
+                                disabled={!canEditFeedback}
                                 onChange={(event) =>
                                   handleFeedbackChange(item.field.id, (current) => ({
                                     ...current,
@@ -1048,8 +1049,8 @@ export function WeekScheduleView({
                               max={fieldMeta.max}
                               placeholder={fieldMeta.placeholder}
                               value={item.field.value}
-                              readOnly={!isAthlete}
-                              disabled={!isAthlete}
+                              readOnly={!canEditFeedback}
+                              disabled={!canEditFeedback}
                               onChange={(event) =>
                                 handleFeedbackChange(item.field.id, (current) => ({
                                   ...current,
@@ -1086,8 +1087,8 @@ export function WeekScheduleView({
                                         min={FEEDBACK_FIELDS.distance.min}
                                         placeholder={FEEDBACK_FIELDS.distance.placeholder}
                                         value={item.distance.value}
-                                        readOnly={!isAthlete}
-                                        disabled={!isAthlete}
+                                        readOnly={!canEditFeedback}
+                                        disabled={!canEditFeedback}
                                         onChange={(event) =>
                                           handleFeedbackChange(
                                             item.distance.id,
@@ -1113,8 +1114,8 @@ export function WeekScheduleView({
                                           type="text"
                                           placeholder={FEEDBACK_FIELDS.duration.placeholder}
                                           value={duration.value}
-                                          readOnly={!isAthlete}
-                                          disabled={!isAthlete}
+                                          readOnly={!canEditFeedback}
+                                          disabled={!canEditFeedback}
                                           onChange={(event) =>
                                             handleFeedbackChange(
                                               duration.id,
@@ -1161,7 +1162,7 @@ export function WeekScheduleView({
                   </div>
                 )}
 
-                {isAthlete && (
+                {canEditFeedback && (
                   <div className="mt-auto flex items-center justify-end">
                     <button
                       className="btn btn-primary btn-sm"
