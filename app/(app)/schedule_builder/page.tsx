@@ -156,14 +156,6 @@ const createScheduleFromWeek = (
   return { schedule: initialSchedule, scheduledCount } as const;
 };
 
-const parseWeekNumber = (value: string): number | null => {
-  const match = /^\d{4}-W(\d{1,2})$/.exec(value);
-  if (!match) return null;
-
-  const week = Number(match[1]);
-  return Number.isNaN(week) ? null : week;
-};
-
 const mapFeedbackFields = (fields: ModuleRow["activeFeedbackFields"] = []) =>
   fields.map(({ label, ...field }) => ({
     ...field,
