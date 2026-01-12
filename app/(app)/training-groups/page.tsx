@@ -9,11 +9,14 @@ import {
   type TrainingGroupInvite,
   type TrainingGroupWithMembers,
   acceptTrainingGroupInvite,
+  addTrainingGroupMember,
   createTrainingGroup,
+  deleteTrainingGroup,
   declineTrainingGroupInvite,
   getPendingTrainingGroupInvites,
   getTrainingGroupsForUser,
   leaveTrainingGroup,
+  removeTrainingGroupMember,
   searchUsers,
 } from "@/lib/supabase/training-modules";
 
@@ -30,6 +33,250 @@ const getGroupRoleForUser = (
   if (group.assistantCoaches.some((coach) => coach.id === userId)) return "assistantCoach";
   if (group.athletes.some((athlete) => athlete.id === userId)) return "athlete";
   return null;
+};
+
+const memberRoleLabels: Record<"assistantCoach" | "athlete", string> = {
+  assistantCoach: "Assisterande coach",
+  athlete: "Atlet",
+};
+
+type GroupManagementProps = {
+  group: TrainingGroupWithMembers;
+  onRefresh: () => Promise<void>;
+  onError: (message: string) => void;
+  onNotice: (message: string) => void;
+  setIsUpdatingMembership: (value: boolean) => void;
+  isUpdatingMembership: boolean;
+};
+
+const GroupManagementPanel = ({
+  group,
+  onRefresh,
+  onError,
+  onNotice,
+  setIsUpdatingMembership,
+  isUpdatingMembership,
+}: GroupManagementProps) => {
+  const [isExpanded, setIsExpanded] = useState(false);
+  const [memberRole, setMemberRole] = useState<"assistantCoach" | "athlete">("athlete");
+  const [searchTerm, setSearchTerm] = useState("");
+  const [searchResults, setSearchResults] = useState<AthleteRow[]>([]);
+  const [isSearching, setIsSearching] = useState(false);
+
+  const existingMemberIds = useMemo(() => {
+    const ids = new Set<string>([group.headCoach.id]);
+    group.assistantCoaches.forEach((coach) => ids.add(coach.id));
+    group.athletes.forEach((athlete) => ids.add(athlete.id));
+    return ids;
+  }, [group]);
+
+  const handleSearch = async () => {
+    setIsSearching(true);
+    onError("");
+    try {
+      const results = await searchUsers(
+        searchTerm,
+        memberRole === "assistantCoach" ? "coach" : "athlete",
+      );
+      setSearchResults(results.filter((user) => !existingMemberIds.has(user.id)));
+    } catch (searchError) {
+      onError(searchError instanceof Error ? searchError.message : String(searchError));
+    } finally {
+      setIsSearching(false);
+    }
+  };
+
+  const handleAddMember = async (member: AthleteRow) => {
+    setIsUpdatingMembership(true);
+    onError("");
+    try {
+      await addTrainingGroupMember(group.id, memberRole, member.id);
+      setSearchResults((current) => current.filter((candidate) => candidate.id !== member.id));
+      await onRefresh();
+      onNotice(
+        memberRole === "assistantCoach"
+          ? "Inbjudan skickad till coachen."
+          : "Inbjudan skickad till atleten.",
+      );
+    } catch (addError) {
+      onError(addError instanceof Error ? addError.message : String(addError));
+    } finally {
+      setIsUpdatingMembership(false);
+    }
+  };
+
+  const handleRemoveMember = async (member: AthleteRow, role: "assistantCoach" | "athlete") => {
+    if (!confirm(`Är du säker på att du vill ta bort ${member.name} från gruppen?`)) {
+      return;
+    }
+
+    setIsUpdatingMembership(true);
+    onError("");
+    try {
+      await removeTrainingGroupMember(group.id, role, member.id);
+      await onRefresh();
+      onNotice("Medlemmen togs bort från gruppen.");
+    } catch (removeError) {
+      onError(removeError instanceof Error ? removeError.message : String(removeError));
+    } finally {
+      setIsUpdatingMembership(false);
+    }
+  };
+
+  const handleDeleteGroup = async () => {
+    if (!confirm(`Radera gruppen "${group.name}"? Detta går inte att ångra.`)) {
+      return;
+    }
+
+    setIsUpdatingMembership(true);
+    onError("");
+    try {
+      await deleteTrainingGroup(group.id);
+      await onRefresh();
+      onNotice("Gruppen raderades.");
+    } catch (deleteError) {
+      onError(deleteError instanceof Error ? deleteError.message : String(deleteError));
+    } finally {
+      setIsUpdatingMembership(false);
+    }
+  };
+
+  return (
+    <div className="mt-4 border-t border-base-300 pt-3">
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <p className="text-xs font-semibold uppercase tracking-wide text-base-content/60">
+          Hantera grupp
+        </p>
+        <button
+          type="button"
+          className="btn btn-ghost btn-xs"
+          onClick={() => setIsExpanded((current) => !current)}
+        >
+          {isExpanded ? "Dölj" : "Visa"}
+        </button>
+      </div>
+
+      {isExpanded && (
+        <div className="mt-3 flex flex-col gap-4">
+          <div className="rounded-lg border border-base-300 bg-base-100 p-3">
+            <p className="text-sm font-semibold">Lägg till deltagare</p>
+            <div className="mt-2 flex flex-wrap gap-2">
+              {(["athlete", "assistantCoach"] as const).map((role) => (
+                <button
+                  key={role}
+                  type="button"
+                  className={`btn btn-xs ${memberRole === role ? "btn-primary" : "btn-outline"}`}
+                  onClick={() => setMemberRole(role)}
+                >
+                  {memberRoleLabels[role]}
+                </button>
+              ))}
+            </div>
+            <div className="mt-3 flex gap-2">
+              <input
+                type="search"
+                className="input input-bordered flex-1"
+                placeholder={`Sök ${memberRole === "assistantCoach" ? "coacher" : "atleter"}`}
+                value={searchTerm}
+                onChange={(event) => setSearchTerm(event.target.value)}
+              />
+              <button
+                className="btn btn-secondary"
+                type="button"
+                onClick={handleSearch}
+                disabled={isSearching}
+              >
+                {isSearching ? "Söker..." : "Sök"}
+              </button>
+            </div>
+            {searchResults.length > 0 && (
+              <div className="mt-3 flex flex-col gap-2">
+                {searchResults.map((result) => (
+                  <div
+                    key={result.id}
+                    className="flex items-center justify-between gap-2 rounded-lg border border-base-300 bg-base-200 p-2"
+                  >
+                    <div className="text-sm">
+                      <p className="font-semibold">{result.name}</p>
+                      <p className="text-xs text-base-content/70">{result.email}</p>
+                    </div>
+                    <button
+                      className="btn btn-outline btn-xs"
+                      type="button"
+                      onClick={() => handleAddMember(result)}
+                      disabled={isUpdatingMembership}
+                    >
+                      Bjud in
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
+            {searchResults.length === 0 && searchTerm.trim().length > 0 && !isSearching && (
+              <p className="mt-2 text-xs text-base-content/60">Inga matchningar hittades.</p>
+            )}
+          </div>
+
+          <div className="rounded-lg border border-base-300 bg-base-100 p-3">
+            <p className="text-sm font-semibold">Assisterande coacher</p>
+            {group.assistantCoaches.length === 0 ? (
+              <p className="mt-1 text-xs text-base-content/60">Inga assisterande coacher ännu.</p>
+            ) : (
+              <div className="mt-2 flex flex-col gap-2">
+                {group.assistantCoaches.map((coach) => (
+                  <div key={coach.id} className="flex items-center justify-between gap-2 text-sm">
+                    <span>{coach.name}</span>
+                    <button
+                      type="button"
+                      className="btn btn-ghost btn-xs"
+                      onClick={() => handleRemoveMember(coach, "assistantCoach")}
+                      disabled={isUpdatingMembership}
+                    >
+                      Ta bort
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+
+          <div className="rounded-lg border border-base-300 bg-base-100 p-3">
+            <p className="text-sm font-semibold">Atleter</p>
+            {group.athletes.length === 0 ? (
+              <p className="mt-1 text-xs text-base-content/60">Inga atleter ännu.</p>
+            ) : (
+              <div className="mt-2 flex flex-col gap-2">
+                {group.athletes.map((athlete) => (
+                  <div key={athlete.id} className="flex items-center justify-between gap-2 text-sm">
+                    <span>{athlete.name}</span>
+                    <button
+                      type="button"
+                      className="btn btn-ghost btn-xs"
+                      onClick={() => handleRemoveMember(athlete, "athlete")}
+                      disabled={isUpdatingMembership}
+                    >
+                      Ta bort
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+
+          <div className="flex justify-end">
+            <button
+              type="button"
+              className="btn btn-error btn-sm"
+              onClick={handleDeleteGroup}
+              disabled={isUpdatingMembership}
+            >
+              Radera grupp
+            </button>
+          </div>
+        </div>
+      )}
+    </div>
+  );
 };
 
 export default function TrainingGroupsPage() {
@@ -51,6 +298,7 @@ export default function TrainingGroupsPage() {
   const [pendingInvites, setPendingInvites] = useState<TrainingGroupInvite[]>([]);
   const [isLoadingInvites, setIsLoadingInvites] = useState(false);
   const [isUpdatingMembership, setIsUpdatingMembership] = useState(false);
+  const [notice, setNotice] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   const isCoach = profile?.isCoach ?? false;
@@ -86,6 +334,7 @@ export default function TrainingGroupsPage() {
     const loadGroups = async () => {
       setIsLoadingGroups(true);
       setError(null);
+      setNotice(null);
 
       try {
         const loadedGroups = await getTrainingGroupsForUser(profile.id);
@@ -106,6 +355,7 @@ export default function TrainingGroupsPage() {
     const loadInvites = async () => {
       setIsLoadingInvites(true);
       setError(null);
+      setNotice(null);
 
       try {
         const invites = await getPendingTrainingGroupInvites(profile.id);
@@ -123,6 +373,7 @@ export default function TrainingGroupsPage() {
   const handleSearchCoaches = async () => {
     setIsSearchingCoach(true);
     setError(null);
+    setNotice(null);
 
     try {
       const results = await searchUsers(coachSearchTerm, "coach");
@@ -137,6 +388,7 @@ export default function TrainingGroupsPage() {
   const handleSearchAthletes = async () => {
     setIsSearchingAthlete(true);
     setError(null);
+    setNotice(null);
 
     try {
       const results = await searchUsers(athleteSearchTerm, "athlete");
@@ -172,6 +424,7 @@ export default function TrainingGroupsPage() {
 
     setIsSubmitting(true);
     setError(null);
+    setNotice(null);
 
     try {
       const newGroup = await createTrainingGroup({
@@ -198,6 +451,8 @@ export default function TrainingGroupsPage() {
 
     setIsLoadingGroups(true);
     setIsLoadingInvites(true);
+    setNotice(null);
+    setError(null);
 
     try {
       const [loadedGroups, loadedInvites] = await Promise.all([
@@ -222,6 +477,7 @@ export default function TrainingGroupsPage() {
 
     setIsUpdatingMembership(true);
     setError(null);
+    setNotice(null);
 
     try {
       if (decision === "accept") {
@@ -244,6 +500,7 @@ export default function TrainingGroupsPage() {
 
     setIsUpdatingMembership(true);
     setError(null);
+    setNotice(null);
 
     try {
       await leaveTrainingGroup(group.id, role, profile.id);
@@ -278,6 +535,11 @@ export default function TrainingGroupsPage() {
       {error && (
         <div className="alert alert-error">
           <span>{error}</span>
+        </div>
+      )}
+      {notice && (
+        <div className="alert alert-success">
+          <span>{notice}</span>
         </div>
       )}
 
@@ -601,6 +863,7 @@ export default function TrainingGroupsPage() {
                       {groups.map((group) => {
                         const role = profile?.id ? getGroupRoleForUser(group, profile.id) : null;
                         const canLeave = role === "assistantCoach" || role === "athlete";
+                        const canManage = role === "headCoach";
 
                         return (
                           <div
@@ -641,6 +904,17 @@ export default function TrainingGroupsPage() {
                                   Lämna grupp
                                 </button>
                               </div>
+                            )}
+
+                            {canManage && (
+                              <GroupManagementPanel
+                                group={group}
+                                onRefresh={refreshGroupsAndInvites}
+                                onError={(message) => setError(message || null)}
+                                onNotice={setNotice}
+                                setIsUpdatingMembership={setIsUpdatingMembership}
+                                isUpdatingMembership={isUpdatingMembership}
+                              />
                             )}
                           </div>
                         );
