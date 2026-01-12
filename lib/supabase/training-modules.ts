@@ -1292,9 +1292,16 @@ export const getTrainingGroupJoinRequestsForGroup = async (
       throw toReadableError(error);
     }
 
-    const rows = (data ?? []) as Array<{ athlete: AthleteRow | null }>;
+    const rows = (data ?? []) as unknown as Array<{
+      athlete: AthleteRow | AthleteRow[] | null;
+    }>;
 
-    return rows.map((row) => row.athlete).filter(Boolean) as AthleteRow[];
+    const getAthlete = (athlete: AthleteRow | AthleteRow[] | null) =>
+      (Array.isArray(athlete) ? athlete[0] : athlete) ?? null;
+
+    return rows
+      .map((row) => getAthlete(row.athlete))
+      .filter(Boolean) as AthleteRow[];
   } catch (error) {
     console.error("Error retrieving training group join requests:", error);
     throw toReadableError(error);
