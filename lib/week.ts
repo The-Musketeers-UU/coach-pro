@@ -9,9 +9,12 @@ export const getIsoWeekNumber = (date: Date) => {
   const firstThursdayDayNumber = (firstThursday.getUTCDay() + 6) % 7;
   firstThursday.setUTCDate(firstThursday.getUTCDate() - firstThursdayDayNumber + 3);
 
-  return (
-    1 + Math.round((target.getTime() - firstThursday.getTime()) / MILLISECONDS_IN_WEEK)
-  );
+  const weekNumber = 1 + Math.round((target.getTime() - firstThursday.getTime()) / MILLISECONDS_IN_WEEK);
+  
+  const isoYear = target.getUTCFullYear();
+  
+  // Return combined year+week format (e.g., 202634)
+  return parseInt(`${isoYear}${weekNumber.toString().padStart(2, '0')}`);
 };
 
 export const findClosestWeekIndex = (

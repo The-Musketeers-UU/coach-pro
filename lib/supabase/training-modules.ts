@@ -45,6 +45,7 @@ type DbScheduleWeekRow = {
   owner: string;
   athlete: string;
   week: number;
+  year: number;
   title: string;
 };
 
@@ -195,6 +196,7 @@ export type CreateScheduleWeekInput = {
   ownerId: string;
   athleteId: string;
   week: number;
+  year:number;
   title: string;
 };
 
@@ -334,7 +336,7 @@ export const getScheduleWeeksByAthlete = async (
   try {
     const { data, error } = await supabase
       .from("scheduleWeek")
-      .select("id,week,owner,athlete,title")
+      .select("id,week,owner,athlete,title,year")
       .eq("athlete", athleteId)
       .order("week", { ascending: true });
 
@@ -622,7 +624,7 @@ export const getScheduleWeekByAthleteAndWeek = async (
   try {
     const { data, error } = await supabase
       .from("scheduleWeek")
-      .select("id,week,owner,athlete,title")
+      .select("id,week,owner,athlete,title,year")
       .eq("athlete", input.athleteId)
       .eq("week", input.week)
       .order("id", { ascending: true });
@@ -734,7 +736,7 @@ export const getScheduleWeekWithModulesById = async (
   try {
     const { data: week, error } = await supabase
       .from("scheduleWeek")
-      .select("id,week,owner,athlete,title")
+      .select("id,week,owner,athlete,title,year")
       .eq("id", toDbNumericId(weekId))
       .maybeSingle();
 
@@ -807,6 +809,7 @@ export const createScheduleWeek = async (
     owner: input.ownerId,
     athlete: input.athleteId,
     week: input.week,
+    year: input.year,
     title,
   } satisfies Omit<ScheduleWeekRow, "id">;
 
