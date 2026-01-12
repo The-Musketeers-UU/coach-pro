@@ -197,12 +197,12 @@ const GroupManagementPanel = ({
                     key={result.id}
                     className="flex items-center justify-between gap-2 rounded-lg border border-base-300 bg-base-200 p-2"
                   >
-                    <div className="text-sm">
-                      <p className="font-semibold">{result.name}</p>
-                      <p className="text-xs text-base-content/70">{result.email}</p>
+                    <div className="min-w-0 flex-1 text-sm">
+                      <p className="truncate font-semibold">{result.name}</p>
+                      <p className="truncate text-xs text-base-content/70">{result.email}</p>
                     </div>
                     <button
-                      className="btn btn-outline btn-xs"
+                      className="btn btn-outline btn-xs shrink-0"
                       type="button"
                       onClick={() => handleAddMember(result)}
                       disabled={isUpdatingMembership}
@@ -226,10 +226,10 @@ const GroupManagementPanel = ({
               <div className="mt-2 flex flex-col gap-2">
                 {group.assistantCoaches.map((coach) => (
                   <div key={coach.id} className="flex items-center justify-between gap-2 text-sm">
-                    <span>{coach.name}</span>
+                    <span className="min-w-0 flex-1 truncate">{coach.name}</span>
                     <button
                       type="button"
-                      className="btn btn-ghost btn-xs"
+                      className="btn btn-ghost btn-xs shrink-0"
                       onClick={() => handleRemoveMember(coach, "assistantCoach")}
                       disabled={isUpdatingMembership}
                     >
@@ -249,10 +249,10 @@ const GroupManagementPanel = ({
               <div className="mt-2 flex flex-col gap-2">
                 {group.athletes.map((athlete) => (
                   <div key={athlete.id} className="flex items-center justify-between gap-2 text-sm">
-                    <span>{athlete.name}</span>
+                    <span className="min-w-0 flex-1 truncate">{athlete.name}</span>
                     <button
                       type="button"
-                      className="btn btn-ghost btn-xs"
+                      className="btn btn-ghost btn-xs shrink-0"
                       onClick={() => handleRemoveMember(athlete, "athlete")}
                       disabled={isUpdatingMembership}
                     >
@@ -1036,9 +1036,11 @@ export default function TrainingGroupsPage() {
                                               key={coach.id}
                                               className="flex items-center justify-between gap-2 rounded-md border border-base-200 p-2 text-xs"
                                             >
-                                              <span className="font-medium">{formatUser(coach)}</span>
+                                              <span className="min-w-0 flex-1 truncate font-medium">
+                                                {formatUser(coach)}
+                                              </span>
                                               <button
-                                                className="btn btn-outline btn-xs"
+                                                className="btn btn-outline btn-xs shrink-0"
                                                 type="button"
                                                 onClick={() => handleAddGroupMember(group, "assistantCoach", coach)}
                                                 disabled={isUpdatingMembership}
@@ -1062,9 +1064,11 @@ export default function TrainingGroupsPage() {
                                             key={coach.id}
                                             className="flex items-center justify-between gap-2 rounded-md border border-base-200 p-2 text-xs"
                                           >
-                                            <span className="font-medium">{formatUser(coach)}</span>
+                                            <span className="min-w-0 flex-1 truncate font-medium">
+                                              {formatUser(coach)}
+                                            </span>
                                             <button
-                                              className="btn btn-ghost btn-xs"
+                                              className="btn btn-ghost btn-xs shrink-0"
                                               type="button"
                                               onClick={() => handleRemoveGroupMember(group, "assistantCoach", coach)}
                                               disabled={isUpdatingMembership}
@@ -1110,9 +1114,11 @@ export default function TrainingGroupsPage() {
                                               key={athlete.id}
                                               className="flex items-center justify-between gap-2 rounded-md border border-base-200 p-2 text-xs"
                                             >
-                                              <span className="font-medium">{formatUser(athlete)}</span>
+                                              <span className="min-w-0 flex-1 truncate font-medium">
+                                                {formatUser(athlete)}
+                                              </span>
                                               <button
-                                                className="btn btn-outline btn-xs"
+                                                className="btn btn-outline btn-xs shrink-0"
                                                 type="button"
                                                 onClick={() => handleAddGroupMember(group, "athlete", athlete)}
                                                 disabled={isUpdatingMembership}
@@ -1134,9 +1140,11 @@ export default function TrainingGroupsPage() {
                                             key={athlete.id}
                                             className="flex items-center justify-between gap-2 rounded-md border border-base-200 p-2 text-xs"
                                           >
-                                            <span className="font-medium">{formatUser(athlete)}</span>
+                                            <span className="min-w-0 flex-1 truncate font-medium">
+                                              {formatUser(athlete)}
+                                            </span>
                                             <button
-                                              className="btn btn-ghost btn-xs"
+                                              className="btn btn-ghost btn-xs shrink-0"
                                               type="button"
                                               onClick={() => handleRemoveGroupMember(group, "athlete", athlete)}
                                               disabled={isUpdatingMembership}
