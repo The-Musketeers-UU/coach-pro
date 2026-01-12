@@ -634,13 +634,20 @@ export const searchTrainingGroups = async (
       throw toReadableError(error);
     }
 
-    const rows = (data ?? []) as Array<{
+    const rows = (data ?? []) as unknown as Array<{
       id: number | string;
       name: string;
-      headCoach: AthleteRow | null;
+      headCoach:
+        | AthleteRow
+        | AthleteRow[]
+        | null;
     }>;
 
+    const getHeadCoach = (headCoach: AthleteRow | AthleteRow[] | null) =>
+      (Array.isArray(headCoach) ? headCoach[0] : headCoach) ?? null;
+
     return rows
+      .map((row) => ({ ...row, headCoach: getHeadCoach(row.headCoach) }))
       .filter((row) => row.headCoach)
       .map((row) => ({
         id: toId(row.id),
