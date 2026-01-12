@@ -1176,41 +1176,6 @@ export const addTrainingGroupMember = async (
   }
 };
 
-export const removeTrainingGroupMember = async (
-  groupId: string,
-  role: "assistantCoach" | "athlete",
-  userId: string,
-): Promise<void> => {
-  try {
-    if (role === "assistantCoach") {
-      const { error } = await supabase
-        .from("trainingGroupCoach")
-        .delete()
-        .eq("group", toDbNumericId(groupId))
-        .eq("coach", userId);
-
-      if (error) {
-        console.error("Error removing assistant coach from group:", error);
-        throw toReadableError(error);
-      }
-      return;
-    }
-
-    const { error } = await supabase
-      .from("trainingGroupAthlete")
-      .delete()
-      .eq("group", toDbNumericId(groupId))
-      .eq("athlete", userId);
-
-    if (error) {
-      console.error("Error removing athlete from group:", error);
-      throw toReadableError(error);
-    }
-  } catch (error) {
-    console.error("Error removing training group member:", error);
-    throw toReadableError(error);
-  }
-};
 
 export const deleteTrainingGroup = async (groupId: string): Promise<void> => {
   try {
