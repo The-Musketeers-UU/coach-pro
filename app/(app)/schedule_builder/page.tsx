@@ -213,12 +213,13 @@ const parseYearNumber = (value: string): number | null => {
 };
 
 
-type FeedbackField = { label?: string } & Record<string, unknown>;
-
-const mapFeedbackFields = (fields: FeedbackField[] = []) =>
-  fields.map(({ label, ...field }) => ({
-    ...field,
-    label: label ?? undefined,
+const mapFeedbackFields = (
+  fields: ModuleRow["activeFeedbackFields"] = [],
+): NonNullable<Module["feedbackFields"]> =>
+  fields.map((field) => ({
+    id: field.id,
+    type: field.type,
+    label: field.label ?? undefined,
   }));
 
 
