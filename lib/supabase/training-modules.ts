@@ -139,6 +139,15 @@ export type CreateTrainingGroupInput = {
   createdById?: string;
 };
 
+export type AddTrainingGroupMembersInput = {
+  groupId: string;
+  assistantCoachIds?: string[];
+  athleteIds?: string[];
+  addedById?: string;
+};
+
+export type TrainingGroupMemberRole = "assistantCoach" | "athlete";
+
 const toId = (value: number | string) => String(value);
 
 const toIds = (values: Array<number | string>) => values.map((value) => toId(value));
@@ -798,6 +807,94 @@ export const createTrainingGroup = async (
     return createdGroup;
   } catch (error) {
     console.error("Error creating training group via SQL query:", error);
+    throw toReadableError(error);
+  }
+};
+
+export const addTrainingGroupMembers = async (
+  input: AddTrainingGroupMembersInput,
+): Promise<void> => {
+  const assistantCoachIds = uniqueIds(input.assistantCoachIds ?? []);
+  const athleteIds = uniqueIds(input.athleteIds ?? []);
+
+  if (assistantCoachIds.length === 0 && athleteIds.length === 0) {
+    return;
+  }
+
+  try {
+    if (assistantCoachIds.length > 0) {
+      const { error } = await supabase
+        .from("trainingGroupCoach")
+        .upsert(
+          assistantCoachIds.map((coachId) => ({
+            group: toDbNumericId(input.groupId),
+            coach: coachId,
+            status: coachId === input.addedById ? "accepted" : "pending",
+          })),
+          { onConflict: "group,coach", ignoreDuplicates: true },
+        );
+
+      if (error) {
+        console.error("Error adding assistant coaches to training group:", error);
+        throw toReadableError(error);
+      }
+    }
+
+    if (athleteIds.length > 0) {
+      const { error } = await supabase
+        .from("trainingGroupAthlete")
+        .upsert(
+          athleteIds.map((athleteId) => ({
+            group: toDbNumericId(input.groupId),
+            athlete: athleteId,
+            status: athleteId === input.addedById ? "accepted" : "pending",
+          })),
+          { onConflict: "group,athlete", ignoreDuplicates: true },
+        );
+
+      if (error) {
+        console.error("Error adding athletes to training group:", error);
+        throw toReadableError(error);
+      }
+    }
+  } catch (error) {
+    console.error("Error adding training group members:", error);
+    throw toReadableError(error);
+  }
+};
+
+export const removeTrainingGroupMember = async (
+  groupId: string,
+  role: TrainingGroupMemberRole,
+  userId: string,
+): Promise<void> => {
+  try {
+    if (role === "assistantCoach") {
+      const { error } = await supabase
+        .from("trainingGroupCoach")
+        .delete()
+        .eq("group", toDbNumericId(groupId))
+        .eq("coach", userId);
+
+      if (error) {
+        console.error("Error removing assistant coach from training group:", error);
+        throw toReadableError(error);
+      }
+      return;
+    }
+
+    const { error } = await supabase
+      .from("trainingGroupAthlete")
+      .delete()
+      .eq("group", toDbNumericId(groupId))
+      .eq("athlete", userId);
+
+    if (error) {
+      console.error("Error removing athlete from training group:", error);
+      throw toReadableError(error);
+    }
+  } catch (error) {
+    console.error("Error removing training group member:", error);
     throw toReadableError(error);
   }
 };
