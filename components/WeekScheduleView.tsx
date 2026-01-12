@@ -201,7 +201,7 @@ export function WeekScheduleView({
 
   const today = useMemo(() => {
     const value = new Date();
-    value.setHours(0, 0, 0, 0);
+    value.setUTCHours(0, 0, 0, 0);
     return value;
   }, []);
 
@@ -217,7 +217,7 @@ export function WeekScheduleView({
       const dayNumber = day.dayNumber ?? index + 1;
       const date = new Date(weekDateRange.start);
       date.setUTCDate(weekDateRange.start.getUTCDate() + dayNumber - 1);
-      date.setHours(0, 0, 0, 0);
+      date.setUTCHours(0, 0, 0, 0);
       map.set(day.id, date);
     });
 
