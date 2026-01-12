@@ -951,6 +951,7 @@ export default function TrainingGroupsPage() {
                         const role = profile?.id ? getGroupRoleForUser(group, profile.id) : null;
                         const canLeave = role === "assistantCoach" || role === "athlete";
                         const isHeadCoach = role === "headCoach";
+                        const canManage = isHeadCoach;
                         const groupCoachCandidates = (groupCoachResults[group.id] ?? []).filter(
                           (candidate) =>
                             candidate.id !== group.headCoach.id &&
