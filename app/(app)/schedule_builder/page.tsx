@@ -177,6 +177,15 @@ const parseYearNumber = (value: string): number | null => {
 };
 
 
+type FeedbackField = { label?: string } & Record<string, unknown>;
+
+const mapFeedbackFields = (fields: FeedbackField[] = []) =>
+  fields.map(({ label, ...field }) => ({
+    ...field,
+    label: label ?? undefined,
+  }));
+
+
 
 
 const mapModuleRow = (row: ModuleRow): Module => ({
