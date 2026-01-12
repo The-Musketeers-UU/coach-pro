@@ -122,11 +122,21 @@ export type TrainingGroupWithMembers = {
   athletes: AthleteRow[];
 };
 
+export type TrainingGroupMembershipStatus = "accepted" | "pending";
+
+export type TrainingGroupInvite = {
+  groupId: string;
+  groupName: string;
+  headCoach: AthleteRow;
+  role: "assistantCoach" | "athlete";
+};
+
 export type CreateTrainingGroupInput = {
   name: string;
   headCoachId: string;
   athleteIds?: string[];
   assistantCoachIds?: string[];
+  createdById?: string;
 };
 
 const toId = (value: number | string) => String(value);
@@ -522,9 +532,12 @@ type DbTrainingGroupRow = {
   id: number | string;
   name: string;
   headCoach: AthleteRow | null;
-  coaches?: { coach: AthleteRow | null }[];
-  athletes?: { athlete: AthleteRow | null }[];
+  coaches?: { coach: AthleteRow | null; status?: TrainingGroupMembershipStatus | null }[];
+  athletes?: { athlete: AthleteRow | null; status?: TrainingGroupMembershipStatus | null }[];
 };
+
+const isAcceptedMembership = (status?: TrainingGroupMembershipStatus | null) =>
+  status === "accepted" || !status;
 
 const coerceTrainingGroupRow = (row: DbTrainingGroupRow): TrainingGroupWithMembers => {
   if (!row.headCoach) {
@@ -536,9 +549,11 @@ const coerceTrainingGroupRow = (row: DbTrainingGroupRow): TrainingGroupWithMembe
     name: row.name,
     headCoach: row.headCoach,
     assistantCoaches: (row.coaches ?? [])
+      .filter((coachRow) => isAcceptedMembership(coachRow.status))
       .map((coachRow) => coachRow.coach)
       .filter(Boolean) as AthleteRow[],
     athletes: (row.athletes ?? [])
+      .filter((athleteRow) => isAcceptedMembership(athleteRow.status))
       .map((athleteRow) => athleteRow.athlete)
       .filter(Boolean) as AthleteRow[],
   } satisfies TrainingGroupWithMembers;
@@ -601,7 +616,8 @@ const getTrainingGroupsForCoach = async (
   const { data: assistantGroups, error: assistantError } = await supabase
     .from("trainingGroupCoach")
     .select("group")
-    .eq("coach", coachId);
+    .eq("coach", coachId)
+    .eq("status", "accepted");
 
   if (assistantError) {
     console.error("Error fetching groups for assistant coach:", assistantError);
@@ -644,7 +660,7 @@ const getTrainingGroupsByIds = async (
     const { data, error } = await supabase
       .from("trainingGroup")
       .select(
-        `id,name,headCoach:headCoach (id,name,email,isCoach),coaches:trainingGroupCoach (coach:coach (id,name,email,isCoach)),athletes:trainingGroupAthlete (athlete:athlete (id,name,email,isCoach))`,
+        `id,name,headCoach:headCoach (id,name,email,isCoach),coaches:trainingGroupCoach (status,coach:coach (id,name,email,isCoach)),athletes:trainingGroupAthlete (status,athlete:athlete (id,name,email,isCoach))`,
       )
       .in("id", toDbNumericIds(groupIds))
       .order("name", { ascending: true });
@@ -684,7 +700,8 @@ export const getTrainingGroupsForUser = async (
     const { data: assistantGroups, error: assistantError } = await supabase
       .from("trainingGroupCoach")
       .select("group")
-      .eq("coach", userId);
+      .eq("coach", userId)
+      .eq("status", "accepted");
 
     if (assistantError) {
       console.error("Error fetching assistant coach groups:", assistantError);
@@ -696,7 +713,8 @@ export const getTrainingGroupsForUser = async (
     const { data: athleteGroups, error: athleteError } = await supabase
       .from("trainingGroupAthlete")
       .select("group")
-      .eq("athlete", userId);
+      .eq("athlete", userId)
+      .eq("status", "accepted");
 
     if (athleteError) {
       console.error("Error fetching athlete groups:", athleteError);
@@ -722,6 +740,7 @@ export const createTrainingGroup = async (
   }
 
   try {
+    const createdById = input.createdById;
     const { data: group, error: groupError } = await supabase
       .from("trainingGroup")
       .insert(payload)
@@ -740,7 +759,11 @@ export const createTrainingGroup = async (
 
     if (assistantCoachIds.length > 0) {
       const { error: coachesError } = await supabase.from("trainingGroupCoach").insert(
-        assistantCoachIds.map((coachId) => ({ group: toDbNumericId(groupId), coach: coachId })),
+        assistantCoachIds.map((coachId) => ({
+          group: toDbNumericId(groupId),
+          coach: coachId,
+          status: coachId === createdById ? "accepted" : "pending",
+        })),
       );
 
       if (coachesError) {
@@ -752,7 +775,11 @@ export const createTrainingGroup = async (
     const athleteIds = uniqueIds(input.athleteIds ?? []);
     if (athleteIds.length > 0) {
       const { error: athletesError } = await supabase.from("trainingGroupAthlete").insert(
-        athleteIds.map((athleteId) => ({ group: toDbNumericId(groupId), athlete: athleteId })),
+        athleteIds.map((athleteId) => ({
+          group: toDbNumericId(groupId),
+          athlete: athleteId,
+          status: athleteId === createdById ? "accepted" : "pending",
+        })),
       );
 
       if (athletesError) {
@@ -771,6 +798,188 @@ export const createTrainingGroup = async (
     return createdGroup;
   } catch (error) {
     console.error("Error creating training group via SQL query:", error);
+    throw toReadableError(error);
+  }
+};
+
+export const getPendingTrainingGroupInvites = async (
+  userId: string,
+): Promise<TrainingGroupInvite[]> => {
+  try {
+    const { data: coachInvites, error: coachError } = await supabase
+      .from("trainingGroupCoach")
+      .select(
+        "group:group (id,name,headCoach:headCoach (id,name,email,isCoach)),status,coach",
+      )
+      .eq("coach", userId)
+      .eq("status", "pending");
+
+    if (coachError) {
+      console.error("Error fetching pending coach invites:", coachError);
+      throw toReadableError(coachError);
+    }
+
+    const { data: athleteInvites, error: athleteError } = await supabase
+      .from("trainingGroupAthlete")
+      .select(
+        "group:group (id,name,headCoach:headCoach (id,name,email,isCoach)),status,athlete",
+      )
+      .eq("athlete", userId)
+      .eq("status", "pending");
+
+    if (athleteError) {
+      console.error("Error fetching pending athlete invites:", athleteError);
+      throw toReadableError(athleteError);
+    }
+
+    const coachInviteRows =
+      (coachInvites ?? []) as Array<{
+        group: { id: number | string; name: string; headCoach: AthleteRow | null } | null;
+      }>;
+    const athleteInviteRows =
+      (athleteInvites ?? []) as Array<{
+        group: { id: number | string; name: string; headCoach: AthleteRow | null } | null;
+      }>;
+
+    const invites: TrainingGroupInvite[] = [];
+
+    coachInviteRows.forEach((row) => {
+      if (!row.group?.headCoach) return;
+      invites.push({
+        groupId: toId(row.group.id),
+        groupName: row.group.name,
+        headCoach: row.group.headCoach,
+        role: "assistantCoach",
+      });
+    });
+
+    athleteInviteRows.forEach((row) => {
+      if (!row.group?.headCoach) return;
+      invites.push({
+        groupId: toId(row.group.id),
+        groupName: row.group.name,
+        headCoach: row.group.headCoach,
+        role: "athlete",
+      });
+    });
+
+    return invites;
+  } catch (error) {
+    console.error("Error retrieving pending training group invites:", error);
+    throw toReadableError(error);
+  }
+};
+
+export const acceptTrainingGroupInvite = async (
+  groupId: string,
+  role: TrainingGroupInvite["role"],
+  userId: string,
+): Promise<void> => {
+  try {
+    if (role === "assistantCoach") {
+      const { error } = await supabase
+        .from("trainingGroupCoach")
+        .update({ status: "accepted" })
+        .eq("group", toDbNumericId(groupId))
+        .eq("coach", userId)
+        .eq("status", "pending");
+
+      if (error) {
+        console.error("Error accepting coach invite:", error);
+        throw toReadableError(error);
+      }
+      return;
+    }
+
+    const { error } = await supabase
+      .from("trainingGroupAthlete")
+      .update({ status: "accepted" })
+      .eq("group", toDbNumericId(groupId))
+      .eq("athlete", userId)
+      .eq("status", "pending");
+
+    if (error) {
+      console.error("Error accepting athlete invite:", error);
+      throw toReadableError(error);
+    }
+  } catch (error) {
+    console.error("Error accepting training group invite:", error);
+    throw toReadableError(error);
+  }
+};
+
+export const declineTrainingGroupInvite = async (
+  groupId: string,
+  role: TrainingGroupInvite["role"],
+  userId: string,
+): Promise<void> => {
+  try {
+    if (role === "assistantCoach") {
+      const { error } = await supabase
+        .from("trainingGroupCoach")
+        .delete()
+        .eq("group", toDbNumericId(groupId))
+        .eq("coach", userId)
+        .eq("status", "pending");
+
+      if (error) {
+        console.error("Error declining coach invite:", error);
+        throw toReadableError(error);
+      }
+      return;
+    }
+
+    const { error } = await supabase
+      .from("trainingGroupAthlete")
+      .delete()
+      .eq("group", toDbNumericId(groupId))
+      .eq("athlete", userId)
+      .eq("status", "pending");
+
+    if (error) {
+      console.error("Error declining athlete invite:", error);
+      throw toReadableError(error);
+    }
+  } catch (error) {
+    console.error("Error declining training group invite:", error);
+    throw toReadableError(error);
+  }
+};
+
+export const leaveTrainingGroup = async (
+  groupId: string,
+  role: "assistantCoach" | "athlete",
+  userId: string,
+): Promise<void> => {
+  try {
+    if (role === "assistantCoach") {
+      const { error } = await supabase
+        .from("trainingGroupCoach")
+        .delete()
+        .eq("group", toDbNumericId(groupId))
+        .eq("coach", userId)
+        .eq("status", "accepted");
+
+      if (error) {
+        console.error("Error leaving assistant coach group:", error);
+        throw toReadableError(error);
+      }
+      return;
+    }
+
+    const { error } = await supabase
+      .from("trainingGroupAthlete")
+      .delete()
+      .eq("group", toDbNumericId(groupId))
+      .eq("athlete", userId)
+      .eq("status", "accepted");
+
+    if (error) {
+      console.error("Error leaving athlete group:", error);
+      throw toReadableError(error);
+    }
+  } catch (error) {
+    console.error("Error leaving training group:", error);
     throw toReadableError(error);
   }
 };
