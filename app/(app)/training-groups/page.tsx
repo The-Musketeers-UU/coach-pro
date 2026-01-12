@@ -870,14 +870,16 @@ export default function TrainingGroupsPage() {
                             key={group.id}
                             className="rounded-lg border border-base-300 bg-base-100 p-3 shadow-sm"
                           >
-                            <div className="flex items-start justify-between gap-2">
-                              <div>
-                                <p className="font-semibold">{group.name}</p>
+                            <div className="flex flex-wrap items-start justify-between gap-2">
+                              <div className="min-w-0">
+                                <p className="truncate font-semibold">{group.name}</p>
                                 <p className="text-xs text-base-content/70">
                                   Huvudcoach: {group.headCoach.name}
                                 </p>
                               </div>
-                              <div className="badge badge-outline">{group.athletes.length} atleter</div>
+                              <div className="badge badge-outline shrink-0 whitespace-nowrap">
+                                {group.athletes.length} atleter
+                              </div>
                             </div>
 
                             {group.assistantCoaches.length > 0 && (
