@@ -358,15 +358,24 @@ function ScheduleBuilderPage() {
         if (!isCancelled) {
           setScheduleState(schedule, scheduledCount);
 
-          const matchingWeek = weekOptions.find((option) =>
-            option.label.startsWith(`Vecka ${existingWeek.week}`)
-          );
+          const existingWeekInfo = coerceYearWeekNumber(existingWeek.week);
+          const matchingWeekValue = existingWeekInfo
+            ? `${existingWeekInfo.year}-W${existingWeekInfo.weekNumber}`
+            : null;
+          const matchingWeek = matchingWeekValue
+            ? weekOptions.find((option) => option.value === matchingWeekValue)
+            : weekOptions.find((option) =>
+                option.label.startsWith(`Vecka ${existingWeek.week}`)
+              );
 
           if (matchingWeek) {
             setSelectedWeek(matchingWeek.value);
           }
 
-          setScheduleTitle(existingWeek.title || `Vecka ${existingWeek.week}`);
+          const fallbackTitle = existingWeekInfo
+            ? `Vecka ${existingWeekInfo.weekNumber}`
+            : `Vecka ${existingWeek.week}`;
+          setScheduleTitle(existingWeek.title || fallbackTitle);
         }
       } catch (supabaseError) {
         if (!isCancelled) {
@@ -457,8 +466,8 @@ function ScheduleBuilderPage() {
       return;
     }
 
-    const weekNumber = parseWeekNumber(selectedWeek);
-    if (!weekNumber) {
+    const weekInfo = parseWeekValue(selectedWeek);
+    if (!weekInfo) {
       setAssignError("Välj en giltig vecka att tilldela.");
       return;
     }
