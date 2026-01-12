@@ -6,9 +6,16 @@ import { useRouter } from "next/navigation";
 import { useAuth } from "@/components/auth-provider";
 import {
   type AthleteRow,
+  type TrainingGroupInvite,
   type TrainingGroupWithMembers,
+  acceptTrainingGroupInvite,
+  addTrainingGroupMembers,
   createTrainingGroup,
+  declineTrainingGroupInvite,
+  getPendingTrainingGroupInvites,
   getTrainingGroupsForUser,
+  leaveTrainingGroup,
+  removeTrainingGroupMember,
   searchUsers,
 } from "@/lib/supabase/training-modules";
 
@@ -16,6 +23,16 @@ const formatUser = (user: AthleteRow) => `${user.name} (${user.email})`;
 
 const removeUserById = (users: AthleteRow[], id: string) =>
   users.filter((candidate) => candidate.id !== id);
+
+const getGroupRoleForUser = (
+  group: TrainingGroupWithMembers,
+  userId: string,
+): "headCoach" | "assistantCoach" | "athlete" | null => {
+  if (group.headCoach.id === userId) return "headCoach";
+  if (group.assistantCoaches.some((coach) => coach.id === userId)) return "assistantCoach";
+  if (group.athletes.some((athlete) => athlete.id === userId)) return "athlete";
+  return null;
+};
 
 export default function TrainingGroupsPage() {
   const router = useRouter();
@@ -30,9 +47,18 @@ export default function TrainingGroupsPage() {
   const [athleteResults, setAthleteResults] = useState<AthleteRow[]>([]);
   const [isSearchingCoach, setIsSearchingCoach] = useState(false);
   const [isSearchingAthlete, setIsSearchingAthlete] = useState(false);
+  const [groupCoachSearchTerms, setGroupCoachSearchTerms] = useState<Record<string, string>>({});
+  const [groupAthleteSearchTerms, setGroupAthleteSearchTerms] = useState<Record<string, string>>({});
+  const [groupCoachResults, setGroupCoachResults] = useState<Record<string, AthleteRow[]>>({});
+  const [groupAthleteResults, setGroupAthleteResults] = useState<Record<string, AthleteRow[]>>({});
+  const [isSearchingGroupCoach, setIsSearchingGroupCoach] = useState<Record<string, boolean>>({});
+  const [isSearchingGroupAthlete, setIsSearchingGroupAthlete] = useState<Record<string, boolean>>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [groups, setGroups] = useState<TrainingGroupWithMembers[]>([]);
   const [isLoadingGroups, setIsLoadingGroups] = useState(false);
+  const [pendingInvites, setPendingInvites] = useState<TrainingGroupInvite[]>([]);
+  const [isLoadingInvites, setIsLoadingInvites] = useState(false);
+  const [isUpdatingMembership, setIsUpdatingMembership] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const isCoach = profile?.isCoach ?? false;
@@ -82,6 +108,26 @@ export default function TrainingGroupsPage() {
     void loadGroups();
   }, [profile?.id]);
 
+  useEffect(() => {
+    if (!profile?.id) return;
+
+    const loadInvites = async () => {
+      setIsLoadingInvites(true);
+      setError(null);
+
+      try {
+        const invites = await getPendingTrainingGroupInvites(profile.id);
+        setPendingInvites(invites);
+      } catch (loadError) {
+        setError(loadError instanceof Error ? loadError.message : String(loadError));
+      } finally {
+        setIsLoadingInvites(false);
+      }
+    };
+
+    void loadInvites();
+  }, [profile?.id]);
+
   const handleSearchCoaches = async () => {
     setIsSearchingCoach(true);
     setError(null);
@@ -107,6 +153,34 @@ export default function TrainingGroupsPage() {
       setError(searchError instanceof Error ? searchError.message : String(searchError));
     } finally {
       setIsSearchingAthlete(false);
+    }
+  };
+
+  const handleGroupCoachSearch = async (groupId: string) => {
+    setIsSearchingGroupCoach((current) => ({ ...current, [groupId]: true }));
+    setError(null);
+
+    try {
+      const results = await searchUsers(groupCoachSearchTerms[groupId] ?? "", "coach");
+      setGroupCoachResults((current) => ({ ...current, [groupId]: results }));
+    } catch (searchError) {
+      setError(searchError instanceof Error ? searchError.message : String(searchError));
+    } finally {
+      setIsSearchingGroupCoach((current) => ({ ...current, [groupId]: false }));
+    }
+  };
+
+  const handleGroupAthleteSearch = async (groupId: string) => {
+    setIsSearchingGroupAthlete((current) => ({ ...current, [groupId]: true }));
+    setError(null);
+
+    try {
+      const results = await searchUsers(groupAthleteSearchTerms[groupId] ?? "", "athlete");
+      setGroupAthleteResults((current) => ({ ...current, [groupId]: results }));
+    } catch (searchError) {
+      setError(searchError instanceof Error ? searchError.message : String(searchError));
+    } finally {
+      setIsSearchingGroupAthlete((current) => ({ ...current, [groupId]: false }));
     }
   };
 
@@ -141,6 +215,7 @@ export default function TrainingGroupsPage() {
         headCoachId: headCoach.id,
         assistantCoachIds: assistantCoaches.map((coach) => coach.id),
         athleteIds: athletes.map((athlete) => athlete.id),
+        createdById: profile?.id,
       });
 
       setGroups((current) => [newGroup, ...current.filter((group) => group.id !== newGroup.id)]);
@@ -151,6 +226,120 @@ export default function TrainingGroupsPage() {
       setError(creationError instanceof Error ? creationError.message : String(creationError));
     } finally {
       setIsSubmitting(false);
+    }
+  };
+
+  const refreshGroupsAndInvites = async () => {
+    if (!profile?.id) return;
+
+    setIsLoadingGroups(true);
+    setIsLoadingInvites(true);
+
+    try {
+      const [loadedGroups, loadedInvites] = await Promise.all([
+        getTrainingGroupsForUser(profile.id),
+        getPendingTrainingGroupInvites(profile.id),
+      ]);
+      setGroups(loadedGroups);
+      setPendingInvites(loadedInvites);
+    } catch (loadError) {
+      setError(loadError instanceof Error ? loadError.message : String(loadError));
+    } finally {
+      setIsLoadingGroups(false);
+      setIsLoadingInvites(false);
+    }
+  };
+
+  const handleInviteResponse = async (
+    invite: TrainingGroupInvite,
+    decision: "accept" | "decline",
+  ) => {
+    if (!profile?.id) return;
+
+    setIsUpdatingMembership(true);
+    setError(null);
+
+    try {
+      if (decision === "accept") {
+        await acceptTrainingGroupInvite(invite.groupId, invite.role, profile.id);
+      } else {
+        await declineTrainingGroupInvite(invite.groupId, invite.role, profile.id);
+      }
+      await refreshGroupsAndInvites();
+    } catch (responseError) {
+      setError(responseError instanceof Error ? responseError.message : String(responseError));
+    } finally {
+      setIsUpdatingMembership(false);
+    }
+  };
+
+  const handleLeaveGroup = async (group: TrainingGroupWithMembers) => {
+    if (!profile?.id) return;
+    const role = getGroupRoleForUser(group, profile.id);
+    if (role !== "assistantCoach" && role !== "athlete") return;
+
+    setIsUpdatingMembership(true);
+    setError(null);
+
+    try {
+      await leaveTrainingGroup(group.id, role, profile.id);
+      setGroups((current) => current.filter((item) => item.id !== group.id));
+    } catch (leaveError) {
+      setError(leaveError instanceof Error ? leaveError.message : String(leaveError));
+    } finally {
+      setIsUpdatingMembership(false);
+    }
+  };
+
+  const handleAddGroupMember = async (
+    group: TrainingGroupWithMembers,
+    role: "assistantCoach" | "athlete",
+    member: AthleteRow,
+  ) => {
+    setIsUpdatingMembership(true);
+    setError(null);
+
+    try {
+      await addTrainingGroupMembers({
+        groupId: group.id,
+        assistantCoachIds: role === "assistantCoach" ? [member.id] : [],
+        athleteIds: role === "athlete" ? [member.id] : [],
+        addedById: profile?.id,
+      });
+      await refreshGroupsAndInvites();
+      if (role === "assistantCoach") {
+        setGroupCoachResults((current) => ({
+          ...current,
+          [group.id]: removeUserById(current[group.id] ?? [], member.id),
+        }));
+      } else {
+        setGroupAthleteResults((current) => ({
+          ...current,
+          [group.id]: removeUserById(current[group.id] ?? [], member.id),
+        }));
+      }
+    } catch (addError) {
+      setError(addError instanceof Error ? addError.message : String(addError));
+    } finally {
+      setIsUpdatingMembership(false);
+    }
+  };
+
+  const handleRemoveGroupMember = async (
+    group: TrainingGroupWithMembers,
+    role: "assistantCoach" | "athlete",
+    member: AthleteRow,
+  ) => {
+    setIsUpdatingMembership(true);
+    setError(null);
+
+    try {
+      await removeTrainingGroupMember(group.id, role, member.id);
+      await refreshGroupsAndInvites();
+    } catch (removeError) {
+      setError(removeError instanceof Error ? removeError.message : String(removeError));
+    } finally {
+      setIsUpdatingMembership(false);
     }
   };
 
@@ -170,7 +359,7 @@ export default function TrainingGroupsPage() {
         <h1 className="text-3xl font-semibold">Träningsgrupper</h1>
         <p className="text-base text-base-content/70">
           Skapa grupper där en huvudcoach samlar sina atleter. Du kan även lägga till assisterande
-          coacher som stöd.
+          coacher som stöd. Atleter och assisterande coacher måste bekräfta innan de läggs till.
         </p>
       </div>
 
@@ -429,38 +618,285 @@ export default function TrainingGroupsPage() {
               </p>
             </div>
 
-            {isLoadingGroups ? (
+            {isLoadingGroups || isLoadingInvites ? (
               <div className="flex items-center justify-center py-6">
                 <span className="loading loading-spinner" aria-label="Laddar grupper" />
               </div>
-            ) : groups.length === 0 ? (
-              <p className="text-sm text-base-content/60">Inga grupper hittades ännu.</p>
             ) : (
-              <div className="flex flex-col gap-3">
-                {groups.map((group) => (
-                  <div key={group.id} className="rounded-lg border border-base-200 p-3">
-                    <div className="flex items-start justify-between gap-2">
-                      <div>
-                        <p className="font-semibold">{group.name}</p>
-                        <p className="text-xs text-base-content/70">Huvudcoach: {group.headCoach.name}</p>
-                      </div>
-                      <div className="badge badge-outline">{group.athletes.length} atleter</div>
+              <>
+                <div className="flex flex-col gap-2">
+                  <h3 className="text-sm font-semibold uppercase tracking-wide text-base-content/60">
+                    Inbjudningar
+                  </h3>
+                  {pendingInvites.length === 0 ? (
+                    <p className="text-sm text-base-content/60">Inga väntande inbjudningar.</p>
+                  ) : (
+                    <div className="flex flex-col gap-3">
+                      {pendingInvites.map((invite) => (
+                        <div key={`${invite.groupId}-${invite.role}`} className="rounded-lg border border-base-200 p-3">
+                          <div className="flex items-start justify-between gap-2">
+                            <div>
+                              <p className="font-semibold">{invite.groupName}</p>
+                              <p className="text-xs text-base-content/70">
+                                Huvudcoach: {invite.headCoach.name}
+                              </p>
+                              <p className="text-xs text-base-content/60">
+                                Roll: {invite.role === "assistantCoach" ? "Assisterande coach" : "Atlet"}
+                              </p>
+                            </div>
+                          </div>
+                          <div className="mt-3 flex gap-2">
+                            <button
+                              className="btn btn-primary btn-sm"
+                              type="button"
+                              onClick={() => handleInviteResponse(invite, "accept")}
+                              disabled={isUpdatingMembership}
+                            >
+                              Acceptera
+                            </button>
+                            <button
+                              className="btn btn-ghost btn-sm"
+                              type="button"
+                              onClick={() => handleInviteResponse(invite, "decline")}
+                              disabled={isUpdatingMembership}
+                            >
+                              Avböj
+                            </button>
+                          </div>
+                        </div>
+                      ))}
                     </div>
+                  )}
+                </div>
 
-                    {group.assistantCoaches.length > 0 && (
-                      <p className="mt-2 text-xs text-base-content/70">
-                        Assisterande coacher: {group.assistantCoaches.map((coach) => coach.name).join(", ")}
-                      </p>
-                    )}
+                <div className="mt-4 flex flex-col gap-2">
+                  <h3 className="text-sm font-semibold uppercase tracking-wide text-base-content/60">
+                    Aktiva grupper
+                  </h3>
+                  {groups.length === 0 ? (
+                    <p className="text-sm text-base-content/60">Inga grupper hittades ännu.</p>
+                  ) : (
+                    <div className="flex flex-col gap-3">
+                      {groups.map((group) => {
+                        const role = profile?.id ? getGroupRoleForUser(group, profile.id) : null;
+                        const canLeave = role === "assistantCoach" || role === "athlete";
+                        const isHeadCoach = role === "headCoach";
+                        const groupCoachCandidates = (groupCoachResults[group.id] ?? []).filter(
+                          (candidate) =>
+                            candidate.id !== group.headCoach.id &&
+                            !group.assistantCoaches.some((coach) => coach.id === candidate.id),
+                        );
+                        const groupAthleteCandidates = (groupAthleteResults[group.id] ?? []).filter(
+                          (candidate) =>
+                            !group.athletes.some((athlete) => athlete.id === candidate.id),
+                        );
 
-                    {group.athletes.length > 0 && (
-                      <p className="text-xs text-base-content/70">
-                        Atleter: {group.athletes.map((athlete) => athlete.name).join(", ")}
-                      </p>
-                    )}
-                  </div>
-                ))}
-              </div>
+                        return (
+                          <div key={group.id} className="rounded-lg border border-base-200 p-3">
+                            <div className="flex items-start justify-between gap-2">
+                              <div>
+                                <p className="font-semibold">{group.name}</p>
+                                <p className="text-xs text-base-content/70">
+                                  Huvudcoach: {group.headCoach.name}
+                                </p>
+                              </div>
+                              <div className="badge badge-outline">{group.athletes.length} atleter</div>
+                            </div>
+
+                            {group.assistantCoaches.length > 0 && (
+                              <p className="mt-2 text-xs text-base-content/70">
+                                Assisterande coacher:{" "}
+                                {group.assistantCoaches.map((coach) => coach.name).join(", ")}
+                              </p>
+                            )}
+
+                            {group.athletes.length > 0 && (
+                              <p className="text-xs text-base-content/70">
+                                Atleter: {group.athletes.map((athlete) => athlete.name).join(", ")}
+                              </p>
+                            )}
+
+                            {isHeadCoach && (
+                              <div className="mt-4 border-t border-base-200 pt-4">
+                                <div className="flex flex-col gap-2">
+                                  <h4 className="text-sm font-semibold uppercase tracking-wide text-base-content/60">
+                                    Hantera grupp
+                                  </h4>
+                                  <p className="text-xs text-base-content/60">
+                                    Lägg till eller ta bort medlemmar. Inbjudningar måste accepteras innan
+                                    de syns som aktiva.
+                                  </p>
+                                </div>
+
+                                <div className="mt-3 grid grid-cols-1 gap-4 md:grid-cols-2">
+                                  <div className="flex flex-col gap-3 rounded-lg border border-base-200 p-3">
+                                    <p className="text-sm font-semibold">Assisterande coacher</p>
+                                    <div className="flex flex-col gap-2">
+                                      <div className="flex gap-2">
+                                        <input
+                                          type="search"
+                                          className="input input-bordered input-sm flex-1"
+                                          placeholder="Sök coach"
+                                          value={groupCoachSearchTerms[group.id] ?? ""}
+                                          onChange={(event) =>
+                                            setGroupCoachSearchTerms((current) => ({
+                                              ...current,
+                                              [group.id]: event.target.value,
+                                            }))
+                                          }
+                                        />
+                                        <button
+                                          className="btn btn-secondary btn-sm"
+                                          type="button"
+                                          onClick={() => handleGroupCoachSearch(group.id)}
+                                          disabled={isSearchingGroupCoach[group.id]}
+                                        >
+                                          {isSearchingGroupCoach[group.id] ? "Söker..." : "Sök"}
+                                        </button>
+                                      </div>
+
+                                      {groupCoachCandidates.length > 0 && (
+                                        <div className="flex flex-col gap-2">
+                                          {groupCoachCandidates.map((coach) => (
+                                            <div
+                                              key={coach.id}
+                                              className="flex items-center justify-between gap-2 rounded-md border border-base-200 p-2 text-xs"
+                                            >
+                                              <span className="font-medium">{formatUser(coach)}</span>
+                                              <button
+                                                className="btn btn-outline btn-xs"
+                                                type="button"
+                                                onClick={() => handleAddGroupMember(group, "assistantCoach", coach)}
+                                                disabled={isUpdatingMembership}
+                                              >
+                                                Lägg till
+                                              </button>
+                                            </div>
+                                          ))}
+                                        </div>
+                                      )}
+                                    </div>
+
+                                    {group.assistantCoaches.length === 0 ? (
+                                      <p className="text-xs text-base-content/60">
+                                        Inga assisterande coacher ännu.
+                                      </p>
+                                    ) : (
+                                      <div className="flex flex-col gap-2">
+                                        {group.assistantCoaches.map((coach) => (
+                                          <div
+                                            key={coach.id}
+                                            className="flex items-center justify-between gap-2 rounded-md border border-base-200 p-2 text-xs"
+                                          >
+                                            <span className="font-medium">{formatUser(coach)}</span>
+                                            <button
+                                              className="btn btn-ghost btn-xs"
+                                              type="button"
+                                              onClick={() => handleRemoveGroupMember(group, "assistantCoach", coach)}
+                                              disabled={isUpdatingMembership}
+                                            >
+                                              Ta bort
+                                            </button>
+                                          </div>
+                                        ))}
+                                      </div>
+                                    )}
+                                  </div>
+
+                                  <div className="flex flex-col gap-3 rounded-lg border border-base-200 p-3">
+                                    <p className="text-sm font-semibold">Atleter</p>
+                                    <div className="flex flex-col gap-2">
+                                      <div className="flex gap-2">
+                                        <input
+                                          type="search"
+                                          className="input input-bordered input-sm flex-1"
+                                          placeholder="Sök atlet"
+                                          value={groupAthleteSearchTerms[group.id] ?? ""}
+                                          onChange={(event) =>
+                                            setGroupAthleteSearchTerms((current) => ({
+                                              ...current,
+                                              [group.id]: event.target.value,
+                                            }))
+                                          }
+                                        />
+                                        <button
+                                          className="btn btn-secondary btn-sm"
+                                          type="button"
+                                          onClick={() => handleGroupAthleteSearch(group.id)}
+                                          disabled={isSearchingGroupAthlete[group.id]}
+                                        >
+                                          {isSearchingGroupAthlete[group.id] ? "Söker..." : "Sök"}
+                                        </button>
+                                      </div>
+
+                                      {groupAthleteCandidates.length > 0 && (
+                                        <div className="flex flex-col gap-2">
+                                          {groupAthleteCandidates.map((athlete) => (
+                                            <div
+                                              key={athlete.id}
+                                              className="flex items-center justify-between gap-2 rounded-md border border-base-200 p-2 text-xs"
+                                            >
+                                              <span className="font-medium">{formatUser(athlete)}</span>
+                                              <button
+                                                className="btn btn-outline btn-xs"
+                                                type="button"
+                                                onClick={() => handleAddGroupMember(group, "athlete", athlete)}
+                                                disabled={isUpdatingMembership}
+                                              >
+                                                Lägg till
+                                              </button>
+                                            </div>
+                                          ))}
+                                        </div>
+                                      )}
+                                    </div>
+
+                                    {group.athletes.length === 0 ? (
+                                      <p className="text-xs text-base-content/60">Inga atleter ännu.</p>
+                                    ) : (
+                                      <div className="flex flex-col gap-2">
+                                        {group.athletes.map((athlete) => (
+                                          <div
+                                            key={athlete.id}
+                                            className="flex items-center justify-between gap-2 rounded-md border border-base-200 p-2 text-xs"
+                                          >
+                                            <span className="font-medium">{formatUser(athlete)}</span>
+                                            <button
+                                              className="btn btn-ghost btn-xs"
+                                              type="button"
+                                              onClick={() => handleRemoveGroupMember(group, "athlete", athlete)}
+                                              disabled={isUpdatingMembership}
+                                            >
+                                              Ta bort
+                                            </button>
+                                          </div>
+                                        ))}
+                                      </div>
+                                    )}
+                                  </div>
+                                </div>
+                              </div>
+                            )}
+
+                            {canLeave && (
+                              <div className="mt-3 flex justify-end">
+                                <button
+                                  className="btn btn-outline btn-xs"
+                                  type="button"
+                                  onClick={() => handleLeaveGroup(group)}
+                                  disabled={isUpdatingMembership}
+                                >
+                                  Lämna grupp
+                                </button>
+                              </div>
+                            )}
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
+              </>
             )}
           </div>
         </div>
