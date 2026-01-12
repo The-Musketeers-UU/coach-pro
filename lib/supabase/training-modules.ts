@@ -137,6 +137,13 @@ export type TrainingGroupSearchResult = {
   headCoach: AthleteRow;
 };
 
+export type TrainingGroupJoinRequest = {
+  groupId: string;
+  groupName: string;
+  headCoach: AthleteRow;
+  athlete: AthleteRow;
+};
+
 export type CreateTrainingGroupInput = {
   name: string;
   headCoachId: string;
@@ -1304,6 +1311,58 @@ export const getTrainingGroupJoinRequestsForGroup = async (
       .filter(Boolean) as AthleteRow[];
   } catch (error) {
     console.error("Error retrieving training group join requests:", error);
+    throw toReadableError(error);
+  }
+};
+
+export const getTrainingGroupJoinRequestsForCoach = async (
+  coachId: string,
+): Promise<TrainingGroupJoinRequest[]> => {
+  try {
+    const { data, error } = await supabase
+      .from("trainingGroupAthlete")
+      .select(
+        "athlete:athlete (id,name,email,isCoach),group:group (id,name,headCoach:headCoach (id,name,email,isCoach)),status",
+      )
+      .eq("status", "requested")
+      .eq("group.headCoach", coachId);
+
+    if (error) {
+      console.error("Error fetching coach join requests:", error);
+      throw toReadableError(error);
+    }
+
+    const rows = (data ?? []) as unknown as Array<{
+      athlete: AthleteRow | AthleteRow[] | null;
+      group:
+        | { id: number | string; name: string; headCoach: AthleteRow | null }
+        | { id: number | string; name: string; headCoach: AthleteRow | null }[]
+        | null;
+    }>;
+
+    const getAthlete = (athlete: AthleteRow | AthleteRow[] | null) =>
+      (Array.isArray(athlete) ? athlete[0] : athlete) ?? null;
+    const getGroup = (
+      group:
+        | { id: number | string; name: string; headCoach: AthleteRow | null }
+        | { id: number | string; name: string; headCoach: AthleteRow | null }[]
+        | null,
+    ) => (Array.isArray(group) ? group[0] : group);
+
+    return rows.reduce<TrainingGroupJoinRequest[]>((acc, row) => {
+      const athlete = getAthlete(row.athlete);
+      const group = getGroup(row.group);
+      if (!athlete || !group?.headCoach) return acc;
+      acc.push({
+        groupId: toId(group.id),
+        groupName: group.name,
+        headCoach: group.headCoach,
+        athlete,
+      });
+      return acc;
+    }, []);
+  } catch (error) {
+    console.error("Error retrieving coach join requests:", error);
     throw toReadableError(error);
   }
 };

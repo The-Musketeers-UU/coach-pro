@@ -7,6 +7,7 @@ import { useAuth } from "@/components/auth-provider";
 import {
   type AthleteRow,
   type TrainingGroupInvite,
+  type TrainingGroupJoinRequest,
   type TrainingGroupSearchResult,
   type TrainingGroupWithMembers,
   acceptTrainingGroupInvite,
@@ -17,7 +18,7 @@ import {
   deleteTrainingGroup,
   declineTrainingGroupInvite,
   getTrainingGroupJoinRequestsForAthlete,
-  getTrainingGroupJoinRequestsForGroup,
+  getTrainingGroupJoinRequestsForCoach,
   getPendingTrainingGroupInvites,
   getTrainingGroupsForUser,
   leaveTrainingGroup,
@@ -69,8 +70,6 @@ const GroupManagementPanel = ({
   const [searchTerm, setSearchTerm] = useState("");
   const [searchResults, setSearchResults] = useState<AthleteRow[]>([]);
   const [isSearching, setIsSearching] = useState(false);
-  const [pendingAthleteRequests, setPendingAthleteRequests] = useState<AthleteRow[]>([]);
-  const [isLoadingRequests, setIsLoadingRequests] = useState(false);
 
   const existingMemberIds = useMemo(() => {
     const ids = new Set<string>([group.headCoach.id]);
@@ -95,24 +94,6 @@ const GroupManagementPanel = ({
     }
   };
 
-  const loadPendingRequests = async () => {
-    setIsLoadingRequests(true);
-    onError("");
-    try {
-      const pending = await getTrainingGroupJoinRequestsForGroup(group.id);
-      setPendingAthleteRequests(pending);
-    } catch (requestError) {
-      onError(requestError instanceof Error ? requestError.message : String(requestError));
-    } finally {
-      setIsLoadingRequests(false);
-    }
-  };
-
-  useEffect(() => {
-    if (!isExpanded) return;
-    void loadPendingRequests();
-  }, [group.id, isExpanded]);
-
   const handleAddMember = async (member: AthleteRow) => {
     setIsUpdatingMembership(true);
     onError("");
@@ -127,35 +108,6 @@ const GroupManagementPanel = ({
       );
     } catch (addError) {
       onError(addError instanceof Error ? addError.message : String(addError));
-    } finally {
-      setIsUpdatingMembership(false);
-    }
-  };
-
-  const handleApproveRequest = async (athlete: AthleteRow) => {
-    setIsUpdatingMembership(true);
-    onError("");
-    try {
-      await approveTrainingGroupJoinRequest(group.id, athlete.id);
-      await onRefresh();
-      await loadPendingRequests();
-      onNotice("Förfrågan godkänd.");
-    } catch (approveError) {
-      onError(approveError instanceof Error ? approveError.message : String(approveError));
-    } finally {
-      setIsUpdatingMembership(false);
-    }
-  };
-
-  const handleDeclineRequest = async (athlete: AthleteRow) => {
-    setIsUpdatingMembership(true);
-    onError("");
-    try {
-      await declineTrainingGroupJoinRequest(group.id, athlete.id);
-      await loadPendingRequests();
-      onNotice("Förfrågan avböjdes.");
-    } catch (declineError) {
-      onError(declineError instanceof Error ? declineError.message : String(declineError));
     } finally {
       setIsUpdatingMembership(false);
     }
@@ -274,47 +226,6 @@ const GroupManagementPanel = ({
           </div>
 
           <div className="rounded-lg border border-base-300 bg-base-100 p-3">
-            <p className="text-sm font-semibold">Förfrågningar från atleter</p>
-            {isLoadingRequests ? (
-              <p className="mt-1 text-xs text-base-content/60">Laddar förfrågningar...</p>
-            ) : pendingAthleteRequests.length === 0 ? (
-              <p className="mt-1 text-xs text-base-content/60">Inga väntande förfrågningar.</p>
-            ) : (
-              <div className="mt-2 flex flex-col gap-2">
-                {pendingAthleteRequests.map((athlete) => (
-                  <div
-                    key={athlete.id}
-                    className="flex items-center justify-between gap-2 rounded-lg border border-base-300 bg-base-200 p-2"
-                  >
-                    <div className="min-w-0 flex-1 text-sm">
-                      <p className="truncate font-semibold">{athlete.name}</p>
-                      <p className="truncate text-xs text-base-content/70">{athlete.email}</p>
-                    </div>
-                    <div className="flex gap-2">
-                      <button
-                        className="btn btn-primary btn-xs"
-                        type="button"
-                        onClick={() => handleApproveRequest(athlete)}
-                        disabled={isUpdatingMembership}
-                      >
-                        Godkänn
-                      </button>
-                      <button
-                        className="btn btn-ghost btn-xs"
-                        type="button"
-                        onClick={() => handleDeclineRequest(athlete)}
-                        disabled={isUpdatingMembership}
-                      >
-                        Avböj
-                      </button>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-
-          <div className="rounded-lg border border-base-300 bg-base-100 p-3">
             <p className="text-sm font-semibold">Assisterande coacher</p>
             {group.assistantCoaches.length === 0 ? (
               <p className="mt-1 text-xs text-base-content/60">Inga assisterande coacher ännu.</p>
@@ -397,6 +308,8 @@ export default function TrainingGroupsPage() {
   const [isLoadingGroups, setIsLoadingGroups] = useState(false);
   const [pendingInvites, setPendingInvites] = useState<TrainingGroupInvite[]>([]);
   const [isLoadingInvites, setIsLoadingInvites] = useState(false);
+  const [pendingJoinRequests, setPendingJoinRequests] = useState<TrainingGroupJoinRequest[]>([]);
+  const [isLoadingJoinRequests, setIsLoadingJoinRequests] = useState(false);
   const [requestedGroupIds, setRequestedGroupIds] = useState<string[]>([]);
   const [requestingGroupIds, setRequestingGroupIds] = useState<string[]>([]);
   const [isUpdatingMembership, setIsUpdatingMembership] = useState(false);
@@ -471,6 +384,27 @@ export default function TrainingGroupsPage() {
 
     void loadInvites();
   }, [profile?.id]);
+
+  useEffect(() => {
+    if (!profile?.id || !profile.isCoach) return;
+
+    const loadJoinRequests = async () => {
+      setIsLoadingJoinRequests(true);
+      setError(null);
+      setNotice(null);
+
+      try {
+        const requests = await getTrainingGroupJoinRequestsForCoach(profile.id);
+        setPendingJoinRequests(requests);
+      } catch (loadError) {
+        setError(loadError instanceof Error ? loadError.message : String(loadError));
+      } finally {
+        setIsLoadingJoinRequests(false);
+      }
+    };
+
+    void loadJoinRequests();
+  }, [profile?.id, profile?.isCoach]);
 
   useEffect(() => {
     if (!profile?.id || profile.isCoach) return;
@@ -572,6 +506,34 @@ export default function TrainingGroupsPage() {
     }
   };
 
+  const handleJoinRequestDecision = async (
+    request: TrainingGroupJoinRequest,
+    decision: "accept" | "decline",
+  ) => {
+    if (!profile?.id) return;
+
+    setIsUpdatingMembership(true);
+    setError(null);
+    setNotice(null);
+
+    try {
+      if (decision === "accept") {
+        await approveTrainingGroupJoinRequest(request.groupId, request.athlete.id);
+        setNotice("Förfrågan godkänd.");
+      } else {
+        await declineTrainingGroupJoinRequest(request.groupId, request.athlete.id);
+        setNotice("Förfrågan avböjdes.");
+      }
+      const updatedRequests = await getTrainingGroupJoinRequestsForCoach(profile.id);
+      setPendingJoinRequests(updatedRequests);
+      await refreshGroupsAndInvites();
+    } catch (decisionError) {
+      setError(decisionError instanceof Error ? decisionError.message : String(decisionError));
+    } finally {
+      setIsUpdatingMembership(false);
+    }
+  };
+
   const handleCreateGroup = async () => {
     if (!headCoach) {
       setError("Välj en huvudcoach för gruppen.");
@@ -607,21 +569,31 @@ export default function TrainingGroupsPage() {
 
     setIsLoadingGroups(true);
     setIsLoadingInvites(true);
+    if (profile.isCoach) {
+      setIsLoadingJoinRequests(true);
+    }
     setNotice(null);
     setError(null);
 
     try {
-      const [loadedGroups, loadedInvites] = await Promise.all([
+      const [loadedGroups, loadedInvites, loadedRequests] = await Promise.all([
         getTrainingGroupsForUser(profile.id),
         getPendingTrainingGroupInvites(profile.id),
+        profile.isCoach ? getTrainingGroupJoinRequestsForCoach(profile.id) : Promise.resolve([]),
       ]);
       setGroups(loadedGroups);
       setPendingInvites(loadedInvites);
+      if (profile.isCoach) {
+        setPendingJoinRequests(loadedRequests);
+      }
     } catch (loadError) {
       setError(loadError instanceof Error ? loadError.message : String(loadError));
     } finally {
       setIsLoadingGroups(false);
       setIsLoadingInvites(false);
+      if (profile.isCoach) {
+        setIsLoadingJoinRequests(false);
+      }
     }
   };
 
@@ -959,7 +931,7 @@ export default function TrainingGroupsPage() {
                 <div className="flex flex-col gap-2">
                   <h2 className="card-title">Hitta träningsgrupp</h2>
                   <p className="text-sm text-base-content/70">
-                    Sök efter träningsgrupper och skicka en förfrågan till huvudcoachen för att gå med.
+                    Sök efter träningsgrupper och begär att gå med i coachens grupp.
                   </p>
                 </div>
 
@@ -985,6 +957,9 @@ export default function TrainingGroupsPage() {
                       {isSearchingGroups ? "Söker..." : "Sök"}
                     </button>
                   </div>
+                  <p className="text-xs text-base-content/60">
+                    Din begäran skickas till huvudcoachen som äger gruppen.
+                  </p>
                 </div>
 
                 {groupSearchResults.length > 0 && (
@@ -1003,7 +978,7 @@ export default function TrainingGroupsPage() {
                             ? "Förfrågan skickad"
                             : isRequesting
                               ? "Skickar..."
-                              : "Skicka förfrågan";
+                              : "Begär att gå med";
 
                       return (
                         <div
@@ -1049,15 +1024,69 @@ export default function TrainingGroupsPage() {
               </p>
             </div>
 
-            {isLoadingGroups || isLoadingInvites ? (
+            {isLoadingGroups || isLoadingInvites || (isCoach && isLoadingJoinRequests) ? (
               <div className="flex items-center justify-center py-6">
                 <span className="loading loading-spinner" aria-label="Laddar grupper" />
               </div>
             ) : (
               <>
+                {isCoach && (
+                  <div className="flex flex-col gap-2">
+                    <h3 className="text-sm font-semibold uppercase tracking-wide text-base-content/60">
+                      Förfrågningar att gå med
+                    </h3>
+                    {isLoadingJoinRequests ? (
+                      <div className="rounded-lg border border-dashed border-base-300 bg-base-100 p-3 text-sm text-base-content/60">
+                        Laddar förfrågningar...
+                      </div>
+                    ) : pendingJoinRequests.length === 0 ? (
+                      <div className="rounded-lg border border-dashed border-base-300 bg-base-100 p-3 text-sm text-base-content/60">
+                        Inga väntande förfrågningar från atleter.
+                      </div>
+                    ) : (
+                      <div className="flex flex-col gap-3">
+                        {pendingJoinRequests.map((request) => (
+                          <div
+                            key={`${request.groupId}-${request.athlete.id}`}
+                            className="rounded-lg border border-base-300 bg-base-100 p-3 shadow-sm"
+                          >
+                            <div>
+                              <p className="font-semibold">{request.athlete.name}</p>
+                              <p className="text-xs text-base-content/70">{request.athlete.email}</p>
+                              <p className="mt-1 text-xs text-base-content/60">
+                                Vill gå med i din grupp: {request.groupName}
+                              </p>
+                            </div>
+                            <div className="mt-3 flex flex-wrap gap-2">
+                              <button
+                                className="btn btn-primary btn-sm"
+                                type="button"
+                                onClick={() => handleJoinRequestDecision(request, "accept")}
+                                disabled={isUpdatingMembership}
+                              >
+                                Godkänn
+                              </button>
+                              <button
+                                className="btn btn-ghost btn-sm"
+                                type="button"
+                                onClick={() => handleJoinRequestDecision(request, "decline")}
+                                disabled={isUpdatingMembership}
+                              >
+                                Avböj
+                              </button>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {isCoach && <div className="divider my-2" />}
+
                 <div className="flex flex-col gap-2">
                   <h3 className="text-sm font-semibold uppercase tracking-wide text-base-content/60">
-                    Inbjudningar
+                    Inbjudningar till dig
                   </h3>
                   {pendingInvites.length === 0 ? (
                     <div className="rounded-lg border border-dashed border-base-300 bg-base-100 p-3 text-sm text-base-content/60">
