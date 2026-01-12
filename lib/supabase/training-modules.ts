@@ -997,6 +997,163 @@ export const leaveTrainingGroup = async (
   }
 };
 
+const hasExistingMembership = async (
+  groupId: string,
+  role: "assistantCoach" | "athlete",
+  userId: string,
+): Promise<boolean> => {
+  try {
+    if (role === "assistantCoach") {
+      const { data, error } = await supabase
+        .from("trainingGroupCoach")
+        .select("coach")
+        .eq("group", toDbNumericId(groupId))
+        .eq("coach", userId)
+        .limit(1)
+        .maybeSingle();
+
+      if (error) {
+        console.error("Error checking coach membership:", error);
+        throw toReadableError(error);
+      }
+
+      return Boolean(data);
+    }
+
+    const { data, error } = await supabase
+      .from("trainingGroupAthlete")
+      .select("athlete")
+      .eq("group", toDbNumericId(groupId))
+      .eq("athlete", userId)
+      .limit(1)
+      .maybeSingle();
+
+    if (error) {
+      console.error("Error checking athlete membership:", error);
+      throw toReadableError(error);
+    }
+
+    return Boolean(data);
+  } catch (error) {
+    console.error("Error verifying training group membership:", error);
+    throw toReadableError(error);
+  }
+};
+
+export const addTrainingGroupMember = async (
+  groupId: string,
+  role: "assistantCoach" | "athlete",
+  userId: string,
+): Promise<void> => {
+  try {
+    const exists = await hasExistingMembership(groupId, role, userId);
+    if (exists) return;
+
+    if (role === "assistantCoach") {
+      const { error } = await supabase.from("trainingGroupCoach").insert({
+        group: toDbNumericId(groupId),
+        coach: userId,
+        status: "pending",
+      });
+
+      if (error) {
+        console.error("Error adding assistant coach to group:", error);
+        throw toReadableError(error);
+      }
+      return;
+    }
+
+    const { error } = await supabase.from("trainingGroupAthlete").insert({
+      group: toDbNumericId(groupId),
+      athlete: userId,
+      status: "pending",
+    });
+
+    if (error) {
+      console.error("Error adding athlete to group:", error);
+      throw toReadableError(error);
+    }
+  } catch (error) {
+    console.error("Error adding training group member:", error);
+    throw toReadableError(error);
+  }
+};
+
+export const removeTrainingGroupMember = async (
+  groupId: string,
+  role: "assistantCoach" | "athlete",
+  userId: string,
+): Promise<void> => {
+  try {
+    if (role === "assistantCoach") {
+      const { error } = await supabase
+        .from("trainingGroupCoach")
+        .delete()
+        .eq("group", toDbNumericId(groupId))
+        .eq("coach", userId);
+
+      if (error) {
+        console.error("Error removing assistant coach from group:", error);
+        throw toReadableError(error);
+      }
+      return;
+    }
+
+    const { error } = await supabase
+      .from("trainingGroupAthlete")
+      .delete()
+      .eq("group", toDbNumericId(groupId))
+      .eq("athlete", userId);
+
+    if (error) {
+      console.error("Error removing athlete from group:", error);
+      throw toReadableError(error);
+    }
+  } catch (error) {
+    console.error("Error removing training group member:", error);
+    throw toReadableError(error);
+  }
+};
+
+export const deleteTrainingGroup = async (groupId: string): Promise<void> => {
+  try {
+    const numericGroupId = toDbNumericId(groupId);
+
+    const { error: coachError } = await supabase
+      .from("trainingGroupCoach")
+      .delete()
+      .eq("group", numericGroupId);
+
+    if (coachError) {
+      console.error("Error removing training group coaches:", coachError);
+      throw toReadableError(coachError);
+    }
+
+    const { error: athleteError } = await supabase
+      .from("trainingGroupAthlete")
+      .delete()
+      .eq("group", numericGroupId);
+
+    if (athleteError) {
+      console.error("Error removing training group athletes:", athleteError);
+      throw toReadableError(athleteError);
+    }
+
+    const { error: groupError } = await supabase
+      .from("trainingGroup")
+      .delete()
+      .eq("id", numericGroupId);
+
+    if (groupError) {
+      console.error("Error deleting training group:", groupError);
+      throw toReadableError(groupError);
+    }
+  } catch (error) {
+    console.error("Error deleting training group:", error);
+    throw toReadableError(error);
+  }
+};
+
 export const upsertScheduleModuleFeedback = async (
   input: UpsertScheduleModuleFeedbackInput,
 ): Promise<ScheduleModuleFeedbackRow> => {
