@@ -282,7 +282,7 @@ export default function TrainingGroupsPage() {
       )}
 
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
-        <div className="card bg-base-200 shadow lg:col-span-2">
+        <div className="card border border-base-300 bg-base-200 shadow-sm lg:col-span-2">
           <div className="card-body gap-6">
             <div className="flex flex-col gap-2">
               <h2 className="card-title">Ny träningsgrupp</h2>
@@ -505,7 +505,7 @@ export default function TrainingGroupsPage() {
               </div>
             </div>
 
-            <div className="flex items-center justify-end gap-3">
+            <div className="flex flex-col gap-3 border-t border-base-300 pt-4 sm:flex-row sm:items-center sm:justify-between">
               <p className="text-sm text-base-content/70">
                 Minst en atlet krävs för att skapa en grupp.
               </p>
@@ -521,7 +521,7 @@ export default function TrainingGroupsPage() {
           </div>
         </div>
 
-        <div className="card bg-base-200 shadow">
+        <div className="card border border-base-300 bg-base-200 shadow-sm">
           <div className="card-body gap-4">
             <div>
               <h2 className="card-title">Dina grupper</h2>
@@ -541,7 +541,9 @@ export default function TrainingGroupsPage() {
                     Inbjudningar
                   </h3>
                   {pendingInvites.length === 0 ? (
-                    <p className="text-sm text-base-content/60">Inga väntande inbjudningar.</p>
+                    <div className="rounded-lg border border-dashed border-base-300 bg-base-100 p-3 text-sm text-base-content/60">
+                      Inga väntande inbjudningar.
+                    </div>
                   ) : (
                     <div className="flex flex-col gap-3">
                       {pendingInvites.map((invite) => (
@@ -560,7 +562,7 @@ export default function TrainingGroupsPage() {
                               </p>
                             </div>
                           </div>
-                          <div className="mt-3 flex gap-2">
+                          <div className="mt-3 flex flex-wrap gap-2">
                             <button
                               className="btn btn-primary btn-sm"
                               type="button"
@@ -584,12 +586,16 @@ export default function TrainingGroupsPage() {
                   )}
                 </div>
 
-                <div className="mt-4 flex flex-col gap-2">
+                <div className="divider my-2" />
+
+                <div className="flex flex-col gap-2">
                   <h3 className="text-sm font-semibold uppercase tracking-wide text-base-content/60">
                     Aktiva grupper
                   </h3>
                   {groups.length === 0 ? (
-                    <p className="text-sm text-base-content/60">Inga grupper hittades ännu.</p>
+                    <div className="rounded-lg border border-dashed border-base-300 bg-base-100 p-3 text-sm text-base-content/60">
+                      Inga grupper hittades ännu.
+                    </div>
                   ) : (
                     <div className="flex flex-col gap-3">
                       {groups.map((group) => {
