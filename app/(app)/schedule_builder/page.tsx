@@ -34,6 +34,7 @@ import {
   getScheduleWeekByAthleteAndWeek,
   getScheduleWeekWithModulesById,
 } from "@/lib/supabase/training-modules";
+import { coerceYearWeekNumber, parseWeekValue } from "@/lib/week";
 
 type WeekOption = { value: string; label: string };
 

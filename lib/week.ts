@@ -22,7 +22,10 @@ const resolveIsoWeekYear = (weekNumber: number, referenceDate = new Date()) => {
   return currentYear;
 };
 
-export const getIsoWeekNumber = (date: Date) => {
+export const toYearWeekNumber = (year: number, weekNumber: number) =>
+  Number(`${year}${weekNumber}`);
+
+export const getIsoWeekInfo = (date: Date) => {
   const target = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()));
   const dayNumber = (target.getUTCDay() + 6) % 7;
   target.setUTCDate(target.getUTCDate() - dayNumber + 3);
@@ -31,10 +34,17 @@ export const getIsoWeekNumber = (date: Date) => {
   const firstThursdayDayNumber = (firstThursday.getUTCDay() + 6) % 7;
   firstThursday.setUTCDate(firstThursday.getUTCDate() - firstThursdayDayNumber + 3);
 
-  return (
-    1 + Math.round((target.getTime() - firstThursday.getTime()) / MILLISECONDS_IN_WEEK)
-  );
+  const weekNumber =
+    1 + Math.round((target.getTime() - firstThursday.getTime()) / MILLISECONDS_IN_WEEK);
+
+  return {
+    weekNumber,
+    year: target.getUTCFullYear(),
+    yearWeek: toYearWeekNumber(target.getUTCFullYear(), weekNumber),
+  } as const;
 };
+
+export const getIsoWeekNumber = (date: Date) => getIsoWeekInfo(date).weekNumber;
 
 export const getDateRangeForIsoWeek = (
   weekNumber: number,
@@ -80,6 +90,52 @@ export const formatIsoWeekMonthYear = (
 };
 
 export { getStartDateOfIsoWeek, resolveIsoWeekYear };
+
+export const parseYearWeekNumber = (value: number) => {
+  const raw = String(value);
+  if (raw.length < 5) return null;
+
+  const year = Number(raw.slice(0, 4));
+  const weekNumber = Number(raw.slice(4));
+
+  if (!Number.isFinite(year) || !Number.isFinite(weekNumber)) return null;
+
+  return { year, weekNumber } as const;
+};
+
+export const coerceYearWeekNumber = (value: number, referenceDate = new Date()) => {
+  const parsed = parseYearWeekNumber(value);
+  if (parsed) {
+    return { ...parsed, yearWeek: value, isLegacy: false } as const;
+  }
+
+  const weekNumber = Number(value);
+  if (!Number.isFinite(weekNumber)) return null;
+
+  const year = resolveIsoWeekYear(weekNumber, referenceDate);
+  return {
+    year,
+    weekNumber,
+    yearWeek: toYearWeekNumber(year, weekNumber),
+    isLegacy: true,
+  } as const;
+};
+
+export const parseWeekValue = (value: string) => {
+  const match = /^(\d{4})-W(\d{1,2})$/.exec(value);
+  if (!match) return null;
+
+  const year = Number(match[1]);
+  const weekNumber = Number(match[2]);
+
+  if (!Number.isFinite(year) || !Number.isFinite(weekNumber)) return null;
+
+  return {
+    year,
+    weekNumber,
+    yearWeek: toYearWeekNumber(year, weekNumber),
+  } as const;
+};
 
 export const findClosestWeekIndex = (
   weeks: { week: number }[],

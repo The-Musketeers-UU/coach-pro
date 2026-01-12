@@ -2,31 +2,22 @@
 
 import { useMemo } from "react";
 
-import { formatIsoWeekMonthYear, getIsoWeekNumber } from "@/lib/week";
+import {
+  formatIsoWeekMonthYear,
+  getIsoWeekInfo,
+  parseWeekValue,
+} from "@/lib/week";
 
 export type WeekOption = {
   value: string;
   label: string;
   weekNumber: number;
+  year: number;
+  yearWeek: number;
   startDate: Date;
 };
 
 const MILLISECONDS_IN_WEEK = 7 * 24 * 60 * 60 * 1000;
-
-const getIsoWeekInfo = (date: Date) => {
-  const target = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()));
-  const dayNumber = (target.getUTCDay() + 6) % 7;
-  target.setUTCDate(target.getUTCDate() - dayNumber + 3);
-
-  const firstThursday = new Date(Date.UTC(target.getUTCFullYear(), 0, 4));
-  const firstThursdayDayNumber = (firstThursday.getUTCDay() + 6) % 7;
-  firstThursday.setUTCDate(firstThursday.getUTCDate() - firstThursdayDayNumber + 3);
-
-  const weekNumber =
-    1 + Math.round((target.getTime() - firstThursday.getTime()) / MILLISECONDS_IN_WEEK);
-
-  return { weekNumber, year: target.getUTCFullYear() } as const;
-};
 
 const getStartOfIsoWeek = (date: Date) => {
   const result = new Date(date);
@@ -51,7 +42,7 @@ export const createRollingWeekOptions = (): WeekOption[] => {
   let currentWeekStart = startDate;
 
   while (currentWeekStart <= endDate) {
-    const { weekNumber, year } = getIsoWeekInfo(currentWeekStart);
+    const { weekNumber, year, yearWeek } = getIsoWeekInfo(currentWeekStart);
     const value = `${year}-W${weekNumber}`;
     const label = `Vecka ${weekNumber} (${year})`;
 
@@ -59,6 +50,8 @@ export const createRollingWeekOptions = (): WeekOption[] => {
       value,
       label,
       weekNumber,
+      year,
+      yearWeek,
       startDate: new Date(currentWeekStart),
     });
 
@@ -75,17 +68,10 @@ export const getCurrentWeekValue = () => {
   return `${year}-W${weekNumber}`;
 };
 
-export const parseWeekNumber = (value: string): number | null => {
-  const match = /^\d{4}-W(\d{1,2})$/.exec(value);
-  if (!match) return null;
-
-  const week = Number(match[1]);
-  return Number.isNaN(week) ? null : week;
-};
-
 export type WeekSelection = {
   activeWeekOption?: WeekOption;
   weekNumber: number;
+  yearWeek: number;
   weekReferenceDate: Date;
   activeWeekIndex: number;
   isFirstSelectableWeek: boolean;
@@ -106,9 +92,12 @@ export const getWeekSelection = ({
     weekOptions.find((option) => option.value === currentWeekValue) ??
     weekOptions[0];
 
-  const weekNumber =
-    parseWeekNumber(activeWeekOption?.value ?? currentWeekValue) ??
-    getIsoWeekNumber(new Date());
+  const fallbackWeekInfo = getIsoWeekInfo(new Date());
+  const parsedWeek = parseWeekValue(activeWeekOption?.value ?? currentWeekValue);
+
+  const weekNumber = parsedWeek?.weekNumber ?? fallbackWeekInfo.weekNumber;
+  const yearWeek =
+    activeWeekOption?.yearWeek ?? parsedWeek?.yearWeek ?? fallbackWeekInfo.yearWeek;
 
   const weekReferenceDate = activeWeekOption?.startDate ?? new Date();
   const activeWeekIndex = activeWeekOption
@@ -120,6 +109,7 @@ export const getWeekSelection = ({
   return {
     activeWeekOption,
     weekNumber,
+    yearWeek,
     weekReferenceDate,
     activeWeekIndex,
     isFirstSelectableWeek,
@@ -183,7 +173,10 @@ export function WeekSelector({
             onChange={(event) => onChange(event.target.value)}
           >
             {weekOptions.map((weekOption) => {
-              const hasSchedule = availableWeeks?.has(weekOption.weekNumber);
+              const hasSchedule = availableWeeks
+                ? availableWeeks.has(weekOption.yearWeek) ||
+                  availableWeeks.has(weekOption.weekNumber)
+                : undefined;
 
               return (
                 <option
