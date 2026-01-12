@@ -30,5 +30,8 @@ export const ADDITIONAL_THEMES: ThemeName[] = [
 export const isThemeName = (value: string): value is ThemeName =>
   (SUPPORTED_THEMES as readonly string[]).includes(value);
 
-export const sanitizeTheme = (theme: string | undefined | null): ThemeName =>
-  isThemeName(theme ?? "") ? theme : DEFAULT_THEME;
+export const sanitizeTheme = (theme: string | undefined | null): ThemeName => {
+  const candidate = theme ?? "";
+
+  return isThemeName(candidate) ? candidate : DEFAULT_THEME;
+};
