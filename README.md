@@ -34,6 +34,23 @@ A role-aware Next.js app for coaches who plan weekly training programs for their
 - `npm run build` – create a production build
 - `npm run start` – serve the production build
 - `npm run lint` – run ESLint
+- `npm run seed` – populate Supabase with starter modules, schedules, and feedback
+
+## Database seeding
+
+Use the included seed script whenever you need to reset Supabase with useful starter data:
+
+```bash
+npm run seed
+```
+
+The script reads `data/seed-data.json`, creates the listed modules for every coach, and assigns the provided schedule templates
+– including starter feedback – to all athletes. Coaches and athletes must already exist in Supabase; the script pairs athletes
+round-robin with the available coaches. Pass a different JSON path to seed from another file:
+
+```bash
+npm run seed -- ./path/to/custom-data.json
+```
 
 ## Project structure highlights
 

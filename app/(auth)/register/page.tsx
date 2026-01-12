@@ -6,6 +6,7 @@ import { FormEvent, Suspense, useEffect, useState } from "react";
 
 import { useAuth } from "@/components/auth-provider";
 import { getSupabaseBrowserClient } from "@/lib/supabase/browser-client";
+import { ensureUserForAuth } from "@/lib/supabase/training-modules";
 
 export default function RegisterPage() {
   return (
@@ -42,7 +43,7 @@ function RegisterContent() {
     setError(null);
 
     try {
-      const { error: signUpError } = await supabase.auth.signUp({
+      const { data, error: signUpError } = await supabase.auth.signUp({
         email,
         password,
         options: {
@@ -54,6 +55,22 @@ function RegisterContent() {
       });
 
       if (signUpError) throw signUpError;
+
+      const sessionResponse = await supabase.auth.getSession();
+      const sessionUser = data.session?.user ?? sessionResponse.data.session?.user;
+      const accessToken = data.session?.access_token ?? sessionResponse.data.session?.access_token;
+      const authUser = data.user ?? sessionUser;
+
+      const requiresEmailVerification = !data.session && !sessionResponse.data.session;
+
+      if (requiresEmailVerification) {
+        router.replace(`/login?verificationPending=1&redirectTo=${encodeURIComponent(redirectTo)}`);
+        return;
+      }
+
+      if (authUser) {
+        await ensureUserForAuth(authUser, accessToken);
+      }
       router.replace(redirectTo);
     } catch (authError) {
       setError(authError instanceof Error ? authError.message : String(authError));
@@ -64,7 +81,7 @@ function RegisterContent() {
 
   return (
     <main className="flex items-center justify-center bg-base-200">
-      <div className="card w-md bg-base-100 shadow-xl">
+      <div className="card bg-base-100 shadow-xl w:[80vw] sm:w-md">
         <div className="card-body">
           <h1 className="text-2xl font-bold text-center">Skapa konto</h1>
 

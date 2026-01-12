@@ -7,7 +7,7 @@ import { useAuth } from "@/components/auth-provider";
 import {
   type AthleteRow,
   type ScheduleWeekWithModules,
-  getAthletes,
+  getCoachAthletes,
   getScheduleWeeksWithModules,
 } from "@/lib/supabase/training-modules";
 
@@ -234,7 +234,7 @@ export default function StatsPage() {
       setError(null);
 
       try {
-        const athleteRows = await getAthletes();
+        const athleteRows = await getCoachAthletes(profile.id);
         setAthletes(athleteRows);
         setSelectedAthlete((current) => current || athleteRows[0]?.id || "");
       } catch (supabaseError) {

@@ -10,7 +10,6 @@ type CreateModuleModalProps = {
   isSubmitting: boolean;
   onClose: () => void;
   onSubmit: (event: FormEvent<HTMLFormElement>) => void;
-  onReset: () => void;
   onUpdate: Dispatch<SetStateAction<ModuleForm>>;
 };
 
@@ -21,12 +20,11 @@ export function CreateModuleModal({
   isSubmitting,
   onClose,
   onSubmit,
-  onReset,
   onUpdate,
 }: CreateModuleModalProps) {
   return (
     <dialog className={`modal ${isOpen ? "modal-open" : ""} z-[1100]`}>
-      <div className="modal-box max-w-md space-y-4">
+      <div className="modal-box w-full max-w-4xl space-y-4">
         <div className="flex items-start justify-between gap-4">
           <div>
             <h3 className="text-xl font-semibold">Skapa nytt block</h3>
@@ -41,13 +39,10 @@ export function CreateModuleModal({
         <form className="space-y-3" onSubmit={onSubmit}>
           <ModuleFormFields formState={newModule} onChange={onUpdate} />
 
-          <div className="mt-7 flex flex-row gap-2 sm:flex-row">
-            <button type="button" className="btn flex-1" onClick={onReset}>
-              Rensa formulär
-            </button>
+          <div className="mt-7 flex justify-end">
             <button
               type="submit"
-              className={`btn btn-secondary flex-1 ${
+              className={`btn btn-secondary px-6 ${
                 isSubmitting ? "loading" : ""
               }`}
               disabled={isSubmitting}

@@ -1,6 +1,33 @@
-import type { User as SupabaseAuthUser } from "@supabase/supabase-js";
+import type {
+  PostgrestError,
+  SupabaseClient,
+  User as SupabaseAuthUser,
+} from "@supabase/supabase-js";
 
 import { supabase } from "@/lib/supabase";
+import { getSupabaseBrowserClient } from "@/lib/supabase/browser-client";
+
+export type FeedbackFieldType =
+  | "distance"
+  | "duration"
+  | "weight"
+  | "comment"
+  | "feeling"
+  | "sleepHours";
+
+export type FeedbackFieldDefinition = {
+  id: string;
+  type: FeedbackFieldType;
+  label?: string | null;
+};
+
+export type FeedbackResponse = {
+  fieldId: string;
+  type: FeedbackFieldType;
+  value: number | string | null;
+};
+
+type FeedbackMetricMap = Record<string, number | null>;
 
 type DbModuleRow = {
   id: number | string;
@@ -8,36 +35,45 @@ type DbModuleRow = {
   name: string;
   category: string;
   subCategory: string | null;
-  distance: number | null;
-  duration: number | null;
-  weight: number | null;
   description: string | null;
-  comment: string | null;
-  feeling: number | null;
-  sleepHours: number | null;
+  visibleToAllCoaches: boolean;
+  activeFeedbackFields: unknown;
 };
 
-export type ModuleRow = DbModuleRow & { id: string };
+export type ModuleRow = Omit<DbModuleRow, "activeFeedbackFields"> & {
+  id: string;
+  activeFeedbackFields: FeedbackFieldDefinition[];
+};
 
 const moduleSelectColumns =
-  "id,owner,name,category,subCategory,distance,duration,weight,description,comment,feeling,sleepHours";
+  "id,owner,name,category,subCategory,description,visibleToAllCoaches,activeFeedbackFields";
 
 type DbScheduleModuleFeedbackRow = {
   id: number | string;
   moduleId: number | string;
   scheduleDayId: number | string;
-  distance: number | null;
-  duration: number | null;
-  weight: number | null;
+  distance: unknown;
+  duration: unknown;
+  weight: unknown;
   comment: string | null;
   feeling: number | null;
   sleepHours: number | null;
 };
 
-export type ScheduleModuleFeedbackRow = DbScheduleModuleFeedbackRow & {
+export type ScheduleModuleFeedbackRow = {
   id: string;
   moduleId: string;
   scheduleDayId: string;
+  distance: number | null;
+  duration: number | null;
+  weight: number | null;
+  distanceEntries: FeedbackMetricMap;
+  durationEntries: FeedbackMetricMap;
+  weightEntries: FeedbackMetricMap;
+  comment: string | null;
+  feeling: number | null;
+  sleepHours: number | null;
+  responses: FeedbackResponse[];
 };
 
 type DbScheduleWeekRow = {
@@ -51,6 +87,14 @@ type DbScheduleWeekRow = {
 
 export type ScheduleWeekRow = DbScheduleWeekRow & { id: string };
 
+type DbScheduleTemplateRow = {
+  id: number | string;
+  owner: string;
+  name: string;
+};
+
+export type ScheduleTemplateRow = DbScheduleTemplateRow & { id: string };
+
 type DbScheduleDayRow = {
   id: number | string;
   day: number;
@@ -63,9 +107,25 @@ type ScheduleDayRow = {
   weekId: string | null;
 };
 
+type DbScheduleTemplateDayRow = {
+  id: number | string;
+  day: number;
+  templateId: number | string;
+};
+
+type ScheduleTemplateDayRow = {
+  id: string;
+  day: number;
+  templateId: string;
+};
+
 type DbModuleScheduleDayRow = { A: string; B: number | string };
 
 type ModuleScheduleDayRow = { moduleId: string; dayId: string };
+
+type DbModuleScheduleTemplateDayRow = { A: string; B: number | string };
+
+type ModuleScheduleTemplateDayRow = { moduleId: string; dayId: string };
 
 type ScheduleDayModule = ModuleRow & {
   scheduleDayId: string;
@@ -78,6 +138,53 @@ export type AthleteRow = {
   email: string;
   isCoach: boolean;
 };
+
+export type TrainingGroupWithMembers = {
+  id: string;
+  name: string;
+  headCoach: AthleteRow;
+  assistantCoaches: AthleteRow[];
+  athletes: AthleteRow[];
+};
+
+export type TrainingGroupMembershipStatus = "accepted" | "pending";
+
+export type TrainingGroupInvite = {
+  groupId: string;
+  groupName: string;
+  headCoach: AthleteRow;
+  role: "assistantCoach" | "athlete";
+};
+
+export type TrainingGroupSearchResult = {
+  id: string;
+  name: string;
+  headCoach: AthleteRow;
+};
+
+export type TrainingGroupJoinRequest = {
+  groupId: string;
+  groupName: string;
+  headCoach: AthleteRow;
+  athlete: AthleteRow;
+};
+
+export type CreateTrainingGroupInput = {
+  name: string;
+  headCoachId: string;
+  athleteIds?: string[];
+  assistantCoachIds?: string[];
+  createdById?: string;
+};
+
+export type AddTrainingGroupMembersInput = {
+  groupId: string;
+  assistantCoachIds?: string[];
+  athleteIds?: string[];
+  addedById?: string;
+};
+
+export type TrainingGroupMemberRole = "assistantCoach" | "athlete";
 
 const toId = (value: number | string) => String(value);
 
@@ -95,21 +202,159 @@ const toDbNumericId = (value: number | string) => {
 const toDbNumericIds = (values: Array<number | string>) =>
   values.map((value) => toDbNumericId(value));
 
+const parseFeedbackFields = (raw: unknown): FeedbackFieldDefinition[] => {
+  if (!Array.isArray(raw)) return [];
+
+  return raw
+    .map((item) => {
+      if (!item || typeof item !== "object") return null;
+
+      const candidate = item as { id?: unknown; type?: unknown; label?: unknown };
+      if (typeof candidate.id !== "string" || typeof candidate.type !== "string") {
+        return null;
+      }
+
+      return {
+        id: candidate.id,
+        type: candidate.type as FeedbackFieldType,
+        label:
+          typeof candidate.label === "string" || candidate.label === null
+            ? candidate.label
+            : undefined,
+      } satisfies FeedbackFieldDefinition;
+    })
+    .filter(Boolean) as FeedbackFieldDefinition[];
+};
+
+const parseFeedbackMetricMap = (raw: unknown): FeedbackMetricMap => {
+  if (!raw || typeof raw !== "object" || Array.isArray(raw)) return {};
+
+  const entries = Object.entries(raw as Record<string, unknown>);
+
+  return entries.reduce((acc, [key, value]) => {
+    if (typeof key !== "string") return acc;
+
+    if (typeof value === "number" && Number.isFinite(value)) {
+      acc[key] = value;
+      return acc;
+    }
+
+    if (value === null) {
+      acc[key] = null;
+    }
+
+    return acc;
+  }, {} as FeedbackMetricMap);
+};
+
+const calculateMetricTotal = (metric: FeedbackMetricMap): number | null => {
+  const values = Object.values(metric).filter(
+    (value): value is number => typeof value === "number" && Number.isFinite(value),
+  );
+
+  if (values.length === 0) return null;
+
+  return values.reduce((sum, value) => sum + value, 0);
+};
+
 const coerceModuleRow = (row: DbModuleRow): ModuleRow => ({
   ...row,
   id: toId(row.id),
+  activeFeedbackFields: parseFeedbackFields(row.activeFeedbackFields),
 });
 
 const coerceScheduleModuleFeedbackRow = (
   row: DbScheduleModuleFeedbackRow,
-): ScheduleModuleFeedbackRow => ({
-  ...row,
-  id: toId(row.id),
-  moduleId: toId(row.moduleId),
-  scheduleDayId: toId(row.scheduleDayId),
-});
+): ScheduleModuleFeedbackRow => {
+  const distanceEntries = parseFeedbackMetricMap(row.distance);
+  const durationEntries = parseFeedbackMetricMap(row.duration);
+  const weightEntries = parseFeedbackMetricMap(row.weight);
+
+  return {
+    id: toId(row.id),
+    moduleId: toId(row.moduleId),
+    scheduleDayId: toId(row.scheduleDayId),
+    distance: calculateMetricTotal(distanceEntries),
+    duration: calculateMetricTotal(durationEntries),
+    weight: calculateMetricTotal(weightEntries),
+    distanceEntries,
+    durationEntries,
+    weightEntries,
+    comment: row.comment,
+    feeling: row.feeling,
+    sleepHours: row.sleepHours,
+    responses: [],
+  } satisfies ScheduleModuleFeedbackRow;
+};
+
+const buildFeedbackResponses = (
+  fields: FeedbackFieldDefinition[],
+  feedback: ScheduleModuleFeedbackRow,
+): FeedbackResponse[] => {
+  const responses: FeedbackResponse[] = [];
+  const fieldsByType = new Map<FeedbackFieldType, FeedbackFieldDefinition[]>();
+
+  fields.forEach((field) => {
+    const existing = fieldsByType.get(field.type) ?? [];
+    existing.push(field);
+    fieldsByType.set(field.type, existing);
+  });
+
+  const addMetricResponses = (
+    type: Extract<FeedbackFieldType, "distance" | "duration" | "weight">,
+    entries: FeedbackMetricMap,
+  ) => {
+    const definitions = fieldsByType.get(type) ?? [];
+    const definitionsById = new Set(definitions.map((field) => field.id));
+
+    definitions.forEach((field) => {
+      responses.push({
+        fieldId: field.id,
+        type,
+        value: entries[field.id] ?? null,
+      });
+    });
+
+    Object.entries(entries).forEach(([fieldId, value]) => {
+      if (definitionsById.has(fieldId)) return;
+
+      responses.push({ fieldId, type, value });
+    });
+  };
+
+  addMetricResponses("distance", feedback.distanceEntries);
+  addMetricResponses("duration", feedback.durationEntries);
+  addMetricResponses("weight", feedback.weightEntries);
+
+  const addSingletonResponse = (
+    type: Extract<FeedbackFieldType, "comment" | "feeling" | "sleepHours">,
+    value: number | string | null,
+  ) => {
+    const definition = fieldsByType.get(type)?.[0];
+    if (!definition) return;
+
+    responses.push({
+      fieldId: definition.id,
+      type,
+      value,
+    });
+  };
+
+  addSingletonResponse("comment", feedback.comment ?? null);
+  addSingletonResponse("feeling", feedback.feeling ?? null);
+  addSingletonResponse("sleepHours", feedback.sleepHours ?? null);
+
+  return responses;
+};
 
 const coerceScheduleWeekRow = (row: DbScheduleWeekRow): ScheduleWeekRow => ({
+  ...row,
+  id: toId(row.id),
+});
+
+const coerceScheduleTemplateRow = (
+  row: DbScheduleTemplateRow,
+): ScheduleTemplateRow => ({
   ...row,
   id: toId(row.id),
 });
@@ -120,7 +365,22 @@ const coerceScheduleDayRow = (row: DbScheduleDayRow): ScheduleDayRow => ({
   weekId: row.weekId === null ? null : toId(row.weekId),
 });
 
+const coerceScheduleTemplateDayRow = (
+  row: DbScheduleTemplateDayRow,
+): ScheduleTemplateDayRow => ({
+  ...row,
+  id: toId(row.id),
+  templateId: toId(row.templateId),
+});
+
 const coerceModuleLinkRow = (row: DbModuleScheduleDayRow): ModuleScheduleDayRow => ({
+  moduleId: toId(row.A),
+  dayId: toId(row.B),
+});
+
+const coerceModuleTemplateLinkRow = (
+  row: DbModuleScheduleTemplateDayRow,
+): ModuleScheduleTemplateDayRow => ({
   moduleId: toId(row.A),
   dayId: toId(row.B),
 });
@@ -139,10 +399,16 @@ const mergeModuleFeedback = (
   modulesByDayId.forEach((modules, dayId) => {
     const enriched = modules.map((module) => {
       const feedback = feedbackByKey.get(`${dayId}:${module.id}`);
+      const responses = feedback
+        ? buildFeedbackResponses(module.activeFeedbackFields ?? [], feedback)
+        : [];
+      const enrichedFeedback = feedback
+        ? { ...feedback, responses }
+        : undefined;
       return {
         ...module,
         scheduleDayId: dayId,
-        feedback,
+        feedback: enrichedFeedback,
       } satisfies ScheduleDayModule;
     });
 
@@ -152,12 +418,53 @@ const mergeModuleFeedback = (
   return result;
 };
 
+const formatFeedbackPayloadFromResponses = (responses: FeedbackResponse[]) => {
+  const distance: FeedbackMetricMap = {};
+  const duration: FeedbackMetricMap = {};
+  const weight: FeedbackMetricMap = {};
+  let comment: string | null = null;
+  let feeling: number | null = null;
+  let sleepHours: number | null = null;
+
+  const toNumberOrNull = (value: number | string | null) => {
+    if (typeof value === "number" && Number.isFinite(value)) return value;
+    return null;
+  };
+
+  responses.forEach((response) => {
+    switch (response.type) {
+      case "distance":
+        distance[response.fieldId] = toNumberOrNull(response.value);
+        break;
+      case "duration":
+        duration[response.fieldId] = toNumberOrNull(response.value);
+        break;
+      case "weight":
+        weight[response.fieldId] = toNumberOrNull(response.value);
+        break;
+      case "comment":
+        comment = typeof response.value === "string" ? response.value : null;
+        break;
+      case "feeling":
+        feeling = toNumberOrNull(response.value);
+        break;
+      case "sleepHours":
+        sleepHours = toNumberOrNull(response.value);
+        break;
+      default:
+        break;
+    }
+  });
+
+  return { distance, duration, weight, comment, feeling, sleepHours };
+};
+
 export const getModulesByOwner = async (ownerId: string): Promise<ModuleRow[]> => {
   try {
     const { data, error } = await supabase
       .from("module")
       .select(moduleSelectColumns)
-      .eq("owner", ownerId)
+      .or(`owner.eq.${ownerId},visibleToAllCoaches.eq.true`)
       .order("name", { ascending: true });
 
     if (error) {
@@ -173,9 +480,11 @@ export const getModulesByOwner = async (ownerId: string): Promise<ModuleRow[]> =
 };
 
 export type CreateUserInput = {
+  id: string;
   name: string;
   email: string;
   isCoach?: boolean;
+  accessToken?: string;
 };
 
 export type CreateModuleInput = {
@@ -183,13 +492,19 @@ export type CreateModuleInput = {
   name: string;
   category: string;
   subCategory?: string;
-  distance?: number | null;
-  duration?: number | null;
-  weight?: number | null;
   description?: string;
-  comment?: string | null;
-  feeling?: number | null;
-  sleepHours?: number | null;
+  feedbackFields?: FeedbackFieldDefinition[];
+  visibleToAllCoaches?: boolean;
+};
+
+export type UpdateModuleInput = {
+  id: string;
+  name: string;
+  category: string;
+  subCategory?: string;
+  description?: string;
+  feedbackFields?: FeedbackFieldDefinition[];
+  visibleToAllCoaches?: boolean;
 };
 
 export type CreateScheduleWeekInput = {
@@ -200,15 +515,15 @@ export type CreateScheduleWeekInput = {
   title: string;
 };
 
+export type CreateScheduleTemplateInput = {
+  ownerId: string;
+  name: string;
+};
+
 export type UpsertScheduleModuleFeedbackInput = {
   moduleId: string;
   scheduleDayId: string;
-  distance: number | null;
-  duration: number | null;
-  weight: number | null;
-  comment: string | null;
-  feeling: number | null;
-  sleepHours: number | null;
+  responses: FeedbackResponse[];
 };
 
 export type AddModuleToScheduleDayInput = {
@@ -217,13 +532,16 @@ export type AddModuleToScheduleDayInput = {
   day: number;
 };
 
+export type AddModuleToScheduleTemplateDayInput = {
+  moduleId: string;
+  templateId: string;
+  day: number;
+};
+
 export type GetScheduleWeekByWeekInput = {
   athleteId: string;
   week: number;
 };
-
-const sanitizeNumber = (value: number | null | undefined) =>
-  Number.isFinite(value) ? Number(value) : undefined;
 
 const formatSupabaseError = (error: unknown) => {
   if (!error) return "Okänt fel";
@@ -291,27 +609,927 @@ export const getCoaches = async (): Promise<AthleteRow[]> => {
   }
 };
 
+type DbTrainingGroupRow = {
+  id: number | string;
+  name: string;
+  headCoach: AthleteRow | null;
+  coaches?: { coach: AthleteRow | null; status?: TrainingGroupMembershipStatus | null }[];
+  athletes?: { athlete: AthleteRow | null; status?: TrainingGroupMembershipStatus | null }[];
+};
+
+const isAcceptedMembership = (status?: TrainingGroupMembershipStatus | null) =>
+  status === "accepted" || !status;
+
+const coerceTrainingGroupRow = (row: DbTrainingGroupRow): TrainingGroupWithMembers => {
+  if (!row.headCoach) {
+    throw new Error("Training group is missing head coach data.");
+  }
+
+  return {
+    id: toId(row.id),
+    name: row.name,
+    headCoach: row.headCoach,
+    assistantCoaches: (row.coaches ?? [])
+      .filter((coachRow) => isAcceptedMembership(coachRow.status))
+      .map((coachRow) => coachRow.coach)
+      .filter(Boolean) as AthleteRow[],
+    athletes: (row.athletes ?? [])
+      .filter((athleteRow) => isAcceptedMembership(athleteRow.status))
+      .map((athleteRow) => athleteRow.athlete)
+      .filter(Boolean) as AthleteRow[],
+  } satisfies TrainingGroupWithMembers;
+};
+
+const uniqueIds = (ids: string[]) => Array.from(new Set(ids.filter(Boolean)));
+
+export const searchUsers = async (
+  query: string,
+  role?: "coach" | "athlete",
+): Promise<AthleteRow[]> => {
+  const trimmedQuery = query.trim();
+
+  try {
+    let request = supabase
+      .from("user")
+      .select("id,name,email,isCoach")
+      .order("name", { ascending: true })
+      .limit(20);
+
+    if (role) {
+      request = request.eq("isCoach", role === "coach");
+    }
+
+    if (trimmedQuery) {
+      request = request.or(`name.ilike.%${trimmedQuery}%,email.ilike.%${trimmedQuery}%`);
+    }
+
+    const { data, error } = await request;
+
+    if (error) {
+      console.error("Error searching users:", error);
+      throw toReadableError(error);
+    }
+
+    return data ?? [];
+  } catch (error) {
+    console.error("Error performing user search:", error);
+    throw toReadableError(error);
+  }
+};
+
+export const searchTrainingGroups = async (
+  query: string,
+): Promise<TrainingGroupSearchResult[]> => {
+  const trimmedQuery = query.trim();
+
+  try {
+    let request = supabase
+      .from("trainingGroup")
+      .select("id,name,headCoach:headCoach (id,name,email,isCoach)")
+      .order("name", { ascending: true })
+      .limit(20);
+
+    if (trimmedQuery) {
+      request = request.ilike("name", `%${trimmedQuery}%`);
+    }
+
+    const { data, error } = await request;
+
+    if (error) {
+      console.error("Error searching training groups:", error);
+      throw toReadableError(error);
+    }
+
+    const rows = (data ?? []) as unknown as Array<{
+      id: number | string;
+      name: string;
+      headCoach:
+        | AthleteRow
+        | AthleteRow[]
+        | null;
+    }>;
+
+    const getHeadCoach = (headCoach: AthleteRow | AthleteRow[] | null) =>
+      (Array.isArray(headCoach) ? headCoach[0] : headCoach) ?? null;
+
+    return rows
+      .map((row) => ({ ...row, headCoach: getHeadCoach(row.headCoach) }))
+      .filter((row) => row.headCoach)
+      .map((row) => ({
+        id: toId(row.id),
+        name: row.name,
+        headCoach: row.headCoach as AthleteRow,
+      }));
+  } catch (error) {
+    console.error("Error retrieving training groups via SQL query:", error);
+    throw toReadableError(error);
+  }
+};
+
+const getTrainingGroupsForCoach = async (
+  coachId: string,
+): Promise<TrainingGroupWithMembers[]> => {
+  const groupIds = new Set<string>();
+
+  const { data: headCoachGroups, error: headCoachError } = await supabase
+    .from("trainingGroup")
+    .select("id")
+    .eq("headCoach", coachId);
+
+  if (headCoachError) {
+    console.error("Error fetching groups for head coach:", headCoachError);
+    throw toReadableError(headCoachError);
+  }
+
+  headCoachGroups?.forEach((group) => groupIds.add(toId(group.id)));
+
+  const { data: assistantGroups, error: assistantError } = await supabase
+    .from("trainingGroupCoach")
+    .select("group")
+    .eq("coach", coachId)
+    .eq("status", "accepted");
+
+  if (assistantError) {
+    console.error("Error fetching groups for assistant coach:", assistantError);
+    throw toReadableError(assistantError);
+  }
+
+  assistantGroups?.forEach((group) => groupIds.add(toId(group.group)));
+
+  return getTrainingGroupsByIds(Array.from(groupIds));
+};
+
+export const getCoachAthletes = async (
+  coachId: string,
+): Promise<AthleteRow[]> => {
+  try {
+    const trainingGroups = await getTrainingGroupsForCoach(coachId);
+    const athletesById = new Map<string, AthleteRow>();
+
+    trainingGroups.forEach((group) => {
+      group.athletes.forEach((athlete) => {
+        athletesById.set(athlete.id, athlete);
+      });
+    });
+
+    const athletes = Array.from(athletesById.values());
+
+    return athletes.sort((a, b) => a.name.localeCompare(b.name, "sv"));
+  } catch (error) {
+    console.error("Error retrieving coach athletes via SQL query:", error);
+    throw toReadableError(error);
+  }
+};
+
+const getTrainingGroupsByIds = async (
+  groupIds: string[],
+): Promise<TrainingGroupWithMembers[]> => {
+  if (groupIds.length === 0) return [];
+
+  try {
+    const { data, error } = await supabase
+      .from("trainingGroup")
+      .select(
+        `id,name,headCoach:headCoach (id,name,email,isCoach),coaches:trainingGroupCoach (status,coach:coach (id,name,email,isCoach)),athletes:trainingGroupAthlete (status,athlete:athlete (id,name,email,isCoach))`,
+      )
+      .in("id", toDbNumericIds(groupIds))
+      .order("name", { ascending: true });
+
+    if (error) {
+      console.error("Error fetching training groups:", error);
+      throw toReadableError(error);
+    }
+
+    const rows = (data ?? []) as unknown as DbTrainingGroupRow[];
+
+    return rows.map(coerceTrainingGroupRow);
+  } catch (error) {
+    console.error("Error retrieving training groups via SQL query:", error);
+    throw toReadableError(error);
+  }
+};
+
+export const getTrainingGroupsForUser = async (
+  userId: string,
+): Promise<TrainingGroupWithMembers[]> => {
+  try {
+    const groupIds = new Set<string>();
+
+    const { data: headCoachGroups, error: headCoachError } = await supabase
+      .from("trainingGroup")
+      .select("id")
+      .eq("headCoach", userId);
+
+    if (headCoachError) {
+      console.error("Error fetching groups for head coach:", headCoachError);
+      throw toReadableError(headCoachError);
+    }
+
+    headCoachGroups?.forEach((group) => groupIds.add(toId(group.id)));
+
+    const { data: assistantGroups, error: assistantError } = await supabase
+      .from("trainingGroupCoach")
+      .select("group")
+      .eq("coach", userId)
+      .eq("status", "accepted");
+
+    if (assistantError) {
+      console.error("Error fetching assistant coach groups:", assistantError);
+      throw toReadableError(assistantError);
+    }
+
+    assistantGroups?.forEach((group) => groupIds.add(toId(group.group)));
+
+    const { data: athleteGroups, error: athleteError } = await supabase
+      .from("trainingGroupAthlete")
+      .select("group")
+      .eq("athlete", userId)
+      .eq("status", "accepted");
+
+    if (athleteError) {
+      console.error("Error fetching athlete groups:", athleteError);
+      throw toReadableError(athleteError);
+    }
+
+    athleteGroups?.forEach((group) => groupIds.add(toId(group.group)));
+
+    return getTrainingGroupsByIds(Array.from(groupIds));
+  } catch (error) {
+    console.error("Error retrieving training groups:", error);
+    throw toReadableError(error);
+  }
+};
+
+export const createTrainingGroup = async (
+  input: CreateTrainingGroupInput,
+): Promise<TrainingGroupWithMembers> => {
+  const payload = { name: input.name.trim(), headCoach: input.headCoachId };
+
+  if (!payload.name) {
+    throw new Error("Gruppen måste ha ett namn.");
+  }
+
+  try {
+    const createdById = input.createdById;
+    const { data: group, error: groupError } = await supabase
+      .from("trainingGroup")
+      .insert(payload)
+      .select("id")
+      .single();
+
+    if (groupError) {
+      console.error("Error creating training group:", groupError);
+      throw toReadableError(groupError);
+    }
+
+    const groupId = toId(group?.id);
+    const assistantCoachIds = uniqueIds(input.assistantCoachIds ?? []).filter(
+      (coachId) => coachId !== input.headCoachId,
+    );
+
+    if (assistantCoachIds.length > 0) {
+      const { error: coachesError } = await supabase.from("trainingGroupCoach").insert(
+        assistantCoachIds.map((coachId) => ({
+          group: toDbNumericId(groupId),
+          coach: coachId,
+          status: coachId === createdById ? "accepted" : "pending",
+        })),
+      );
+
+      if (coachesError) {
+        console.error("Error linking assistant coaches:", coachesError);
+        throw toReadableError(coachesError);
+      }
+    }
+
+    const athleteIds = uniqueIds(input.athleteIds ?? []);
+    if (athleteIds.length > 0) {
+      const { error: athletesError } = await supabase.from("trainingGroupAthlete").insert(
+        athleteIds.map((athleteId) => ({
+          group: toDbNumericId(groupId),
+          athlete: athleteId,
+          status: athleteId === createdById ? "accepted" : "pending",
+        })),
+      );
+
+      if (athletesError) {
+        console.error("Error linking athletes to group:", athletesError);
+        throw toReadableError(athletesError);
+      }
+    }
+
+    const groups = await getTrainingGroupsByIds([groupId]);
+    const createdGroup = groups[0];
+
+    if (!createdGroup) {
+      throw new Error("Kunde inte läsa in den skapade träningsgruppen.");
+    }
+
+    return createdGroup;
+  } catch (error) {
+    console.error("Error creating training group via SQL query:", error);
+    throw toReadableError(error);
+  }
+};
+
+export const addTrainingGroupMembers = async (
+  input: AddTrainingGroupMembersInput,
+): Promise<void> => {
+  const assistantCoachIds = uniqueIds(input.assistantCoachIds ?? []);
+  const athleteIds = uniqueIds(input.athleteIds ?? []);
+
+  if (assistantCoachIds.length === 0 && athleteIds.length === 0) {
+    return;
+  }
+
+  try {
+    if (assistantCoachIds.length > 0) {
+      const { error } = await supabase
+        .from("trainingGroupCoach")
+        .upsert(
+          assistantCoachIds.map((coachId) => ({
+            group: toDbNumericId(input.groupId),
+            coach: coachId,
+            status: coachId === input.addedById ? "accepted" : "pending",
+          })),
+          { onConflict: "group,coach", ignoreDuplicates: true },
+        );
+
+      if (error) {
+        console.error("Error adding assistant coaches to training group:", error);
+        throw toReadableError(error);
+      }
+    }
+
+    if (athleteIds.length > 0) {
+      const { error } = await supabase
+        .from("trainingGroupAthlete")
+        .upsert(
+          athleteIds.map((athleteId) => ({
+            group: toDbNumericId(input.groupId),
+            athlete: athleteId,
+            status: athleteId === input.addedById ? "accepted" : "pending",
+          })),
+          { onConflict: "group,athlete", ignoreDuplicates: true },
+        );
+
+      if (error) {
+        console.error("Error adding athletes to training group:", error);
+        throw toReadableError(error);
+      }
+    }
+  } catch (error) {
+    console.error("Error adding training group members:", error);
+    throw toReadableError(error);
+  }
+};
+
+export const removeTrainingGroupMember = async (
+  groupId: string,
+  role: TrainingGroupMemberRole,
+  userId: string,
+): Promise<void> => {
+  try {
+    if (role === "assistantCoach") {
+      const { error } = await supabase
+        .from("trainingGroupCoach")
+        .delete()
+        .eq("group", toDbNumericId(groupId))
+        .eq("coach", userId);
+
+      if (error) {
+        console.error("Error removing assistant coach from training group:", error);
+        throw toReadableError(error);
+      }
+      return;
+    }
+
+    const { error } = await supabase
+      .from("trainingGroupAthlete")
+      .delete()
+      .eq("group", toDbNumericId(groupId))
+      .eq("athlete", userId);
+
+    if (error) {
+      console.error("Error removing athlete from training group:", error);
+      throw toReadableError(error);
+    }
+  } catch (error) {
+    console.error("Error removing training group member:", error);
+    throw toReadableError(error);
+  }
+};
+
+export const getPendingTrainingGroupInvites = async (
+  userId: string,
+): Promise<TrainingGroupInvite[]> => {
+  try {
+    const { data: coachInvites, error: coachError } = await supabase
+      .from("trainingGroupCoach")
+      .select(
+        "group:group (id,name,headCoach:headCoach (id,name,email,isCoach)),status,coach",
+      )
+      .eq("coach", userId)
+      .eq("status", "pending");
+
+    if (coachError) {
+      console.error("Error fetching pending coach invites:", coachError);
+      throw toReadableError(coachError);
+    }
+
+    const { data: athleteInvites, error: athleteError } = await supabase
+      .from("trainingGroupAthlete")
+      .select(
+        "group:group (id,name,headCoach:headCoach (id,name,email,isCoach)),status,athlete",
+      )
+      .eq("athlete", userId)
+      .eq("status", "pending");
+
+    if (athleteError) {
+      console.error("Error fetching pending athlete invites:", athleteError);
+      throw toReadableError(athleteError);
+    }
+
+    const coachInviteRows = (coachInvites ?? []) as unknown as Array<{
+      group:
+        | { id: number | string; name: string; headCoach: AthleteRow | null }
+        | { id: number | string; name: string; headCoach: AthleteRow | null }[]
+        | null;
+    }>;
+    const athleteInviteRows = (athleteInvites ?? []) as unknown as Array<{
+      group:
+        | { id: number | string; name: string; headCoach: AthleteRow | null }
+        | { id: number | string; name: string; headCoach: AthleteRow | null }[]
+        | null;
+    }>;
+
+    const invites: TrainingGroupInvite[] = [];
+
+    const getInviteGroup = (
+      group:
+        | { id: number | string; name: string; headCoach: AthleteRow | null }
+        | { id: number | string; name: string; headCoach: AthleteRow | null }[]
+        | null,
+    ) => (Array.isArray(group) ? group[0] : group);
+
+    coachInviteRows.forEach((row) => {
+      const group = getInviteGroup(row.group);
+      if (!group?.headCoach) return;
+      invites.push({
+        groupId: toId(group.id),
+        groupName: group.name,
+        headCoach: group.headCoach,
+        role: "assistantCoach",
+      });
+    });
+
+    athleteInviteRows.forEach((row) => {
+      const group = getInviteGroup(row.group);
+      if (!group?.headCoach) return;
+      invites.push({
+        groupId: toId(group.id),
+        groupName: group.name,
+        headCoach: group.headCoach,
+        role: "athlete",
+      });
+    });
+
+    return invites;
+  } catch (error) {
+    console.error("Error retrieving pending training group invites:", error);
+    throw toReadableError(error);
+  }
+};
+
+export const acceptTrainingGroupInvite = async (
+  groupId: string,
+  role: TrainingGroupInvite["role"],
+  userId: string,
+): Promise<void> => {
+  try {
+    if (role === "assistantCoach") {
+      const { error } = await supabase
+        .from("trainingGroupCoach")
+        .update({ status: "accepted" })
+        .eq("group", toDbNumericId(groupId))
+        .eq("coach", userId)
+        .eq("status", "pending");
+
+      if (error) {
+        console.error("Error accepting coach invite:", error);
+        throw toReadableError(error);
+      }
+      return;
+    }
+
+    const { error } = await supabase
+      .from("trainingGroupAthlete")
+      .update({ status: "accepted" })
+      .eq("group", toDbNumericId(groupId))
+      .eq("athlete", userId)
+      .eq("status", "pending");
+
+    if (error) {
+      console.error("Error accepting athlete invite:", error);
+      throw toReadableError(error);
+    }
+  } catch (error) {
+    console.error("Error accepting training group invite:", error);
+    throw toReadableError(error);
+  }
+};
+
+export const declineTrainingGroupInvite = async (
+  groupId: string,
+  role: TrainingGroupInvite["role"],
+  userId: string,
+): Promise<void> => {
+  try {
+    if (role === "assistantCoach") {
+      const { error } = await supabase
+        .from("trainingGroupCoach")
+        .delete()
+        .eq("group", toDbNumericId(groupId))
+        .eq("coach", userId)
+        .eq("status", "pending");
+
+      if (error) {
+        console.error("Error declining coach invite:", error);
+        throw toReadableError(error);
+      }
+      return;
+    }
+
+    const { error } = await supabase
+      .from("trainingGroupAthlete")
+      .delete()
+      .eq("group", toDbNumericId(groupId))
+      .eq("athlete", userId)
+      .eq("status", "pending");
+
+    if (error) {
+      console.error("Error declining athlete invite:", error);
+      throw toReadableError(error);
+    }
+  } catch (error) {
+    console.error("Error declining training group invite:", error);
+    throw toReadableError(error);
+  }
+};
+
+export const leaveTrainingGroup = async (
+  groupId: string,
+  role: "assistantCoach" | "athlete",
+  userId: string,
+): Promise<void> => {
+  try {
+    if (role === "assistantCoach") {
+      const { error } = await supabase
+        .from("trainingGroupCoach")
+        .delete()
+        .eq("group", toDbNumericId(groupId))
+        .eq("coach", userId)
+        .eq("status", "accepted");
+
+      if (error) {
+        console.error("Error leaving assistant coach group:", error);
+        throw toReadableError(error);
+      }
+      return;
+    }
+
+    const { error } = await supabase
+      .from("trainingGroupAthlete")
+      .delete()
+      .eq("group", toDbNumericId(groupId))
+      .eq("athlete", userId)
+      .eq("status", "accepted");
+
+    if (error) {
+      console.error("Error leaving athlete group:", error);
+      throw toReadableError(error);
+    }
+  } catch (error) {
+    console.error("Error leaving training group:", error);
+    throw toReadableError(error);
+  }
+};
+
+const hasExistingMembership = async (
+  groupId: string,
+  role: "assistantCoach" | "athlete",
+  userId: string,
+): Promise<boolean> => {
+  try {
+    if (role === "assistantCoach") {
+      const { data, error } = await supabase
+        .from("trainingGroupCoach")
+        .select("coach")
+        .eq("group", toDbNumericId(groupId))
+        .eq("coach", userId)
+        .limit(1)
+        .maybeSingle();
+
+      if (error) {
+        console.error("Error checking coach membership:", error);
+        throw toReadableError(error);
+      }
+
+      return Boolean(data);
+    }
+
+    const { data, error } = await supabase
+      .from("trainingGroupAthlete")
+      .select("athlete")
+      .eq("group", toDbNumericId(groupId))
+      .eq("athlete", userId)
+      .limit(1)
+      .maybeSingle();
+
+    if (error) {
+      console.error("Error checking athlete membership:", error);
+      throw toReadableError(error);
+    }
+
+    return Boolean(data);
+  } catch (error) {
+    console.error("Error verifying training group membership:", error);
+    throw toReadableError(error);
+  }
+};
+
+export const addTrainingGroupMember = async (
+  groupId: string,
+  role: "assistantCoach" | "athlete",
+  userId: string,
+): Promise<void> => {
+  try {
+    const exists = await hasExistingMembership(groupId, role, userId);
+    if (exists) return;
+
+    if (role === "assistantCoach") {
+      const { error } = await supabase.from("trainingGroupCoach").insert({
+        group: toDbNumericId(groupId),
+        coach: userId,
+        status: "pending",
+      });
+
+      if (error) {
+        console.error("Error adding assistant coach to group:", error);
+        throw toReadableError(error);
+      }
+      return;
+    }
+
+    const { error } = await supabase.from("trainingGroupAthlete").insert({
+      group: toDbNumericId(groupId),
+      athlete: userId,
+      status: "pending",
+    });
+
+    if (error) {
+      console.error("Error adding athlete to group:", error);
+      throw toReadableError(error);
+    }
+  } catch (error) {
+    console.error("Error adding training group member:", error);
+    throw toReadableError(error);
+  }
+};
+
+export const requestTrainingGroupJoin = async (
+  groupId: string,
+  athleteId: string,
+): Promise<void> => {
+  try {
+    const exists = await hasExistingMembership(groupId, "athlete", athleteId);
+    if (exists) return;
+
+    const { error } = await supabase.from("trainingGroupAthlete").insert({
+      group: toDbNumericId(groupId),
+      athlete: athleteId,
+      status: "requested",
+    });
+
+    if (error) {
+      console.error("Error requesting to join training group:", error);
+      throw toReadableError(error);
+    }
+  } catch (error) {
+    console.error("Error requesting training group join:", error);
+    throw toReadableError(error);
+  }
+};
+
+export const getTrainingGroupJoinRequestsForAthlete = async (
+  athleteId: string,
+): Promise<string[]> => {
+  try {
+    const { data, error } = await supabase
+      .from("trainingGroupAthlete")
+      .select("group")
+      .eq("athlete", athleteId)
+      .eq("status", "requested");
+
+    if (error) {
+      console.error("Error fetching athlete join requests:", error);
+      throw toReadableError(error);
+    }
+
+    return toIds((data ?? []).map((row) => row.group as number | string));
+  } catch (error) {
+    console.error("Error retrieving athlete join requests:", error);
+    throw toReadableError(error);
+  }
+};
+
+export const getTrainingGroupJoinRequestsForGroup = async (
+  groupId: string,
+): Promise<AthleteRow[]> => {
+  try {
+    const { data, error } = await supabase
+      .from("trainingGroupAthlete")
+      .select("athlete:athlete (id,name,email,isCoach),status")
+      .eq("group", toDbNumericId(groupId))
+      .eq("status", "requested");
+
+    if (error) {
+      console.error("Error fetching training group join requests:", error);
+      throw toReadableError(error);
+    }
+
+    const rows = (data ?? []) as unknown as Array<{
+      athlete: AthleteRow | AthleteRow[] | null;
+    }>;
+
+    const getAthlete = (athlete: AthleteRow | AthleteRow[] | null) =>
+      (Array.isArray(athlete) ? athlete[0] : athlete) ?? null;
+
+    return rows
+      .map((row) => getAthlete(row.athlete))
+      .filter(Boolean) as AthleteRow[];
+  } catch (error) {
+    console.error("Error retrieving training group join requests:", error);
+    throw toReadableError(error);
+  }
+};
+
+export const getTrainingGroupJoinRequestsForCoach = async (
+  coachId: string,
+): Promise<TrainingGroupJoinRequest[]> => {
+  try {
+    const { data, error } = await supabase
+      .from("trainingGroupAthlete")
+      .select(
+        "athlete:athlete (id,name,email,isCoach),group:group (id,name,headCoach:headCoach (id,name,email,isCoach)),status",
+      )
+      .eq("status", "requested")
+      .eq("group.headCoach", coachId);
+
+    if (error) {
+      console.error("Error fetching coach join requests:", error);
+      throw toReadableError(error);
+    }
+
+    const rows = (data ?? []) as unknown as Array<{
+      athlete: AthleteRow | AthleteRow[] | null;
+      group:
+        | { id: number | string; name: string; headCoach: AthleteRow | null }
+        | { id: number | string; name: string; headCoach: AthleteRow | null }[]
+        | null;
+    }>;
+
+    const getAthlete = (athlete: AthleteRow | AthleteRow[] | null) =>
+      (Array.isArray(athlete) ? athlete[0] : athlete) ?? null;
+    const getGroup = (
+      group:
+        | { id: number | string; name: string; headCoach: AthleteRow | null }
+        | { id: number | string; name: string; headCoach: AthleteRow | null }[]
+        | null,
+    ) => (Array.isArray(group) ? group[0] : group);
+
+    return rows.reduce<TrainingGroupJoinRequest[]>((acc, row) => {
+      const athlete = getAthlete(row.athlete);
+      const group = getGroup(row.group);
+      if (!athlete || !group?.headCoach) return acc;
+      acc.push({
+        groupId: toId(group.id),
+        groupName: group.name,
+        headCoach: group.headCoach,
+        athlete,
+      });
+      return acc;
+    }, []);
+  } catch (error) {
+    console.error("Error retrieving coach join requests:", error);
+    throw toReadableError(error);
+  }
+};
+
+export const approveTrainingGroupJoinRequest = async (
+  groupId: string,
+  athleteId: string,
+): Promise<void> => {
+  try {
+    const { error } = await supabase
+      .from("trainingGroupAthlete")
+      .update({ status: "accepted" })
+      .eq("group", toDbNumericId(groupId))
+      .eq("athlete", athleteId)
+      .eq("status", "requested");
+
+    if (error) {
+      console.error("Error approving training group join request:", error);
+      throw toReadableError(error);
+    }
+  } catch (error) {
+    console.error("Error approving training group join request:", error);
+    throw toReadableError(error);
+  }
+};
+
+export const declineTrainingGroupJoinRequest = async (
+  groupId: string,
+  athleteId: string,
+): Promise<void> => {
+  try {
+    const { error } = await supabase
+      .from("trainingGroupAthlete")
+      .delete()
+      .eq("group", toDbNumericId(groupId))
+      .eq("athlete", athleteId)
+      .eq("status", "requested");
+
+    if (error) {
+      console.error("Error declining training group join request:", error);
+      throw toReadableError(error);
+    }
+  } catch (error) {
+    console.error("Error declining training group join request:", error);
+    throw toReadableError(error);
+  }
+};
+
+
+export const deleteTrainingGroup = async (groupId: string): Promise<void> => {
+  try {
+    const numericGroupId = toDbNumericId(groupId);
+
+    const { error: coachError } = await supabase
+      .from("trainingGroupCoach")
+      .delete()
+      .eq("group", numericGroupId);
+
+    if (coachError) {
+      console.error("Error removing training group coaches:", coachError);
+      throw toReadableError(coachError);
+    }
+
+    const { error: athleteError } = await supabase
+      .from("trainingGroupAthlete")
+      .delete()
+      .eq("group", numericGroupId);
+
+    if (athleteError) {
+      console.error("Error removing training group athletes:", athleteError);
+      throw toReadableError(athleteError);
+    }
+
+    const { error: groupError } = await supabase
+      .from("trainingGroup")
+      .delete()
+      .eq("id", numericGroupId);
+
+    if (groupError) {
+      console.error("Error deleting training group:", groupError);
+      throw toReadableError(groupError);
+    }
+  } catch (error) {
+    console.error("Error deleting training group:", error);
+    throw toReadableError(error);
+  }
+};
+
 export const upsertScheduleModuleFeedback = async (
   input: UpsertScheduleModuleFeedbackInput,
 ): Promise<ScheduleModuleFeedbackRow> => {
+  const formatted = formatFeedbackPayloadFromResponses(input.responses ?? []);
   const payload = {
     moduleId: toDbNumericId(input.moduleId),
     scheduleDayId: toDbNumericId(input.scheduleDayId),
-    distance: sanitizeNumber(input.distance) ?? null,
-    duration: sanitizeNumber(input.duration) ?? null,
-    weight: sanitizeNumber(input.weight) ?? null,
-    comment: input.comment?.trim() || null,
-    feeling: sanitizeNumber(input.feeling) ?? null,
-    sleepHours: sanitizeNumber(input.sleepHours) ?? null,
+    distance: formatted.distance,
+    duration: formatted.duration,
+    weight: formatted.weight,
+    comment: formatted.comment,
+    feeling: formatted.feeling,
+    sleepHours: formatted.sleepHours,
   } satisfies Omit<DbScheduleModuleFeedbackRow, "id">;
 
   try {
     const { data, error } = await supabase
       .from("scheduleModuleFeedback")
       .upsert(payload, { onConflict: "moduleId,scheduleDayId" })
-      .select(
-        "id,moduleId,scheduleDayId,distance,duration,weight,comment,feeling,sleepHours",
-      )
+      .select("id,moduleId,scheduleDayId,distance,duration,weight,comment,feeling,sleepHours")
       .single();
 
     if (error) {
@@ -319,11 +1537,13 @@ export const upsertScheduleModuleFeedback = async (
       throw toReadableError(error);
     }
 
-    return coerceScheduleModuleFeedbackRow({
+    const coerced = coerceScheduleModuleFeedbackRow({
       ...data,
       moduleId: data.moduleId ?? payload.moduleId,
       scheduleDayId: data.scheduleDayId ?? payload.scheduleDayId,
     } as DbScheduleModuleFeedbackRow);
+
+    return { ...coerced, responses: input.responses ?? [] };
   } catch (error) {
     console.error("Error persisting schedule module feedback via SQL query:", error);
     throw toReadableError(error);
@@ -352,10 +1572,40 @@ export const getScheduleWeeksByAthlete = async (
   }
 };
 
+export const getScheduleTemplatesByOwner = async (
+  ownerId: string,
+): Promise<ScheduleTemplateRow[]> => {
+  try {
+    const { data, error } = await supabase
+      .from("scheduleTemplate")
+      .select("id,name,owner")
+      .eq("owner", ownerId)
+      .order("name", { ascending: true });
+
+    if (error) {
+      console.error("Error fetching schedule templates:", error);
+      throw toReadableError(error);
+    }
+
+    return (data ?? []).map(coerceScheduleTemplateRow);
+  } catch (error) {
+    console.error("Error retrieving schedule templates via SQL query:", error);
+    throw toReadableError(error);
+  }
+};
+
 export type ScheduleDayWithModules = ScheduleDayRow & { modules: ScheduleDayModule[] };
 
 export type ScheduleWeekWithModules = ScheduleWeekRow & {
   days: ScheduleDayWithModules[];
+};
+
+export type ScheduleTemplateDayWithModules = ScheduleTemplateDayRow & {
+  modules: ModuleRow[];
+};
+
+export type ScheduleTemplateWithModules = ScheduleTemplateRow & {
+  days: ScheduleTemplateDayWithModules[];
 };
 
 const getScheduleDaysWithModules = async (
@@ -428,9 +1678,7 @@ const getScheduleDaysWithModules = async (
     if (dayIdsForQuery.length > 0) {
       const { data: feedbackData, error: feedbackError } = await supabase
         .from("scheduleModuleFeedback")
-        .select(
-          "id,moduleId,scheduleDayId,distance,duration,weight,comment,feeling,sleepHours",
-        )
+        .select("id,moduleId,scheduleDayId,distance,duration,weight,comment,feeling,sleepHours")
         .in("scheduleDayId", dayIdsForQuery);
 
       if (feedbackError) {
@@ -467,6 +1715,103 @@ const getScheduleDaysWithModules = async (
   }
 };
 
+const getScheduleTemplateDaysWithModules = async (
+  templateId: string,
+): Promise<ScheduleTemplateDayWithModules[]> => {
+  try {
+    const { data: templateDays, error: templateDaysError } = await supabase
+      .from("scheduleTemplateDay")
+      .select("id,day,templateId")
+      .eq("templateId", toDbNumericId(templateId))
+      .order("day", { ascending: true });
+
+    if (templateDaysError) {
+      console.error("Error fetching schedule template days:", templateDaysError);
+      throw templateDaysError;
+    }
+
+    const days = (templateDays ?? []).map(coerceScheduleTemplateDayRow);
+    if (days.length === 0) return [];
+
+    const dayIds = days.map((day) => day.id);
+    const dayIdsForQuery = toDbNumericIds(dayIds);
+
+    const { data: moduleLinks, error: moduleLinksError } = await supabase
+      .from("_ModuleToScheduleTemplateDay")
+      .select("A,B")
+      .in("B", dayIdsForQuery);
+
+    if (moduleLinksError) {
+      console.error(
+        "Error fetching module links for schedule template days:",
+        moduleLinksError,
+      );
+      throw moduleLinksError;
+    }
+
+    const links = (moduleLinks ?? []).map(coerceModuleTemplateLinkRow);
+    if (links.length === 0) {
+      return days.map((day) => ({ ...day, modules: [] }));
+    }
+
+    const moduleIds = Array.from(new Set(links.map((link) => link.moduleId)));
+    const moduleIdsForQuery = toDbNumericIds(moduleIds);
+
+    const { data: modules, error: modulesError } = await supabase
+      .from("module")
+      .select(moduleSelectColumns)
+      .in("id", moduleIdsForQuery);
+
+    if (modulesError) {
+      console.error(
+        "Error fetching modules for schedule template days:",
+        modulesError,
+      );
+      throw modulesError;
+    }
+
+    const modulesList = (modules ?? []).map(coerceModuleRow);
+    const modulesById = new Map(modulesList.map((module) => [module.id, module]));
+    const modulesByDayId = new Map<string, ModuleRow[]>();
+    dayIds.forEach((dayId) => modulesByDayId.set(dayId, []));
+
+    links.forEach((link) => {
+      const linkedModule = modulesById.get(link.moduleId);
+      if (!linkedModule) return;
+
+      const current = modulesByDayId.get(link.dayId);
+      if (current) {
+        current.push(linkedModule);
+      }
+    });
+
+    const aggregatedByDay = new Map<number, ScheduleTemplateDayWithModules>();
+
+    days.forEach((day) => {
+      const modulesForDay = modulesByDayId.get(day.id) ?? [];
+      const existing = aggregatedByDay.get(day.day);
+
+      if (existing) {
+        existing.modules.push(...modulesForDay);
+        return;
+      }
+
+      aggregatedByDay.set(day.day, {
+        ...day,
+        modules: [...modulesForDay],
+      });
+    });
+
+    return Array.from(aggregatedByDay.values()).sort((a, b) => a.day - b.day);
+  } catch (error) {
+    console.error(
+      "Error retrieving schedule template days with modules via SQL query:",
+      error,
+    );
+    throw toReadableError(error);
+  }
+};
+
 const fillMissingDays = (weekId: string, days: ScheduleDayWithModules[]) => {
   const existing = new Map(days.map((day) => [day.day, day]));
 
@@ -477,6 +1822,25 @@ const fillMissingDays = (weekId: string, days: ScheduleDayWithModules[]) => {
         id: `${weekId}-day-${dayNumber}`,
         day: dayNumber,
         weekId,
+        modules: [],
+      }
+    );
+  });
+};
+
+const fillMissingTemplateDays = (
+  templateId: string,
+  days: ScheduleTemplateDayWithModules[],
+) => {
+  const existing = new Map(days.map((day) => [day.day, day]));
+
+  return Array.from({ length: 7 }, (_, index) => {
+    const dayNumber = index + 1;
+    return (
+      existing.get(dayNumber) ?? {
+        id: `${templateId}-day-${dayNumber}`,
+        day: dayNumber,
+        templateId,
         modules: [],
       }
     );
@@ -540,9 +1904,7 @@ export const getScheduleWeeksWithModules = async (
 
     const { data: modules, error: modulesError } = await supabase
       .from("module")
-      .select(
-        "id,owner,name,category,subCategory,distance,duration,weight,description,comment,feeling,sleepHours",
-      )
+      .select(moduleSelectColumns)
       .in("id", moduleIdsForQuery);
 
     if (modulesError) {
@@ -571,9 +1933,7 @@ export const getScheduleWeeksWithModules = async (
   if (dayIdsForQuery.length > 0) {
     const { data: feedbackData, error: feedbackError } = await supabase
       .from("scheduleModuleFeedback")
-      .select(
-        "id,moduleId,scheduleDayId,distance,duration,weight,comment,feeling,sleepHours",
-      )
+      .select("id,moduleId,scheduleDayId,distance,duration,weight,comment,feeling,sleepHours")
       .in("scheduleDayId", dayIdsForQuery);
 
     if (feedbackError) {
@@ -666,6 +2026,23 @@ const deleteScheduleLinksForDays = async (dayIds: string[]) => {
   }
 };
 
+const deleteScheduleTemplateLinksForDays = async (dayIds: string[]) => {
+  if (dayIds.length === 0) return;
+
+  const numericDayIds = toDbNumericIds(dayIds);
+
+  const { error } = await supabase
+    .from("_ModuleToScheduleTemplateDay")
+    .delete()
+    .in("B", numericDayIds);
+
+  if (error) {
+    const message = formatSupabaseError(error);
+    console.error("Error deleting module links for schedule template days:", message);
+    throw toReadableError(error);
+  }
+};
+
 const deleteScheduleFeedbackForDays = async (dayIds: string[]) => {
   if (dayIds.length === 0) return;
 
@@ -679,6 +2056,25 @@ const deleteScheduleFeedbackForDays = async (dayIds: string[]) => {
   if (error) {
     const message = formatSupabaseError(error);
     console.error("Error deleting schedule module feedback for days:", message);
+    throw toReadableError(error);
+  }
+};
+
+const deleteScheduleTemplateDays = async (templateId: string, dayIds: string[]) => {
+  if (dayIds.length === 0) return;
+
+  const numericTemplateId = toDbNumericId(templateId);
+  const numericDayIds = toDbNumericIds(dayIds);
+
+  const { error } = await supabase
+    .from("scheduleTemplateDay")
+    .delete()
+    .in("id", numericDayIds)
+    .eq("templateId", numericTemplateId);
+
+  if (error) {
+    const message = formatSupabaseError(error);
+    console.error("Error deleting schedule template days:", message);
     throw toReadableError(error);
   }
 };
@@ -730,6 +2126,32 @@ export const clearScheduleWeek = async (weekId: string): Promise<void> => {
   }
 };
 
+export const clearScheduleTemplate = async (templateId: string): Promise<void> => {
+  try {
+    const numericTemplateId = toDbNumericId(templateId);
+
+    const { data: existingDays, error } = await supabase
+      .from("scheduleTemplateDay")
+      .select("id")
+      .eq("templateId", numericTemplateId);
+
+    if (error) {
+      const message = formatSupabaseError(error);
+      console.error("Error fetching schedule template days to clear:", message);
+      throw toReadableError(error);
+    }
+
+    const dayIds = toIds((existingDays ?? []).map((day) => day.id));
+    if (dayIds.length === 0) return;
+
+    await deleteScheduleTemplateLinksForDays(dayIds);
+    await deleteScheduleTemplateDays(templateId, dayIds);
+  } catch (error) {
+    const message = formatSupabaseError(error);
+    console.error("Error clearing schedule template via SQL query:", message);
+    throw toReadableError(error);
+  }
+};
 export const getScheduleWeekWithModulesById = async (
   weekId: string,
 ): Promise<ScheduleWeekWithModules | null> => {
@@ -761,19 +2183,51 @@ export const getScheduleWeekWithModulesById = async (
   }
 };
 
+export const getScheduleTemplateWithModulesById = async (
+  templateId: string,
+): Promise<ScheduleTemplateWithModules | null> => {
+  try {
+    const { data: template, error } = await supabase
+      .from("scheduleTemplate")
+      .select("id,name,owner")
+      .eq("id", toDbNumericId(templateId))
+      .maybeSingle();
+
+    if (error) {
+      console.error("Error fetching schedule template by id:", error);
+      throw toReadableError(error);
+    }
+
+    if (!template) return null;
+
+    const days = await getScheduleTemplateDaysWithModules(toId(template.id));
+
+    const coercedTemplate = coerceScheduleTemplateRow(template);
+
+    return {
+      ...coercedTemplate,
+      days: fillMissingTemplateDays(coercedTemplate.id, days),
+    };
+  } catch (error) {
+    console.error(
+      "Error retrieving schedule template with modules via SQL query:",
+      error,
+    );
+    throw toReadableError(error);
+  }
+};
+
 export const createModule = async (input: CreateModuleInput): Promise<ModuleRow> => {
   const payload = {
     owner: input.ownerId,
     name: input.name,
     category: input.category,
     subCategory: input.subCategory?.trim() || null,
-    distance: sanitizeNumber(input.distance) ?? null,
-    duration: sanitizeNumber(input.duration) ?? null,
-    weight: sanitizeNumber(input.weight) ?? null,
     description: input.description?.trim() || null,
-    comment: input.comment?.trim() || null,
-    feeling: sanitizeNumber(input.feeling) ?? null,
-    sleepHours: sanitizeNumber(input.sleepHours) ?? null,
+    visibleToAllCoaches: Boolean(input.visibleToAllCoaches),
+    activeFeedbackFields: Array.isArray(input.feedbackFields)
+      ? input.feedbackFields
+      : [],
   } satisfies Omit<ModuleRow, "id">;
 
   try {
@@ -787,6 +2241,38 @@ export const createModule = async (input: CreateModuleInput): Promise<ModuleRow>
     return coerceModuleRow(data);
   } catch (error) {
     console.error("ƒ?O Error creating module:", error);
+    throw toReadableError(error);
+  }
+};
+
+export const updateModule = async (input: UpdateModuleInput): Promise<ModuleRow> => {
+  const payload = {
+    name: input.name,
+    category: input.category,
+    subCategory: input.subCategory?.trim() || null,
+    description: input.description?.trim() || null,
+    visibleToAllCoaches: input.visibleToAllCoaches,
+    activeFeedbackFields: Array.isArray(input.feedbackFields)
+      ? input.feedbackFields
+      : [],
+  } satisfies Partial<ModuleRow>;
+
+  try {
+    const { data, error } = await supabase
+      .from("module")
+      .update(payload)
+      .eq("id", toDbNumericId(input.id))
+      .select()
+      .single();
+
+    if (error) {
+      console.error("Error updating module:", error);
+      throw toReadableError(error);
+    }
+
+    return coerceModuleRow(data);
+  } catch (error) {
+    console.error("Error updating module via SQL query:", error);
     throw toReadableError(error);
   }
 };
@@ -832,6 +2318,39 @@ export const createScheduleWeek = async (
   }
 };
 
+export const createScheduleTemplate = async (
+  input: CreateScheduleTemplateInput,
+): Promise<ScheduleTemplateRow> => {
+  const name = input.name.trim();
+
+  if (!name) {
+    throw new Error("Mallnamn krävs för att spara en mall.");
+  }
+
+  const payload = {
+    owner: input.ownerId,
+    name,
+  } satisfies Omit<ScheduleTemplateRow, "id">;
+
+  try {
+    const { data, error } = await supabase
+      .from("scheduleTemplate")
+      .insert(payload)
+      .select()
+      .single();
+
+    if (error) {
+      console.error("Error creating schedule template:", error);
+      throw toReadableError(error);
+    }
+
+    return coerceScheduleTemplateRow(data);
+  } catch (error) {
+    console.error("Error persisting schedule template via SQL query:", error);
+    throw toReadableError(error);
+  }
+};
+
 export const updateScheduleWeek = async (
   weekId: string,
   updates: Partial<Pick<ScheduleWeekRow, "title">>,
@@ -858,6 +2377,49 @@ export const updateScheduleWeek = async (
     return coerceScheduleWeekRow(data);
   } catch (error) {
     console.error("Error persisting schedule week updates via SQL query:", error);
+    throw toReadableError(error);
+  }
+};
+
+const createScheduleTemplateDay = async (
+  templateId: string,
+  day: number,
+): Promise<ScheduleTemplateDayRow> => {
+  try {
+    const numericTemplateId = toDbNumericId(templateId);
+
+    const { data: existingDay, error: existingError } = await supabase
+      .from("scheduleTemplateDay")
+      .select("id,day,templateId")
+      .eq("templateId", numericTemplateId)
+      .eq("day", day)
+      .order("id", { ascending: true })
+      .limit(1);
+
+    if (existingError) {
+      console.error("Error checking for existing schedule template day:", existingError);
+      throw toReadableError(existingError);
+    }
+
+    const alreadyCreatedDay = existingDay?.[0];
+    if (alreadyCreatedDay) {
+      return coerceScheduleTemplateDayRow(alreadyCreatedDay);
+    }
+
+    const { data, error } = await supabase
+      .from("scheduleTemplateDay")
+      .insert({ templateId: numericTemplateId, day })
+      .select()
+      .single();
+
+    if (error) {
+      console.error("Error creating schedule template day:", error);
+      throw toReadableError(error);
+    }
+
+    return coerceScheduleTemplateDayRow(data);
+  } catch (error) {
+    console.error("Error persisting schedule template day via SQL query:", error);
     throw toReadableError(error);
   }
 };
@@ -929,33 +2491,138 @@ export const addModuleToScheduleDay = async (
   }
 };
 
-export const createUser = async (input: CreateUserInput): Promise<AthleteRow> => {
+export const addModuleToScheduleTemplateDay = async (
+  input: AddModuleToScheduleTemplateDayInput,
+): Promise<{ day: ScheduleTemplateDayRow; link: ModuleScheduleTemplateDayRow }> => {
+  const dayRow = await createScheduleTemplateDay(input.templateId, input.day);
+
+  try {
+    const { data: linkRow, error } = await supabase
+      .from("_ModuleToScheduleTemplateDay")
+      .insert({
+        A: input.moduleId,
+        B: toDbNumericId(dayRow.id),
+      })
+      .select()
+      .single();
+
+    if (error) {
+      console.error("Error linking module to schedule template day:", error);
+      throw toReadableError(error);
+    }
+
+    return { day: dayRow, link: coerceModuleTemplateLinkRow(linkRow) };
+  } catch (error) {
+    console.error("Error persisting module link for schedule template via SQL query:", error);
+    throw toReadableError(error);
+  }
+};
+
+const isPostgrestError = (error: unknown): error is PostgrestError =>
+  Boolean(error) && typeof (error as PostgrestError).code === "string";
+
+const isRlsInsertError = (error: unknown) => {
+  if (!isPostgrestError(error)) return false;
+
+  return (
+    error.code === "42501" ||
+    error.message?.toLowerCase().includes("row-level security") ||
+    error.details?.toLowerCase().includes("row-level security")
+  );
+};
+
+const resolveAccessToken = async (client: SupabaseClient = getSupabaseBrowserClient()) => {
+  const { data: sessionData, error: sessionError } = await client.auth.getSession();
+
+  if (!sessionError && sessionData.session?.access_token) {
+    return sessionData.session.access_token;
+  }
+
+  const { data: refreshedSession, error: refreshError } = await client.auth.refreshSession();
+
+  if (refreshError) {
+    console.error("Failed to refresh Supabase session for access token", refreshError);
+    return null;
+  }
+
+  return refreshedSession.session?.access_token ?? null;
+};
+
+const persistUserWithServiceRole = async (input: CreateUserInput): Promise<AthleteRow> => {
+  const accessToken = input.accessToken ?? (await resolveAccessToken());
+
+  if (!accessToken) {
+    throw new Error(
+      "Unable to create user profile because no Supabase access token was provided to validate the request.",
+    );
+  }
+
+  const response = await fetch("/api/profiles", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      id: input.id,
+      email: input.email,
+      name: input.name,
+      isCoach: Boolean(input.isCoach),
+      accessToken,
+    }),
+  });
+
+  if (!response.ok) {
+    const errorMessage = (await response.text()) || response.statusText;
+    throw new Error(errorMessage);
+  }
+
+  return (await response.json()) as AthleteRow;
+};
+
+export const createUser = async (
+  input: CreateUserInput,
+  client: SupabaseClient = supabase,
+): Promise<AthleteRow> => {
   const payload = {
+    id: input.id,
     name: input.name.trim(),
     email: input.email.trim(),
     isCoach: Boolean(input.isCoach),
-  } satisfies Omit<AthleteRow, "id">;
+  } satisfies AthleteRow;
 
   try {
-    const { data, error } = await supabase.from("user").insert(payload).select().single();
+    const { data, error } = await client.from("user").insert(payload).select().single();
 
     if (error) {
       console.error("Error creating user:", error);
+
+      if (isRlsInsertError(error)) {
+        return persistUserWithServiceRole(input);
+      }
+
       throw toReadableError(error);
     }
 
     return data;
   } catch (error) {
     console.error("Error persisting user via SQL query:", error);
+
+    if (isRlsInsertError(error)) {
+      return persistUserWithServiceRole(input);
+    }
+
     throw toReadableError(error);
   }
 };
 
-export const findUserByEmail = async (email: string): Promise<AthleteRow | null> => {
+export const findUserByEmail = async (
+  email: string,
+  client: SupabaseClient = supabase,
+): Promise<AthleteRow | null> => {
   console.log("Finding user by email:", email);
 
   try {
-    const { data: user, error } = await supabase
+    const { data: user, error } = await client
       .from("user")
       .select("id,name,email,isCoach")
       .eq("email", email)
@@ -977,12 +2644,16 @@ export const findUserByEmail = async (email: string): Promise<AthleteRow | null>
 
 export const ensureUserForAuth = async (
   authUser: SupabaseAuthUser,
+  accessTokenOverride?: string | null,
 ): Promise<AthleteRow> => {
   if (!authUser.email) {
     throw new Error("Authenticated user is missing an email.");
   }
 
-  const existingUser = await findUserByEmail(authUser.email);
+  const supabaseClient = getSupabaseBrowserClient();
+  const accessToken = accessTokenOverride ?? (await resolveAccessToken(supabaseClient)) ?? undefined;
+
+  const existingUser = await findUserByEmail(authUser.email, supabaseClient);
   if (existingUser) return existingUser;
 
   const nameFromMetadata =
@@ -993,9 +2664,14 @@ export const ensureUserForAuth = async (
   const name = nameFromMetadata || authUser.email;
   const isCoach = Boolean(authUser.user_metadata?.isCoach);
 
-  return createUser({
-    email: authUser.email,
-    name,
-    isCoach,
-  });
+  return createUser(
+    {
+      id: authUser.id,
+      email: authUser.email,
+      name,
+      isCoach,
+      accessToken,
+    },
+    supabaseClient,
+  );
 };

@@ -6,6 +6,7 @@ export type Module = {
   description: string;
   category: Category;
   subcategory?: string;
+  visibleToAllCoaches?: boolean;
   distance?: number | null;
   duration?: number | null;
   weight?: number | null;
@@ -13,6 +14,7 @@ export type Module = {
   feeling?: number | null;
   sleepHours?: number | null;
   sourceModuleId?: string;
+  feedbackFields?: FeedbackFieldDefinition[];
 };
 
 export type DaySchedule = Record<string, Module[]>;
@@ -33,13 +35,14 @@ export type ModuleForm = {
   description: string;
   category: string;
   subcategory: string;
+  visibleToAllCoaches: boolean;
   distance: string;
   duration: string;
   weight: string;
   comment: string;
   feeling: string;
   sleepHours: string;
-  activeFeedbackFields: FeedbackFieldType[];
+  feedbackFields: FeedbackFieldDefinition[];
 };
 
 export type FeedbackFieldType =
@@ -50,10 +53,22 @@ export type FeedbackFieldType =
   | "feeling"
   | "sleepHours";
 
+export type FeedbackFieldDefinition = {
+  id: string;
+  type: FeedbackFieldType;
+  label?: string;
+};
+
 export type Athlete = {
   id: string;
   name: string;
   sport: string;
+};
+
+export type TrainingGroup = {
+  id: string;
+  name: string;
+  athletes: Athlete[];
 };
 
 export type Day = { id: string; label: string };

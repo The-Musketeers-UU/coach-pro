@@ -144,7 +144,7 @@ export function ReusableBlocksModal({
             onClick={onAddModule}
             disabled={!selectedModuleId}
           >
-            Lägg
+            Lägg till i schema
           </button>
         </div>
       </div>

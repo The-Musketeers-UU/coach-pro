@@ -1,14 +1,28 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import { useRouter } from "next/navigation";
 
-import { WeekScheduleView, type ProgramWeek } from "@/components/WeekScheduleView";
+import {
+  WeekSelector,
+  createRollingWeekOptions,
+  getCurrentWeekValue,
+  getWeekSelection,
+} from "@/components/WeekSelector";
+
+import {
+  WeekScheduleView,
+  type FeedbackFieldKey,
+  type FeedbackFieldDefinition,
+  type ProgramWeek,
+} from "@/components/WeekScheduleView";
+
 import { useAuth } from "@/components/auth-provider";
 import {
   type ScheduleWeekWithModules,
   getScheduleWeeksWithModules,
 } from "@/lib/supabase/training-modules";
-import { findClosestWeekIndex, getIsoWeekNumber } from "@/lib/week";
+import { formatIsoWeekMonthYear, getIsoWeekNumber } from "@/lib/week";
 
 const dayLabels = [
   "Måndag",
@@ -21,85 +35,124 @@ const dayLabels = [
 ];
 
 const toProgramWeek = (week: ScheduleWeekWithModules): ProgramWeek => ({
-    id: week.id,
-    label: week.title || `Vecka ${week.week}`,
-    focus: `Ägare: ${week.owner}`,
-    days: week.days.map((day) => ({
-      id: day.id,
-      label: dayLabels[day.day - 1] ?? `Dag ${day.day}`,
-    modules: day.modules.map((module) => ({
-      id: module.id,
-      scheduleDayId: module.scheduleDayId,
-      title: module.name,
-      description: module.description ?? "",
-      category: module.category,
-      subcategory: module.subCategory ?? undefined,
-      distance: module.feedback?.distance ?? module.distance,
-      weight: module.feedback?.weight ?? module.weight,
-      duration: module.feedback?.duration ?? module.duration,
-      comment: module.feedback?.comment ?? module.comment,
-      feeling: module.feedback?.feeling ?? module.feeling,
-      sleepHours: module.feedback?.sleepHours ?? module.sleepHours,
-      feedback: module.feedback && {
-        distance: module.feedback.distance,
-        weight: module.feedback.weight,
-        duration: module.feedback.duration,
-        comment: module.feedback.comment,
-        feeling: module.feedback.feeling,
-        sleepHours: module.feedback.sleepHours,
-      },
-    })),
+  id: week.id,
+  label: week.title || `Vecka ${week.week}`,
+  days: week.days.map((day) => ({
+    id: day.id,
+    label: dayLabels[day.day - 1] ?? `Dag ${day.day}`,
+    dayNumber: day.day,
+    modules: day.modules.map((module) => {
+      const responses = module.feedback?.responses ?? [];
+
+      const byType = new Map<FeedbackFieldKey, number | string | null>();
+      for (const r of responses) byType.set(r.type, r.value);
+
+      const getNumeric = (type: FeedbackFieldKey) => {
+        const matched = byType.get(type);
+        if (matched === null || matched === undefined) return null;
+        const parsed = Number(matched);
+        return Number.isFinite(parsed) ? parsed : null;
+      };
+
+      const getText = (type: FeedbackFieldKey) => {
+        const matched = byType.get(type);
+        return matched === null || matched === undefined ? null : String(matched);
+      };
+
+      return {
+        id: module.id,
+        scheduleDayId: module.scheduleDayId,
+        title: module.name,
+        description: module.description ?? "",
+        category: module.category,
+        subcategory: module.subCategory ?? undefined,
+        distance: getNumeric("distance"),
+        weight: getNumeric("weight"),
+        duration: getNumeric("duration"),
+        comment: getText("comment"),
+        feeling: getNumeric("feeling"),
+        sleepHours: getNumeric("sleepHours"),
+        feedbackFields: module.activeFeedbackFields ?? [],
+        feedbackResponses: responses,
+      };
+    }),
   })),
 });
 
 export default function AthleteSchedulePage() {
+  const router = useRouter();
   const { user, profile, isLoading, isLoadingProfile } = useAuth();
-  const [weekIndex, setWeekIndex] = useState(0);
+  const weekOptions = useMemo(() => createRollingWeekOptions(), []);
+  const currentWeekValue = useMemo(() => getCurrentWeekValue(), []);
+  const [selectedWeekValue, setSelectedWeekValue] = useState(currentWeekValue);
   const [rawWeeks, setRawWeeks] = useState<ScheduleWeekWithModules[]>([]);
-  const [isFetching, setIsFetching] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const currentWeekNumber = getIsoWeekNumber(new Date());
-
-  const viewWeeks = useMemo(() => rawWeeks.map(toProgramWeek), [rawWeeks]);
-  const safeWeekIndex = Math.min(
-    Math.max(weekIndex, 0),
-    Math.max(viewWeeks.length - 1, 0),
+  const currentWeekNumber = useMemo(() => getIsoWeekNumber(new Date()), []);
+  const availableWeeks = useMemo(
+    () => new Set(rawWeeks.map((week) => week.week)),
+    [rawWeeks]
   );
-  const activeWeek = viewWeeks[safeWeekIndex];
-  const weekNumber = rawWeeks[safeWeekIndex]?.week ?? currentWeekNumber;
+  const weekSelection = useMemo(
+    () => getWeekSelection({ weekOptions, selectedWeekValue, currentWeekValue }),
+    [currentWeekValue, selectedWeekValue, weekOptions],
+  );
+  const weekNumber = weekSelection.weekNumber ?? currentWeekNumber;
+  const activeWeek = useMemo(() => {
+    const weekWithData = rawWeeks.find((week) => week.week === weekNumber);
+    return weekWithData ? toProgramWeek(weekWithData) : undefined;
+  }, [rawWeeks, weekNumber]);
 
   const goToPreviousWeek = () =>
-    setWeekIndex((prev) => Math.max(0, Math.min(prev, viewWeeks.length - 1) - 1));
+    setSelectedWeekValue((previous) => {
+      const previousIndex = weekOptions.findIndex(
+        (option) => option.value === previous,
+      );
+
+      if (previousIndex <= 0) return previous;
+
+      return weekOptions[previousIndex - 1]?.value ?? previous;
+    });
 
   const goToNextWeek = () =>
-    setWeekIndex((prev) => Math.min(viewWeeks.length - 1, prev + 1));
+    setSelectedWeekValue((previous) => {
+      const previousIndex = weekOptions.findIndex(
+        (option) => option.value === previous,
+      );
+      if (previousIndex === -1) return previous;
+
+      const nextIndex = Math.min(weekOptions.length - 1, previousIndex + 1);
+      return weekOptions[nextIndex]?.value ?? previous;
+    });
 
   useEffect(() => {
     if (!profile?.id) return;
 
     const loadWeeks = async () => {
-      setIsFetching(true);
       setError(null);
       try {
         const weeks = await getScheduleWeeksWithModules(profile.id);
         setRawWeeks(weeks);
-        setWeekIndex(findClosestWeekIndex(weeks, currentWeekNumber));
       } catch (supabaseError) {
         setError(
           supabaseError instanceof Error
             ? supabaseError.message
-            : String(supabaseError),
+            : String(supabaseError)
         );
-      } finally {
-        setIsFetching(false);
       }
     };
 
     void loadWeeks();
   }, [currentWeekNumber, profile?.id]);
 
-  if (isLoading || isLoadingProfile || isFetching) {
+  useEffect(() => {
+    if (isLoading || isLoadingProfile) return;
+    if (!user) {
+      router.replace("/login?redirectTo=/athlete");
+    }
+  }, [isLoading, isLoadingProfile, router, user]);
+
+  if (isLoading || isLoadingProfile) {
     return (
       <div className="flex min-h-screen items-center justify-center">
         <span className="loading loading-spinner" aria-label="Laddar program" />
@@ -107,56 +160,52 @@ export default function AthleteSchedulePage() {
     );
   }
 
-  if (!user) return null;
+  if (!user) {
+    return (
+      <div className="flex min-h-screen items-center justify-center">
+        <span className="loading loading-spinner" aria-label="Laddar program" />
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen">
       <div className="mx-auto max-w-full space-y-5 px-5 py-5">
-          <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between justify-self-center">
-            <div className="flex items-center gap-3">
-              <button
-                className="btn btn-outline btn-xs btn-primary"
-                onClick={goToPreviousWeek}
-                aria-label="Previous week"
-                disabled={weekIndex === 0}
-              >
-                &lt;
-              </button>
-              <p className="badge-md badge badge-outline badge-secondary font-semibold uppercase tracking-wide min-w-[100px]">
-                Vecka {weekNumber} 
-              </p>
-              <button
-                className="btn btn-outline btn-xs btn-primary"
-                onClick={goToNextWeek}
-                aria-label="Next week"
-                disabled={weekIndex === viewWeeks.length - 1 || viewWeeks.length === 0}
-              >
-                &gt;
-              </button>
-            </div>
+        <div className="grid gap-4 md:grid-cols-[1fr_auto_1fr] md:items-center">
+          <p className="text-lg font-medium uppercase tracking-wide text-base-content/70">
+            {formatIsoWeekMonthYear(
+              weekSelection.weekNumber,
+              weekSelection.weekReferenceDate,
+            )}
+          </p>
+
+          <div className="flex justify-center">
+            <WeekSelector
+              weekOptions={weekOptions}
+              selectedWeekValue={selectedWeekValue}
+              currentWeekValue={currentWeekValue}
+              availableWeeks={availableWeeks}
+              onChange={setSelectedWeekValue}
+              onPrevious={goToPreviousWeek}
+              onNext={goToNextWeek}
+              className="md:flex-row md:items-center md:gap-4"
+              showMonthLabel={false}
+            />
+          </div>
+
+          <div className="hidden md:block" />
         </div>
 
         {error && <div className="alert alert-error">{error}</div>}
 
-        {viewWeeks.length === 0 ? (
-          <WeekScheduleView
-            week={undefined}
-            weekNumber={weekNumber}
-            emptyWeekTitle="Inget program"
-            emptyWeekDescription="Ingen data hittades i Supabase."
-            viewerRole="athlete"
-            athleteId={profile?.id}
-          />
-        ) : (
-          <WeekScheduleView
-            week={activeWeek}
-            weekNumber={weekNumber}
-            emptyWeekTitle="Inget program"
-            emptyWeekDescription="Ingen data för veckan."
-            viewerRole="athlete"
-            athleteId={profile?.id}
-          />
-        )}
+        <WeekScheduleView
+          week={activeWeek}
+          weekNumber={weekNumber}
+          emptyWeekTitle="Inget schema"
+          emptyWeekDescription="Det finns inget schema för den här veckan."
+          viewerRole="athlete"
+          athleteId={profile?.id}
+        />
       </div>
     </div>
   );

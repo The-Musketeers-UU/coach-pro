@@ -1,0 +1,132 @@
+{
+  "modules": [
+    {
+      "name": "Aerobic Base Run",
+      "category": "Running",
+      "subCategory": "Base",
+      "description": "Easy conversational run to build aerobic capacity.",
+      "feedbackFields": [
+        { "id": "distance-km", "type": "distance", "label": "Distance (km)" },
+        { "id": "duration-min", "type": "duration", "label": "Duration (min)" },
+        { "id": "session-notes", "type": "comment", "label": "Notes" },
+        { "id": "session-feeling", "type": "feeling", "label": "Feeling" }
+      ]
+    },
+    {
+      "name": "Mobility Reset",
+      "category": "Mobility",
+      "subCategory": "Hips & Thoracic",
+      "description": "Short mobility routine to prime movement quality.",
+      "feedbackFields": [
+        { "id": "mobility-duration", "type": "duration", "label": "Minutes" },
+        { "id": "mobility-notes", "type": "comment", "label": "Notes" },
+        { "id": "mobility-feeling", "type": "feeling", "label": "Feeling" }
+      ]
+    },
+    {
+      "name": "Strength Circuit",
+      "category": "Strength",
+      "subCategory": "Full Body",
+      "description": "Bodyweight and dumbbell circuit for general strength.",
+      "feedbackFields": [
+        { "id": "strength-load", "type": "weight", "label": "Total load (kg)" },
+        { "id": "strength-duration", "type": "duration", "label": "Duration (min)" },
+        { "id": "strength-notes", "type": "comment", "label": "Notes" },
+        { "id": "strength-feeling", "type": "feeling", "label": "Feeling" }
+      ]
+    },
+    {
+      "name": "Tempo Progression Run",
+      "category": "Running",
+      "subCategory": "Tempo",
+      "description": "Progressively faster run to build lactate threshold.",
+      "feedbackFields": [
+        { "id": "tempo-distance", "type": "distance", "label": "Distance (km)" },
+        { "id": "tempo-duration", "type": "duration", "label": "Duration (min)" },
+        { "id": "tempo-notes", "type": "comment", "label": "Notes" },
+        { "id": "tempo-feeling", "type": "feeling", "label": "Feeling" }
+      ]
+    },
+    {
+      "name": "Interval Speed Session",
+      "category": "Running",
+      "subCategory": "Speed",
+      "description": "Track or road intervals with full recoveries.",
+      "feedbackFields": [
+        { "id": "interval-distance", "type": "distance", "label": "Total distance (km)" },
+        { "id": "interval-duration", "type": "duration", "label": "Session time (min)" },
+        { "id": "interval-notes", "type": "comment", "label": "Notes" },
+        { "id": "interval-feeling", "type": "feeling", "label": "Feeling" }
+      ]
+    },
+    {
+      "name": "Long Endurance Ride",
+      "category": "Cycling",
+      "subCategory": "Endurance",
+      "description": "Steady aerobic ride focused on time in zone.",
+      "feedbackFields": [
+        { "id": "ride-distance", "type": "distance", "label": "Distance (km)" },
+        { "id": "ride-duration", "type": "duration", "label": "Duration (min)" },
+        { "id": "ride-notes", "type": "comment", "label": "Notes" },
+        { "id": "ride-feeling", "type": "feeling", "label": "Feeling" }
+      ]
+    },
+    {
+      "name": "Swim Technique Drills",
+      "category": "Swimming",
+      "subCategory": "Technique",
+      "description": "Focused drill set for form and efficiency.",
+      "feedbackFields": [
+        { "id": "swim-distance", "type": "distance", "label": "Total distance (m)" },
+        { "id": "swim-duration", "type": "duration", "label": "Duration (min)" },
+        { "id": "swim-notes", "type": "comment", "label": "Notes" },
+        { "id": "swim-feeling", "type": "feeling", "label": "Feeling" }
+      ]
+    },
+    {
+      "name": "Power Lift Session",
+      "category": "Strength",
+      "subCategory": "Lower Body",
+      "description": "Heavy compound lifts to build strength.",
+      "feedbackFields": [
+        { "id": "power-weight", "type": "weight", "label": "Total load (kg)" },
+        { "id": "power-duration", "type": "duration", "label": "Duration (min)" },
+        { "id": "power-notes", "type": "comment", "label": "Notes" },
+        { "id": "power-feeling", "type": "feeling", "label": "Feeling" }
+      ]
+    },
+    {
+      "name": "Core Stability",
+      "category": "Strength",
+      "subCategory": "Core",
+      "description": "Planks and anti-rotation holds for stability.",
+      "feedbackFields": [
+        { "id": "core-duration", "type": "duration", "label": "Duration (min)" },
+        { "id": "core-notes", "type": "comment", "label": "Notes" },
+        { "id": "core-feeling", "type": "feeling", "label": "Feeling" }
+      ]
+    },
+    {
+      "name": "Yoga Recovery Flow",
+      "category": "Recovery",
+      "subCategory": "Yoga",
+      "description": "Gentle flow to restore range of motion.",
+      "feedbackFields": [
+        { "id": "yoga-duration", "type": "duration", "label": "Minutes" },
+        { "id": "yoga-notes", "type": "comment", "label": "Notes" },
+        { "id": "yoga-feeling", "type": "feeling", "label": "Feeling" }
+      ]
+    },
+    {
+      "name": "Mindfulness Reset",
+      "category": "Recovery",
+      "subCategory": "Breathing",
+      "description": "Breathing and mindfulness session to reset focus.",
+      "feedbackFields": [
+        { "id": "mindfulness-duration", "type": "duration", "label": "Minutes" },
+        { "id": "mindfulness-notes", "type": "comment", "label": "Notes" },
+        { "id": "mindfulness-feeling", "type": "feeling", "label": "Feeling" }
+      ]
+    }
+  ]
+}

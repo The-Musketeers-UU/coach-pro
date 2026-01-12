@@ -1,24 +1,21 @@
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 
+import {
+  SUPABASE_ANON_KEY,
+  SUPABASE_AUTH_CONFIG,
+  SUPABASE_URL,
+  warnIfSupabaseEnvMissing,
+} from "@/lib/supabase/config";
+
 let cachedClient: SupabaseClient | null = null;
 
 export const getSupabaseBrowserClient = () => {
   if (cachedClient) return cachedClient;
 
-  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL ?? "http://localhost:54321";
-  const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ?? "development-anon-key";
+  warnIfSupabaseEnvMissing();
 
-  if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY) {
-    console.warn(
-      "Supabase environment variables are missing. Using placeholder credentials for local development. Configure NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY for real authentication.",
-    );
-  }
-
-  cachedClient = createClient(supabaseUrl, supabaseAnonKey, {
-    auth: {
-      autoRefreshToken: true,
-      persistSession: true,
-    },
+  cachedClient = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+    auth: SUPABASE_AUTH_CONFIG,
   });
 
   return cachedClient;
