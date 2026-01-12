@@ -123,6 +123,7 @@ model TrainingGroupCoach {
   group   TrainingGroup @relation(fields: [groupId], references: [id])
   coachId String        @map("coach") @db.Uuid
   coach   User          @relation("GroupCoaches", fields: [coachId], references: [id])
+  status  String        @default("accepted") @db.Text
 
   @@unique([groupId, coachId])
   @@map("trainingGroupCoach")
@@ -135,6 +136,7 @@ model TrainingGroupAthlete {
   group     TrainingGroup @relation(fields: [groupId], references: [id])
   athleteId String        @map("athlete") @db.Uuid
   athlete   User          @relation("GroupAthletes", fields: [athleteId], references: [id])
+  status    String        @default("accepted") @db.Text
 
   @@unique([groupId, athleteId])
   @@map("trainingGroupAthlete")
