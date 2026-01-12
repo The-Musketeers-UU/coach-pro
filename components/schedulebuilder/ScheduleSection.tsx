@@ -49,6 +49,15 @@ type ScheduleSectionProps = {
   onWeekChange: (value: string) => void;
   scheduleTitle: string;
   onScheduleTitleChange: (value: string) => void;
+  templateOptions: { value: string; label: string }[];
+  selectedTemplate: string;
+  onTemplateChange: (value: string) => void;
+  templateName: string;
+  onTemplateNameChange: (value: string) => void;
+  onSaveTemplate: () => void;
+  onApplyTemplate: () => void;
+  isSavingTemplate: boolean;
+  isApplyingTemplate: boolean;
   onOpenMobileLibrary: (dayId: string) => void;
 };
 
@@ -77,6 +86,15 @@ export function ScheduleSection({
   onWeekChange,
   scheduleTitle,
   onScheduleTitleChange,
+  templateOptions,
+  selectedTemplate,
+  onTemplateChange,
+  templateName,
+  onTemplateNameChange,
+  onSaveTemplate,
+  onApplyTemplate,
+  isSavingTemplate,
+  isApplyingTemplate,
   onOpenMobileLibrary,
 }: ScheduleSectionProps) {
   const [selectedDayId, setSelectedDayId] = useState<string | null>(
@@ -137,6 +155,61 @@ export function ScheduleSection({
               >
                 Tilldela schema
               </button>
+            </div>
+          </div>
+
+          <div className="grid w-full grid-cols-1 gap-4 lg:grid-cols-2">
+            <div className="flex flex-col gap-2">
+              <span className="text-sm font-semibold text-base-content">
+                Spara som mall
+              </span>
+              <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+                <input
+                  type="text"
+                  className="input input-sm input-bordered w-full"
+                  value={templateName}
+                  onChange={(event) => onTemplateNameChange(event.target.value)}
+                  placeholder="Mallnamn"
+                />
+                <button
+                  className="btn btn-primary btn-sm"
+                  onClick={onSaveTemplate}
+                  disabled={isSavingTemplate}
+                >
+                  {isSavingTemplate ? "Sparar..." : "Spara mall"}
+                </button>
+              </div>
+            </div>
+            <div className="flex flex-col gap-2">
+              <span className="text-sm font-semibold text-base-content">
+                Använd mall
+              </span>
+              <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+                <select
+                  className="select select-sm select-bordered w-full"
+                  value={selectedTemplate}
+                  onChange={(event) => onTemplateChange(event.target.value)}
+                  disabled={templateOptions.length === 0}
+                >
+                  <option value="">
+                    {templateOptions.length === 0
+                      ? "Inga mallar sparade"
+                      : "Välj mall"}
+                  </option>
+                  {templateOptions.map((template) => (
+                    <option key={template.value} value={template.value}>
+                      {template.label}
+                    </option>
+                  ))}
+                </select>
+                <button
+                  className="btn btn-outline btn-sm"
+                  onClick={onApplyTemplate}
+                  disabled={!selectedTemplate || isApplyingTemplate}
+                >
+                  {isApplyingTemplate ? "Laddar..." : "Ladda mall"}
+                </button>
+              </div>
             </div>
           </div>
 

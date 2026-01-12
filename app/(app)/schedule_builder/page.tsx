@@ -24,17 +24,24 @@ import {
   type AthleteRow,
   type ModuleRow,
   type ScheduleWeekWithModules,
+  type ScheduleTemplateRow,
+  type ScheduleTemplateWithModules,
   type TrainingGroupWithMembers,
   createModule,
   updateModule,
   addModuleToScheduleDay,
+  addModuleToScheduleTemplateDay,
   createScheduleWeek,
+  createScheduleTemplate,
   updateScheduleWeek,
   clearScheduleWeek,
+  clearScheduleTemplate,
   getCoachAthletes,
   getModulesByOwner,
   getScheduleWeekByAthleteAndWeek,
   getScheduleWeekWithModulesById,
+  getScheduleTemplateWithModulesById,
+  getScheduleTemplatesByOwner,
   getTrainingGroupsForUser,
 } from "@/lib/supabase/training-modules";
 
@@ -158,6 +165,33 @@ const createScheduleFromWeek = (
   return { schedule: initialSchedule, scheduledCount } as const;
 };
 
+const createScheduleFromTemplate = (
+  template: ScheduleTemplateWithModules,
+): { schedule: DaySchedule; scheduledCount: number } => {
+  const initialSchedule = createEmptySchedule(days);
+  let scheduledCount = 0;
+
+  template.days.forEach((day) => {
+    const dayId = weekdayNumberToDayId[day.day];
+    if (!dayId) return;
+
+    initialSchedule[dayId] = day.modules.map((moduleRow) => {
+      scheduledCount += 1;
+      return {
+        id: `scheduled-${moduleRow.id}-${scheduledCount}`,
+        title: moduleRow.name,
+        description: moduleRow.description ?? "",
+        category: (moduleRow.category as Module["category"]) ?? "kondition",
+        subcategory: moduleRow.subCategory ?? undefined,
+        sourceModuleId: moduleRow.id,
+        feedbackFields: mapFeedbackFields(moduleRow.activeFeedbackFields),
+      } satisfies Module;
+    });
+  });
+
+  return { schedule: initialSchedule, scheduledCount } as const;
+};
+
 const parseWeekNumber = (value: string): number | null => {
   const match = /^\d{4}-W(\d{1,2})$/.exec(value);
   if (!match) return null;
@@ -209,6 +243,7 @@ function ScheduleBuilderPage() {
   const [selectedWeek, setSelectedWeek] = useState<string>(() => currentWeekValue);
   const [scheduleTitle, setScheduleTitle] = useState("");
   const [modules, setModules] = useState<Module[]>([]);
+  const [templates, setTemplates] = useState<ScheduleTemplateRow[]>([]);
   const [athletes, setAthletes] = useState<Athlete[]>([]);
   const [trainingGroups, setTrainingGroups] = useState<TrainingGroup[]>([]);
   const [selectedGroupIds, setSelectedGroupIds] = useState<string[]>([]);
@@ -220,6 +255,12 @@ function ScheduleBuilderPage() {
   const [assignSuccess, setAssignSuccess] = useState<string | null>(null);
   const [isAssigning, setIsAssigning] = useState(false);
   const editingWeekId = searchParams.get("weekId");
+  const [templateName, setTemplateName] = useState("");
+  const [selectedTemplateId, setSelectedTemplateId] = useState<string>("");
+  const [templateError, setTemplateError] = useState<string | null>(null);
+  const [templateSuccess, setTemplateSuccess] = useState<string | null>(null);
+  const [isSavingTemplate, setIsSavingTemplate] = useState(false);
+  const [isApplyingTemplate, setIsApplyingTemplate] = useState(false);
 
   const persistModule = async (module: Module): Promise<Module> => {
     if (!profile?.id) {
@@ -283,6 +324,15 @@ function ScheduleBuilderPage() {
   const [selectedMobileModuleId, setSelectedMobileModuleId] = useState<
     string | null
   >(null);
+
+  const templateOptions = useMemo(
+    () =>
+      templates.map((template) => ({
+        value: template.id,
+        label: template.name,
+      })),
+    [templates],
+  );
 
   const mobileLibraryDayLabel = useMemo(
     () => days.find((day) => day.id === mobileLibraryDayId)?.label,
@@ -448,15 +498,17 @@ function ScheduleBuilderPage() {
       setDataError(null);
 
       try {
-        const [moduleRows, athleteRows, groupRows] = await Promise.all([
+        const [moduleRows, athleteRows, groupRows, templateRows] = await Promise.all([
           getModulesByOwner(profile.id),
           getCoachAthletes(profile.id),
           getTrainingGroupsForUser(profile.id),
+          getScheduleTemplatesByOwner(profile.id),
         ]);
 
         setModules(moduleRows.map(mapModuleRow));
         setAthletes(athleteRows.map(mapAthleteRow));
         setTrainingGroups(groupRows.map(mapTrainingGroupRow));
+        setTemplates(templateRows);
       } catch (supabaseError) {
         setDataError(
           supabaseError instanceof Error
@@ -489,6 +541,118 @@ function ScheduleBuilderPage() {
         ? prev.filter((id) => id !== groupId)
         : [...prev, groupId],
     );
+  };
+
+  const scheduleHasModules = useMemo(
+    () =>
+      Object.values(scheduleControls.schedule).some(
+        (modulesForDay) => modulesForDay.length > 0,
+      ),
+    [scheduleControls.schedule],
+  );
+
+  const handleSaveTemplate = async () => {
+    if (!profile?.id) {
+      setTemplateError("Inloggning krävs för att spara mallar.");
+      return;
+    }
+
+    const trimmedName = templateName.trim();
+    if (!trimmedName) {
+      setTemplateError("Ange ett mallnamn innan du sparar.");
+      return;
+    }
+
+    if (!scheduleHasModules) {
+      setTemplateError("Lägg till minst ett block innan du sparar mallen.");
+      return;
+    }
+
+    setTemplateError(null);
+    setTemplateSuccess(null);
+    setIsSavingTemplate(true);
+
+    try {
+      const template = await createScheduleTemplate({
+        ownerId: profile.id,
+        name: trimmedName,
+      });
+
+      await clearScheduleTemplate(template.id);
+
+      const scheduleEntries = Object.entries(scheduleControls.schedule);
+      for (const [dayId, modulesForDay] of scheduleEntries) {
+        const dayNumber = dayIdToWeekdayNumber[dayId];
+        if (!dayNumber) continue;
+
+        for (const scheduledModule of modulesForDay) {
+          const moduleId = scheduledModule.sourceModuleId ?? scheduledModule.id;
+          if (!moduleId) {
+            throw new Error("Saknar block-id för att spara mallen.");
+          }
+
+          await addModuleToScheduleTemplateDay({
+            moduleId,
+            templateId: template.id,
+            day: dayNumber,
+          });
+        }
+      }
+
+      const updatedTemplates = await getScheduleTemplatesByOwner(profile.id);
+      setTemplates(updatedTemplates);
+      setSelectedTemplateId(template.id);
+      setTemplateName("");
+      setTemplateSuccess("Mallen har sparats!");
+    } catch (templateFailure) {
+      setTemplateError(
+        templateFailure instanceof Error
+          ? templateFailure.message
+          : String(templateFailure),
+      );
+    } finally {
+      setIsSavingTemplate(false);
+    }
+  };
+
+  const handleApplyTemplate = async () => {
+    if (!selectedTemplateId) {
+      setTemplateError("Välj en mall att använda.");
+      return;
+    }
+
+    if (scheduleHasModules) {
+      const shouldReplace = window.confirm(
+        "Det nuvarande schemat kommer att ersättas av mallen. Vill du fortsätta?",
+      );
+      if (!shouldReplace) return;
+    }
+
+    setTemplateError(null);
+    setTemplateSuccess(null);
+    setIsApplyingTemplate(true);
+
+    try {
+      const template = await getScheduleTemplateWithModulesById(selectedTemplateId);
+
+      if (!template) {
+        throw new Error("Det gick inte att hitta den valda mallen.");
+      }
+
+      const { schedule, scheduledCount } = createScheduleFromTemplate(template);
+      setScheduleState(schedule, scheduledCount);
+      setScheduleTitle(template.name);
+      scheduleControls.clearSelectedScheduleModules();
+      setTemplateSuccess("Mallen har laddats in.");
+    } catch (templateFailure) {
+      setTemplateError(
+        templateFailure instanceof Error
+          ? templateFailure.message
+          : String(templateFailure),
+      );
+    } finally {
+      setIsApplyingTemplate(false);
+    }
   };
 
   const handleAssignToAthletes = async () => {
@@ -658,6 +822,10 @@ function ScheduleBuilderPage() {
           {existingWeekError && (
             <div className="alert alert-warning">{existingWeekError}</div>
           )}
+          {templateError && <div className="alert alert-error">{templateError}</div>}
+          {templateSuccess && (
+            <div className="alert alert-success">{templateSuccess}</div>
+          )}
 
           <ScheduleSection
             days={days}
@@ -686,6 +854,15 @@ function ScheduleBuilderPage() {
             onWeekChange={setSelectedWeek}
             scheduleTitle={scheduleTitle}
             onScheduleTitleChange={setScheduleTitle}
+            templateOptions={templateOptions}
+            selectedTemplate={selectedTemplateId}
+            onTemplateChange={setSelectedTemplateId}
+            templateName={templateName}
+            onTemplateNameChange={setTemplateName}
+            onSaveTemplate={handleSaveTemplate}
+            onApplyTemplate={handleApplyTemplate}
+            isSavingTemplate={isSavingTemplate}
+            isApplyingTemplate={isApplyingTemplate}
             onOpenMobileLibrary={openMobileLibrary}
           />
         </div>
