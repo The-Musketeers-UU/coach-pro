@@ -8,15 +8,15 @@ import { useAuth } from "@/components/auth-provider";
 import { getSupabaseBrowserClient } from "@/lib/supabase/browser-client";
 import { ensureUserForAuth } from "@/lib/supabase/training-modules";
 
-export default function RegisterPage() {
+export default function ForgotPassPage() {
   return (
     <Suspense fallback={<LoadingFallback />}>
-      <RegisterContent />
+      <ForgotPassword />
     </Suspense>
   );
 }
 
-function RegisterContent() {
+function ForgotPassword() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const redirectTo = searchParams.get("redirectTo") ?? "/";
@@ -83,7 +83,7 @@ function RegisterContent() {
     <main className="flex items-center justify-center bg-base-200">
       <div className="card bg-base-100 shadow-xl w:[80vw] sm:w-md">
         <div className="card-body">
-          <h1 className="text-2xl font-bold text-center">Skapa konto</h1>
+          <h1 className="text-2xl font-bold text-center">återställ lösenord</h1>
 
           {error && <div className="alert alert-error mt-2">{error}</div>}
 
@@ -104,22 +104,9 @@ function RegisterContent() {
               />
             </div>
 
-            <div className="form-control">
-              <label className="label">
-                <span className="label-text">Lösenord</span>
-              </label>
-              <input
-                type="password"
-                placeholder="••••••••"
-                className="input input-bordered w-full"
-                required
-                value={password}
-                onChange={(event) => setPassword(event.target.value)}
-              />
-            </div>
-
-          
       
+
+           
 
             <div className="form-control mt-2 pt-4">
               <button
