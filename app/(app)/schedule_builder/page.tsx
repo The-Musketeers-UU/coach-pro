@@ -212,6 +212,8 @@ const parseYearNumber = (value: string): number | null => {
   return Number.isNaN(year) ? null : year;
 };
 
+const formatWeekValue = (year: number, weekNumber: number) =>
+  `${year}-W${weekNumber}`;
 
 const mapFeedbackFields = (
   fields: ModuleRow["activeFeedbackFields"] = [],
@@ -221,8 +223,6 @@ const mapFeedbackFields = (
     type: field.type,
     label: field.label ?? undefined,
   }));
-
-
 
 
 const mapModuleRow = (row: ModuleRow): Module => ({
@@ -445,8 +445,12 @@ function ScheduleBuilderPage() {
         if (!isCancelled) {
           setScheduleState(schedule, scheduledCount);
 
-          const matchingWeek = weekOptions.find((option) =>
-            option.label.startsWith(`Vecka ${existingWeek.week}`)
+          const matchingWeekValue = formatWeekValue(
+            existingWeek.year,
+            existingWeek.week,
+          );
+          const matchingWeek = weekOptions.find(
+            (option) => option.value === matchingWeekValue,
           );
 
           if (matchingWeek) {
