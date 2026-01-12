@@ -47,6 +47,7 @@ type SelectedModuleState = {
 type WeekScheduleViewProps = {
   week?: ProgramWeek;
   weekNumber: number;
+  weekReferenceDate?: Date;
   title?: string;
   headerAction?: ReactNode;
   emptyWeekTitle?: string;
@@ -163,6 +164,7 @@ const FEEDBACK_FIELDS: Record<
 export function WeekScheduleView({
   week,
   weekNumber,
+  weekReferenceDate,
   title,
   headerAction,
   emptyWeekTitle = "Inget program",
@@ -194,8 +196,8 @@ export function WeekScheduleView({
   }, [athleteId, coachId, viewerRole]);
 
   const weekDateRange = useMemo(
-    () => getDateRangeForIsoWeek(weekNumber, new Date()),
-    [weekNumber]
+    () => getDateRangeForIsoWeek(weekNumber, weekReferenceDate ?? new Date()),
+    [weekNumber, weekReferenceDate]
   );
 
   const today = useMemo(() => {

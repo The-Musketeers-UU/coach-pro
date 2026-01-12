@@ -10,6 +10,7 @@ import {
   getCoachAthletes,
   getScheduleWeeksWithModules,
 } from "@/lib/supabase/training-modules";
+import { coerceYearWeekNumber } from "@/lib/week";
 
 const athleteGraphLink=[  { href: "/graph", label: "graph" },
 ]
@@ -19,6 +20,8 @@ type WeekStats = {
   id: string;
   label: string;
   weekNumber: number;
+  yearWeek: number;
+  year?: number;
   assignedModules: number;
   loggedModules: number;
   completionRate: number;
@@ -104,13 +107,19 @@ const aggregateLoggedModules = (modules: ScheduleModule[]) => {
 };
 
 const toWeekStats = (week: ScheduleWeekWithModules): WeekStats => {
+  const weekInfo = coerceYearWeekNumber(week.week);
+  const weekNumber = weekInfo?.weekNumber ?? week.week;
+  const yearWeek = weekInfo?.yearWeek ?? week.week;
+  const year = weekInfo?.year;
   const modules = week.days.flatMap((day) => day.modules);
   const metrics = aggregateLoggedModules(modules);
 
   return {
     id: week.id,
-    label: week.title || `Vecka ${week.week}`,
-    weekNumber: week.week,
+    label: week.title || `Vecka ${weekNumber}${year ? ` (${year})` : ""}`,
+    weekNumber,
+    yearWeek,
+    year,
     assignedModules: modules.length,
     loggedModules: metrics.loggedCount,
     completionRate:
@@ -204,10 +213,10 @@ export default function StatsPage() {
   const [isFetchingWeeks, setIsFetchingWeeks] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const goToWeekGraph = (week: WeekStats) => {
+ const goToWeekGraph = (week: WeekStats) => {
     const params = new URLSearchParams();
     if (selectedAthlete) params.set("athleteId", selectedAthlete);
-    params.set("weekNumber", String(week.weekNumber));
+    params.set("weekNumber", String(week.yearWeek));
 
     const query = params.toString();
     router.push(`/stats/${week.id}${query ? `?${query}` : ""}`);
@@ -279,7 +288,7 @@ export default function StatsPage() {
 
   const coverage = useMemo(() => computeCoverage(allModules), [allModules]);
   const weekStats = useMemo(
-    () => weeks.map(toWeekStats).sort((a, b) => a.weekNumber - b.weekNumber),
+    () => weeks.map(toWeekStats).sort((a, b) => a.yearWeek - b.yearWeek),
     [weeks],
   );
 
@@ -508,7 +517,7 @@ export default function StatsPage() {
                       <div className="flex items-center justify-between gap-3">
                         <div>
                           <p className="text-xs uppercase tracking-wide text-base-content/70">
-                            Vecka {week.weekNumber}
+                            Vecka {week.weekNumber}{week.year ? ` (${week.year})` : "" }
                           </p>
                           <h3 className="text-lg font-semibold">{week.label}</h3>
                         </div>

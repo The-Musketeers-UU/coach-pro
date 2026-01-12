@@ -472,6 +472,8 @@ function ScheduleBuilderPage() {
       return;
     }
 
+    const { weekNumber, year, yearWeek } = weekInfo;
+
     if (assignControls.selectedAthletes.length === 0) {
       setAssignError("Välj minst en aktiv att tilldela schemat till.");
       return;
@@ -489,7 +491,7 @@ function ScheduleBuilderPage() {
           athleteId,
           existingWeek: await getScheduleWeekByAthleteAndWeek({
             athleteId,
-            week: weekNumber,
+            week: yearWeek,
           }),
         })),
       );
@@ -505,7 +507,7 @@ function ScheduleBuilderPage() {
         );
 
         const shouldReplace = window.confirm(
-          `Följande aktiva har redan ett schema för vecka ${weekNumber}: ${athleteNames.join(
+          `Följande aktiva har redan ett schema för vecka ${weekNumber} (${year}): ${athleteNames.join(
             ", ",
           )}. Det befintliga schemat kommer att ersättas. Vill du fortsätta?`,
         );
@@ -528,7 +530,7 @@ function ScheduleBuilderPage() {
           : await createScheduleWeek({
               ownerId: profile.id,
               athleteId,
-              week: weekNumber,
+              week: yearWeek,
               title: trimmedTitle,
             });
 

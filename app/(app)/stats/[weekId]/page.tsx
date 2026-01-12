@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useParams, useRouter, useSearchParams } from "next/navigation";
 
 import { useAuth } from "@/components/auth-provider";
+import { coerceYearWeekNumber } from "@/lib/week";
 import {
   type ScheduleWeekWithModules,
   getScheduleWeekWithModulesById,
@@ -101,6 +102,13 @@ export default function WeekGraphPage() {
     return Array.isArray(raw) ? raw[0] : raw;
   }, [params]);
 
+  const weekInfo = useMemo(
+    () => (week ? coerceYearWeekNumber(week.week) : null),
+    [week],
+  );
+  const weekLabelNumber = weekInfo?.weekNumber ?? week?.week;
+  const weekLabelYear = weekInfo?.year;
+
   useEffect(() => {
     if (isLoading || isLoadingProfile) return;
 
@@ -190,8 +198,8 @@ export default function WeekGraphPage() {
       <div className="mx-auto max-w-5xl space-y-6 px-5 py-6">
         <div className="flex items-center justify-between gap-3">
           <div>
-            <p className="text-xs uppercase tracking-wide text-base-content/70">Vecka {week.week}</p>
-            <h1 className="text-2xl font-semibold leading-tight">{week.title || `Vecka ${week.week}`}</h1>
+            <p className="text-xs uppercase tracking-wide text-base-content/70">Vecka {weekLabelNumber}{weekLabelYear ? ` (${weekLabelYear})` : ""}</p>
+            <h1 className="text-2xl font-semibold leading-tight">{week.title || `Vecka ${weekLabelNumber}`}</h1>
             <p className="text-sm text-base-content/70">Grafer över loggad feedback i veckan.</p>
           </div>
 

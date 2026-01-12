@@ -22,7 +22,7 @@ import {
   type ScheduleWeekWithModules,
   getScheduleWeeksWithModules,
 } from "@/lib/supabase/training-modules";
-import { formatIsoWeekMonthYear, getIsoWeekNumber } from "@/lib/week";
+import { coerceYearWeekNumber, formatIsoWeekMonthYear, getIsoWeekInfo } from "@/lib/week";
 
 const dayLabels = [
   "Måndag",
@@ -34,50 +34,55 @@ const dayLabels = [
   "Söndag",
 ];
 
-const toProgramWeek = (week: ScheduleWeekWithModules): ProgramWeek => ({
-  id: week.id,
-  label: week.title || `Vecka ${week.week}`,
-  days: week.days.map((day) => ({
-    id: day.id,
-    label: dayLabels[day.day - 1] ?? `Dag ${day.day}`,
-    dayNumber: day.day,
-    modules: day.modules.map((module) => {
-      const responses = module.feedback?.responses ?? [];
+const toProgramWeek = (week: ScheduleWeekWithModules): ProgramWeek => {
+  const weekInfo = coerceYearWeekNumber(week.week);
+  const weekLabelNumber = weekInfo?.weekNumber ?? week.week;
 
-      const byType = new Map<FeedbackFieldKey, number | string | null>();
-      for (const r of responses) byType.set(r.type, r.value);
+  return {
+    id: week.id,
+    label: week.title || `Vecka ${weekLabelNumber}`,
+    days: week.days.map((day) => ({
+      id: day.id,
+      label: dayLabels[day.day - 1] ?? `Dag ${day.day}`,
+      dayNumber: day.day,
+      modules: day.modules.map((module) => {
+        const responses = module.feedback?.responses ?? [];
 
-      const getNumeric = (type: FeedbackFieldKey) => {
-        const matched = byType.get(type);
-        if (matched === null || matched === undefined) return null;
-        const parsed = Number(matched);
-        return Number.isFinite(parsed) ? parsed : null;
-      };
+        const byType = new Map<FeedbackFieldKey, number | string | null>();
+        for (const r of responses) byType.set(r.type, r.value);
 
-      const getText = (type: FeedbackFieldKey) => {
-        const matched = byType.get(type);
-        return matched === null || matched === undefined ? null : String(matched);
-      };
+        const getNumeric = (type: FeedbackFieldKey) => {
+          const matched = byType.get(type);
+          if (matched === null || matched === undefined) return null;
+          const parsed = Number(matched);
+          return Number.isFinite(parsed) ? parsed : null;
+        };
 
-      return {
-        id: module.id,
-        scheduleDayId: module.scheduleDayId,
-        title: module.name,
-        description: module.description ?? "",
-        category: module.category,
-        subcategory: module.subCategory ?? undefined,
-        distance: getNumeric("distance"),
-        weight: getNumeric("weight"),
-        duration: getNumeric("duration"),
-        comment: getText("comment"),
-        feeling: getNumeric("feeling"),
-        sleepHours: getNumeric("sleepHours"),
-        feedbackFields: module.activeFeedbackFields ?? [],
-        feedbackResponses: responses,
-      };
-    }),
-  })),
-});
+        const getText = (type: FeedbackFieldKey) => {
+          const matched = byType.get(type);
+          return matched === null || matched === undefined ? null : String(matched);
+        };
+
+        return {
+          id: module.id,
+          scheduleDayId: module.scheduleDayId,
+          title: module.name,
+          description: module.description ?? "",
+          category: module.category,
+          subcategory: module.subCategory ?? undefined,
+          distance: getNumeric("distance"),
+          weight: getNumeric("weight"),
+          duration: getNumeric("duration"),
+          comment: getText("comment"),
+          feeling: getNumeric("feeling"),
+          sleepHours: getNumeric("sleepHours"),
+          feedbackFields: module.activeFeedbackFields ?? [],
+          feedbackResponses: responses,
+        };
+      }),
+    })),
+  };
+};
 
 export default function AthleteSchedulePage() {
   const router = useRouter();
@@ -88,20 +93,29 @@ export default function AthleteSchedulePage() {
   const [rawWeeks, setRawWeeks] = useState<ScheduleWeekWithModules[]>([]);
   const [error, setError] = useState<string | null>(null);
 
-  const currentWeekNumber = useMemo(() => getIsoWeekNumber(new Date()), []);
+  const currentWeekInfo = useMemo(() => getIsoWeekInfo(new Date()), []);
+  const currentWeekNumber = currentWeekInfo.weekNumber;
+  const currentYearWeek = currentWeekInfo.yearWeek;
   const availableWeeks = useMemo(
-    () => new Set(rawWeeks.map((week) => week.week)),
-    [rawWeeks]
+    () =>
+      new Set(
+        rawWeeks.map((week) => coerceYearWeekNumber(week.week)?.yearWeek ?? week.week),
+      ),
+    [rawWeeks],
   );
   const weekSelection = useMemo(
     () => getWeekSelection({ weekOptions, selectedWeekValue, currentWeekValue }),
     [currentWeekValue, selectedWeekValue, weekOptions],
   );
   const weekNumber = weekSelection.weekNumber ?? currentWeekNumber;
+  const selectedYearWeek = weekSelection.yearWeek ?? currentYearWeek;
   const activeWeek = useMemo(() => {
-    const weekWithData = rawWeeks.find((week) => week.week === weekNumber);
+    const weekWithData = rawWeeks.find((week) => {
+      const weekInfo = coerceYearWeekNumber(week.week);
+      return weekInfo ? weekInfo.yearWeek === selectedYearWeek : week.week === selectedYearWeek;
+    });
     return weekWithData ? toProgramWeek(weekWithData) : undefined;
-  }, [rawWeeks, weekNumber]);
+  }, [rawWeeks, selectedYearWeek]);
 
   const goToPreviousWeek = () =>
     setSelectedWeekValue((previous) => {
@@ -201,6 +215,7 @@ export default function AthleteSchedulePage() {
         <WeekScheduleView
           week={activeWeek}
           weekNumber={weekNumber}
+          weekReferenceDate={weekSelection.weekReferenceDate}
           emptyWeekTitle="Inget schema"
           emptyWeekDescription="Det finns inget schema för den här veckan."
           viewerRole="athlete"

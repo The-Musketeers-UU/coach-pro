@@ -23,9 +23,10 @@ import {
   getScheduleWeeksWithModules,
 } from "@/lib/supabase/training-modules";
 import {
+  coerceYearWeekNumber,
   formatIsoWeekMonthYear,
   findClosestWeekIndex,
-  getIsoWeekNumber,
+  getIsoWeekInfo,
 } from "@/lib/week";
 
 const dayLabels = [
@@ -38,50 +39,55 @@ const dayLabels = [
   "Söndag",
 ];
 
-const toProgramWeek = (week: ScheduleWeekWithModules): ProgramWeek => ({
-  id: week.id,
-  label: week.title || `Vecka ${week.week}`,
-  days: week.days.map((day) => ({
-    id: day.id,
-    label: dayLabels[day.day - 1] ?? `Dag ${day.day}`,
-    dayNumber: day.day,
-    modules: day.modules.map((module) => {
-      const responses = module.feedback?.responses ?? [];
+const toProgramWeek = (week: ScheduleWeekWithModules): ProgramWeek => {
+  const weekInfo = coerceYearWeekNumber(week.week);
+  const weekLabelNumber = weekInfo?.weekNumber ?? week.week;
 
-      const byType = new Map<FeedbackFieldKey, number | string | null>();
-      for (const r of responses) byType.set(r.type, r.value);
+  return {
+    id: week.id,
+    label: week.title || `Vecka ${weekLabelNumber}`,
+    days: week.days.map((day) => ({
+      id: day.id,
+      label: dayLabels[day.day - 1] ?? `Dag ${day.day}`,
+      dayNumber: day.day,
+      modules: day.modules.map((module) => {
+        const responses = module.feedback?.responses ?? [];
 
-      const getNumeric = (type: FeedbackFieldKey) => {
-        const matched = byType.get(type);
-        if (matched === null || matched === undefined) return null;
-        const parsed = Number(matched);
-        return Number.isFinite(parsed) ? parsed : null;
-      };
+        const byType = new Map<FeedbackFieldKey, number | string | null>();
+        for (const r of responses) byType.set(r.type, r.value);
 
-      const getText = (type: FeedbackFieldKey) => {
-        const matched = byType.get(type);
-        return matched === null || matched === undefined ? null : String(matched);
-      };
+        const getNumeric = (type: FeedbackFieldKey) => {
+          const matched = byType.get(type);
+          if (matched === null || matched === undefined) return null;
+          const parsed = Number(matched);
+          return Number.isFinite(parsed) ? parsed : null;
+        };
 
-      return {
-        id: module.id,
-        scheduleDayId: module.scheduleDayId,
-        title: module.name,
-        description: module.description ?? "",
-        category: module.category,
-        subcategory: module.subCategory ?? undefined,
-        distance: getNumeric("distance"),
-        weight: getNumeric("weight"),
-        duration: getNumeric("duration"),
-        comment: getText("comment"),
-        feeling: getNumeric("feeling"),
-        sleepHours: getNumeric("sleepHours"),
-        feedbackFields: module.activeFeedbackFields ?? [],
-        feedbackResponses: responses,
-      };
-    }),
-  })),
-});
+        const getText = (type: FeedbackFieldKey) => {
+          const matched = byType.get(type);
+          return matched === null || matched === undefined ? null : String(matched);
+        };
+
+        return {
+          id: module.id,
+          scheduleDayId: module.scheduleDayId,
+          title: module.name,
+          description: module.description ?? "",
+          category: module.category,
+          subcategory: module.subCategory ?? undefined,
+          distance: getNumeric("distance"),
+          weight: getNumeric("weight"),
+          duration: getNumeric("duration"),
+          comment: getText("comment"),
+          feeling: getNumeric("feeling"),
+          sleepHours: getNumeric("sleepHours"),
+          feedbackFields: module.activeFeedbackFields ?? [],
+          feedbackResponses: responses,
+        };
+      }),
+    })),
+  };
+};
 
 export default function AthleteSchedulePage() {
   const router = useRouter();
@@ -95,9 +101,14 @@ export default function AthleteSchedulePage() {
   const [isFetching, setIsFetching] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const currentWeekNumber = useMemo(() => getIsoWeekNumber(new Date()), []);
+  const currentWeekInfo = useMemo(() => getIsoWeekInfo(new Date()), []);
+  const currentWeekNumber = currentWeekInfo.weekNumber;
+  const currentYearWeek = currentWeekInfo.yearWeek;
   const availableWeeks = useMemo(
-    () => new Set(rawWeeks.map((week) => week.week)),
+    () =>
+      new Set(
+        rawWeeks.map((week) => coerceYearWeekNumber(week.week)?.yearWeek ?? week.week),
+      ),
     [rawWeeks],
   );
   const weekSelection = useMemo(
@@ -105,9 +116,16 @@ export default function AthleteSchedulePage() {
     [currentWeekValue, selectedWeekValue, weekOptions],
   );
   const weekNumber = weekSelection.weekNumber ?? currentWeekNumber;
+  const selectedYearWeek = weekSelection.yearWeek ?? currentYearWeek;
   const activeWeekData = useMemo(
-    () => rawWeeks.find((week) => week.week === weekNumber),
-    [rawWeeks, weekNumber],
+    () =>
+      rawWeeks.find((week) => {
+        const weekInfo = coerceYearWeekNumber(week.week);
+        return weekInfo
+          ? weekInfo.yearWeek === selectedYearWeek
+          : week.week === selectedYearWeek;
+      }),
+    [rawWeeks, selectedYearWeek],
   );
   const activeWeek = useMemo(
     () => (activeWeekData ? toProgramWeek(activeWeekData) : undefined),
@@ -186,12 +204,19 @@ export default function AthleteSchedulePage() {
       try {
         const weeks = await getScheduleWeeksWithModules(selectedAthlete);
         setRawWeeks(weeks);
-        const closestWeekIndex = findClosestWeekIndex(weeks, currentWeekNumber);
-        const closestWeekNumber = weeks[closestWeekIndex]?.week;
+        const comparableWeeks = weeks.map((week) => ({
+          week: coerceYearWeekNumber(week.week)?.yearWeek ?? week.week,
+        }));
+        const closestWeekIndex = findClosestWeekIndex(
+          comparableWeeks,
+          currentYearWeek,
+        );
+        const closestWeekNumber = comparableWeeks[closestWeekIndex]?.week;
 
         if (closestWeekNumber) {
-          const closestWeekValue = weekOptions.find(
-            (option) => option.weekNumber === closestWeekNumber,
+          const closestWeekValue = weekOptions.find((option) =>
+            option.yearWeek === closestWeekNumber ||
+            option.weekNumber === closestWeekNumber,
           )?.value;
 
           if (closestWeekValue) {
@@ -210,7 +235,7 @@ export default function AthleteSchedulePage() {
     };
 
     void loadWeeks();
-  }, [currentWeekNumber, profile?.isCoach, selectedAthlete, weekOptions]);
+  }, [currentYearWeek, profile?.isCoach, selectedAthlete, weekOptions]);
 
   const isInitialLoad = isLoading || isLoadingProfile;
   const isWeekLoading = isFetching;
@@ -288,6 +313,7 @@ export default function AthleteSchedulePage() {
           <WeekScheduleView
             week={activeWeek}
             weekNumber={weekNumber}
+            weekReferenceDate={weekSelection.weekReferenceDate}
             emptyWeekTitle="Inget schema"
             emptyWeekDescription="Det finns inget schema för den här veckan."
             headerAction={
