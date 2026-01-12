@@ -8,6 +8,7 @@ import {
   type Athlete,
   type Day,
   type Module,
+  type TrainingGroup,
   AssignScheduleModal,
   CreateModuleModal,
   DrawerHandle,
@@ -23,6 +24,7 @@ import {
   type AthleteRow,
   type ModuleRow,
   type ScheduleWeekWithModules,
+  type TrainingGroupWithMembers,
   createModule,
   updateModule,
   addModuleToScheduleDay,
@@ -33,6 +35,7 @@ import {
   getModulesByOwner,
   getScheduleWeekByAthleteAndWeek,
   getScheduleWeekWithModulesById,
+  getTrainingGroupsForUser,
 } from "@/lib/supabase/training-modules";
 
 type WeekOption = { value: string; label: string };
@@ -186,6 +189,12 @@ const mapAthleteRow = (row: AthleteRow): Athlete => ({
   sport: row.email,
 });
 
+const mapTrainingGroupRow = (row: TrainingGroupWithMembers): TrainingGroup => ({
+  id: row.id,
+  name: row.name,
+  athletes: row.athletes.map(mapAthleteRow),
+});
+
 function ScheduleBuilderPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -201,6 +210,8 @@ function ScheduleBuilderPage() {
   const [scheduleTitle, setScheduleTitle] = useState("");
   const [modules, setModules] = useState<Module[]>([]);
   const [athletes, setAthletes] = useState<Athlete[]>([]);
+  const [trainingGroups, setTrainingGroups] = useState<TrainingGroup[]>([]);
+  const [selectedGroupIds, setSelectedGroupIds] = useState<string[]>([]);
   const [dataError, setDataError] = useState<string | null>(null);
   const [isLoadingData, setIsLoadingData] = useState(true);
   const [isLoadingExistingWeek, setIsLoadingExistingWeek] = useState(false);
@@ -437,13 +448,15 @@ function ScheduleBuilderPage() {
       setDataError(null);
 
       try {
-        const [moduleRows, athleteRows] = await Promise.all([
+        const [moduleRows, athleteRows, groupRows] = await Promise.all([
           getModulesByOwner(profile.id),
           getCoachAthletes(profile.id),
+          getTrainingGroupsForUser(profile.id),
         ]);
 
         setModules(moduleRows.map(mapModuleRow));
         setAthletes(athleteRows.map(mapAthleteRow));
+        setTrainingGroups(groupRows.map(mapTrainingGroupRow));
       } catch (supabaseError) {
         setDataError(
           supabaseError instanceof Error
@@ -458,6 +471,26 @@ function ScheduleBuilderPage() {
     void loadData();
   }, [profile?.id, profile?.isCoach]);
 
+  const selectedGroupAthleteIds = useMemo(() => {
+    const athleteIds = new Set<string>();
+
+    trainingGroups.forEach((group) => {
+      if (!selectedGroupIds.includes(group.id)) return;
+
+      group.athletes.forEach((athlete) => athleteIds.add(athlete.id));
+    });
+
+    return athleteIds;
+  }, [selectedGroupIds, trainingGroups]);
+
+  const toggleGroupSelection = (groupId: string) => {
+    setSelectedGroupIds((prev) =>
+      prev.includes(groupId)
+        ? prev.filter((id) => id !== groupId)
+        : [...prev, groupId],
+    );
+  };
+
   const handleAssignToAthletes = async () => {
     if (!profile?.id) {
       setAssignError("Inloggning krävs för att tilldela scheman.");
@@ -470,8 +503,12 @@ function ScheduleBuilderPage() {
       return;
     }
 
-    if (assignControls.selectedAthletes.length === 0) {
-      setAssignError("Välj minst en aktiv att tilldela schemat till.");
+    const athleteIds = new Set<string>(assignControls.selectedAthletes);
+    selectedGroupAthleteIds.forEach((athleteId) => athleteIds.add(athleteId));
+    const selectedAthleteIds = Array.from(athleteIds);
+
+    if (selectedAthleteIds.length === 0) {
+      setAssignError("Välj minst en aktiv eller träningsgrupp att tilldela schemat till.");
       return;
     }
 
@@ -483,7 +520,7 @@ function ScheduleBuilderPage() {
 
     try {
       const existingWeeks = await Promise.all(
-        assignControls.selectedAthletes.map(async (athleteId) => ({
+        selectedAthleteIds.map(async (athleteId) => ({
           athleteId,
           existingWeek: await getScheduleWeekByAthleteAndWeek({
             athleteId,
@@ -553,6 +590,7 @@ function ScheduleBuilderPage() {
       }
 
       assignControls.handleAssignToAthletes();
+      setSelectedGroupIds([]);
       setAssignSuccess("Schemat har tilldelats!");
     } catch (assignFailure) {
       setAssignError(
@@ -593,6 +631,7 @@ function ScheduleBuilderPage() {
     setAssignError(null);
     setAssignSuccess(null);
     assignControls.closeAssignModal();
+    setSelectedGroupIds([]);
   };
 
   return (
@@ -680,6 +719,9 @@ function ScheduleBuilderPage() {
         <AssignScheduleModal
           isOpen={assignControls.isAssignModalOpen}
           athletes={assignControls.athletes}
+          trainingGroups={trainingGroups}
+          selectedGroupIds={selectedGroupIds}
+          toggleGroupSelection={toggleGroupSelection}
           selectedAthletes={assignControls.selectedAthletes}
           toggleAthleteSelection={assignControls.toggleAthleteSelection}
           onClose={handleCloseAssignModal}
