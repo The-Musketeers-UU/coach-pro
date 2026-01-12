@@ -832,33 +832,46 @@ export const getPendingTrainingGroupInvites = async (
       throw toReadableError(athleteError);
     }
 
-    const coachInviteRows =
-      (coachInvites ?? []) as Array<{
-        group: { id: number | string; name: string; headCoach: AthleteRow | null } | null;
-      }>;
-    const athleteInviteRows =
-      (athleteInvites ?? []) as Array<{
-        group: { id: number | string; name: string; headCoach: AthleteRow | null } | null;
-      }>;
+    const coachInviteRows = (coachInvites ?? []) as unknown as Array<{
+      group:
+        | { id: number | string; name: string; headCoach: AthleteRow | null }
+        | { id: number | string; name: string; headCoach: AthleteRow | null }[]
+        | null;
+    }>;
+    const athleteInviteRows = (athleteInvites ?? []) as unknown as Array<{
+      group:
+        | { id: number | string; name: string; headCoach: AthleteRow | null }
+        | { id: number | string; name: string; headCoach: AthleteRow | null }[]
+        | null;
+    }>;
 
     const invites: TrainingGroupInvite[] = [];
 
+    const getInviteGroup = (
+      group:
+        | { id: number | string; name: string; headCoach: AthleteRow | null }
+        | { id: number | string; name: string; headCoach: AthleteRow | null }[]
+        | null,
+    ) => (Array.isArray(group) ? group[0] : group);
+
     coachInviteRows.forEach((row) => {
-      if (!row.group?.headCoach) return;
+      const group = getInviteGroup(row.group);
+      if (!group?.headCoach) return;
       invites.push({
-        groupId: toId(row.group.id),
-        groupName: row.group.name,
-        headCoach: row.group.headCoach,
+        groupId: toId(group.id),
+        groupName: group.name,
+        headCoach: group.headCoach,
         role: "assistantCoach",
       });
     });
 
     athleteInviteRows.forEach((row) => {
-      if (!row.group?.headCoach) return;
+      const group = getInviteGroup(row.group);
+      if (!group?.headCoach) return;
       invites.push({
-        groupId: toId(row.group.id),
-        groupName: row.group.name,
-        headCoach: row.group.headCoach,
+        groupId: toId(group.id),
+        groupName: group.name,
+        headCoach: group.headCoach,
         role: "athlete",
       });
     });
