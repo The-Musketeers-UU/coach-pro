@@ -266,8 +266,8 @@ export default function TrainingGroupsPage() {
   }
 
   return (
-    <div className="mx-auto flex max-w-6xl flex-col gap-6 p-6">
-      <div className="flex flex-col gap-2">
+    <main className="mx-auto flex w-full max-w-7xl flex-col gap-6 px-5 py-6">
+      <div className="space-y-2">
         <h1 className="text-3xl font-semibold">Träningsgrupper</h1>
         <p className="text-base text-base-content/70">
           Skapa grupper där en huvudcoach samlar sina atleter. Du kan även lägga till assisterande
@@ -282,10 +282,10 @@ export default function TrainingGroupsPage() {
       )}
 
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
-        <div className="card border border-base-300 bg-base-100 lg:col-span-2">
+        <div className="card border border-base-300 bg-base-200 shadow-sm lg:col-span-2">
           <div className="card-body gap-6">
             <div className="flex flex-col gap-2">
-              <h2 className="text-xl font-semibold">Ny träningsgrupp</h2>
+              <h2 className="card-title">Ny träningsgrupp</h2>
               <p className="text-sm text-base-content/70">
                 Både coacher och atleter kan söka efter varandra. Gruppen skapas under vald huvudcoach,
                 och varje atlet kopplas till den.
@@ -310,7 +310,7 @@ export default function TrainingGroupsPage() {
             </div>
 
             <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-              <div className="flex flex-col gap-3 rounded-xl border border-base-300 p-4">
+              <div className="flex flex-col gap-3 rounded-xl border border-base-300 bg-base-100 p-4">
                 <div className="flex items-center justify-between gap-2">
                   <div>
                     <p className="font-semibold">Huvudcoach</p>
@@ -335,7 +335,7 @@ export default function TrainingGroupsPage() {
                     <p className="text-xs text-base-content/70">{headCoach.email}</p>
                   </div>
                 ) : (
-                  <div className="rounded-lg border border-dashed border-base-300 p-3 text-sm text-base-content/70">
+                  <div className="rounded-lg border border-dashed border-base-300 bg-base-100 p-3 text-sm text-base-content/70">
                     Ingen huvudcoach vald än.
                   </div>
                 )}
@@ -367,7 +367,7 @@ export default function TrainingGroupsPage() {
                       {coachResults.map((coach) => (
                         <div
                           key={coach.id}
-                          className="flex items-center justify-between gap-2 rounded-lg border border-base-300 p-2"
+                          className="flex items-center justify-between gap-2 rounded-lg border border-base-300 bg-base-100 p-2"
                         >
                           <div className="text-sm">
                             <p className="font-semibold">{coach.name}</p>
@@ -418,7 +418,7 @@ export default function TrainingGroupsPage() {
                 </div>
               </div>
 
-              <div className="flex flex-col gap-3 rounded-xl border border-base-300 p-4">
+              <div className="flex flex-col gap-3 rounded-xl border border-base-300 bg-base-100 p-4">
                 <div className="flex items-center justify-between gap-2">
                   <div>
                     <p className="font-semibold">Atleter</p>
@@ -455,7 +455,7 @@ export default function TrainingGroupsPage() {
                       {athleteResults.map((athlete) => (
                         <div
                           key={athlete.id}
-                          className="flex items-center justify-between gap-2 rounded-lg border border-base-300 p-2"
+                          className="flex items-center justify-between gap-2 rounded-lg border border-base-300 bg-base-100 p-2"
                         >
                           <div className="text-sm">
                             <p className="font-semibold">{athlete.name}</p>
@@ -505,7 +505,7 @@ export default function TrainingGroupsPage() {
               </div>
             </div>
 
-            <div className="flex items-center justify-end gap-3">
+            <div className="flex flex-col gap-3 border-t border-base-300 pt-4 sm:flex-row sm:items-center sm:justify-between">
               <p className="text-sm text-base-content/70">
                 Minst en atlet krävs för att skapa en grupp.
               </p>
@@ -521,10 +521,10 @@ export default function TrainingGroupsPage() {
           </div>
         </div>
 
-        <div className="card border border-base-300 bg-base-100">
+        <div className="card border border-base-300 bg-base-200 shadow-sm">
           <div className="card-body gap-4">
             <div>
-              <h2 className="text-xl font-semibold">Dina grupper</h2>
+              <h2 className="card-title">Dina grupper</h2>
               <p className="text-sm text-base-content/70">
                 Du ser alla grupper där du är huvudcoach, assisterande coach eller atlet.
               </p>
@@ -541,11 +541,16 @@ export default function TrainingGroupsPage() {
                     Inbjudningar
                   </h3>
                   {pendingInvites.length === 0 ? (
-                    <p className="text-sm text-base-content/60">Inga väntande inbjudningar.</p>
+                    <div className="rounded-lg border border-dashed border-base-300 bg-base-100 p-3 text-sm text-base-content/60">
+                      Inga väntande inbjudningar.
+                    </div>
                   ) : (
                     <div className="flex flex-col gap-3">
                       {pendingInvites.map((invite) => (
-                        <div key={`${invite.groupId}-${invite.role}`} className="rounded-lg border border-base-200 p-3">
+                        <div
+                          key={`${invite.groupId}-${invite.role}`}
+                          className="rounded-lg border border-base-300 bg-base-100 p-3 shadow-sm"
+                        >
                           <div className="flex items-start justify-between gap-2">
                             <div>
                               <p className="font-semibold">{invite.groupName}</p>
@@ -557,7 +562,7 @@ export default function TrainingGroupsPage() {
                               </p>
                             </div>
                           </div>
-                          <div className="mt-3 flex gap-2">
+                          <div className="mt-3 flex flex-wrap gap-2">
                             <button
                               className="btn btn-primary btn-sm"
                               type="button"
@@ -581,12 +586,16 @@ export default function TrainingGroupsPage() {
                   )}
                 </div>
 
-                <div className="mt-4 flex flex-col gap-2">
+                <div className="divider my-2" />
+
+                <div className="flex flex-col gap-2">
                   <h3 className="text-sm font-semibold uppercase tracking-wide text-base-content/60">
                     Aktiva grupper
                   </h3>
                   {groups.length === 0 ? (
-                    <p className="text-sm text-base-content/60">Inga grupper hittades ännu.</p>
+                    <div className="rounded-lg border border-dashed border-base-300 bg-base-100 p-3 text-sm text-base-content/60">
+                      Inga grupper hittades ännu.
+                    </div>
                   ) : (
                     <div className="flex flex-col gap-3">
                       {groups.map((group) => {
@@ -594,7 +603,10 @@ export default function TrainingGroupsPage() {
                         const canLeave = role === "assistantCoach" || role === "athlete";
 
                         return (
-                          <div key={group.id} className="rounded-lg border border-base-200 p-3">
+                          <div
+                            key={group.id}
+                            className="rounded-lg border border-base-300 bg-base-100 p-3 shadow-sm"
+                          >
                             <div className="flex items-start justify-between gap-2">
                               <div>
                                 <p className="font-semibold">{group.name}</p>
@@ -641,6 +653,6 @@ export default function TrainingGroupsPage() {
           </div>
         </div>
       </div>
-    </div>
+    </main>
   );
 }
