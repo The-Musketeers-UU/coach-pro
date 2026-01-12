@@ -78,11 +78,11 @@ export function DayColumn({
           setDropPreview(null);
         }
       }}
-      className="flex min-h-[600px] flex-col rounded-2xl border border-dashed border-base-200 bg-base-300 p-2"
+      className="flex min-h-[600px] flex-col rounded-2xl bg-base-300 p-2"
     >
       <div className="flex items-center justify-between">
         <div>
-          <p className="text-xs font-semibold uppercase tracking-wide text-neutral">
+          <p className="text-xs font-semibold uppercase tracking-wide text-base-content">
             {day.label}
           </p>
         </div>
@@ -90,7 +90,7 @@ export function DayColumn({
 
       <div className="mt-3 flex-1 space-y-1">
         {modules.length === 0 && (
-<div className="hidden sm:block h-full rounded-xl border border-dashed border-base-200 bg-base-100/60 p-4">
+<div className="hidden sm:block h-full rounded-xl bg-base-100/60 p-4">
     {/* Lägg till Flexbox-klasser på den yttre DIV:en */}
     <div className="h-full flex items-center justify-center"> 
         
