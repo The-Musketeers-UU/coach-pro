@@ -8,6 +8,7 @@ export type WeekOption = {
   value: string;
   label: string;
   weekNumber: number;
+  year: number;
   startDate: Date;
 };
 
@@ -59,6 +60,7 @@ export const createRollingWeekOptions = (): WeekOption[] => {
       value,
       label,
       weekNumber,
+      year,
       startDate: new Date(currentWeekStart),
     });
 
@@ -75,17 +77,23 @@ export const getCurrentWeekValue = () => {
   return `${year}-W${weekNumber}`;
 };
 
-export const parseWeekNumber = (value: string): number | null => {
-  const match = /^\d{4}-W(\d{1,2})$/.exec(value);
+export const parseWeekValue = (
+  value: string,
+): { weekNumber: number; year: number } | null => {
+  const match = /^(\d{4})-W(\d{1,2})$/.exec(value);
   if (!match) return null;
 
-  const week = Number(match[1]);
-  return Number.isNaN(week) ? null : week;
+  const year = Number(match[1]);
+  const weekNumber = Number(match[2]);
+  if (Number.isNaN(year) || Number.isNaN(weekNumber)) return null;
+
+  return { weekNumber, year };
 };
 
 export type WeekSelection = {
   activeWeekOption?: WeekOption;
   weekNumber: number;
+  weekYear: number;
   weekReferenceDate: Date;
   activeWeekIndex: number;
   isFirstSelectableWeek: boolean;
@@ -106,9 +114,9 @@ export const getWeekSelection = ({
     weekOptions.find((option) => option.value === currentWeekValue) ??
     weekOptions[0];
 
-  const weekNumber =
-    parseWeekNumber(activeWeekOption?.value ?? currentWeekValue) ??
-    getIsoWeekNumber(new Date());
+  const parsedWeek = parseWeekValue(activeWeekOption?.value ?? currentWeekValue);
+  const weekNumber = parsedWeek?.weekNumber ?? getIsoWeekNumber(new Date());
+  const weekYear = parsedWeek?.year ?? new Date().getFullYear();
 
   const weekReferenceDate = activeWeekOption?.startDate ?? new Date();
   const activeWeekIndex = activeWeekOption
@@ -120,6 +128,7 @@ export const getWeekSelection = ({
   return {
     activeWeekOption,
     weekNumber,
+    weekYear,
     weekReferenceDate,
     activeWeekIndex,
     isFirstSelectableWeek,
@@ -131,7 +140,7 @@ type WeekSelectorProps = {
   weekOptions: WeekOption[];
   selectedWeekValue: string;
   currentWeekValue: string;
-  availableWeeks?: Set<number>;
+  availableWeeks?: Set<string>;
   onChange: (value: string) => void;
   onPrevious: () => void;
   onNext: () => void;
@@ -183,7 +192,7 @@ export function WeekSelector({
             onChange={(event) => onChange(event.target.value)}
           >
             {weekOptions.map((weekOption) => {
-              const hasSchedule = availableWeeks?.has(weekOption.weekNumber);
+              const hasSchedule = availableWeeks?.has(weekOption.value);
 
               return (
                 <option

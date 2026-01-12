@@ -511,7 +511,7 @@ export type CreateScheduleWeekInput = {
   ownerId: string;
   athleteId: string;
   week: number;
-  year:number;
+  year: number;
   title: string;
 };
 
@@ -541,6 +541,7 @@ export type AddModuleToScheduleTemplateDayInput = {
 export type GetScheduleWeekByWeekInput = {
   athleteId: string;
   week: number;
+  year: number;
 };
 
 const formatSupabaseError = (error: unknown) => {
@@ -1556,8 +1557,9 @@ export const getScheduleWeeksByAthlete = async (
   try {
     const { data, error } = await supabase
       .from("scheduleWeek")
-      .select("id,week,owner,athlete,title,year")
+      .select("id,week,year,owner,athlete,title")
       .eq("athlete", athleteId)
+      .order("year", { ascending: true })
       .order("week", { ascending: true });
 
     if (error) {
@@ -1853,8 +1855,9 @@ export const getScheduleWeeksWithModules = async (
   const weeks = await getScheduleWeeksByAthlete(athleteId);
   const seenWeeks = new Set<number>();
   const uniqueWeeks = weeks.filter((week) => {
-    if (seenWeeks.has(week.week)) return false;
-    seenWeeks.add(week.week);
+    const weekKey = parseInt(`${week.year}${week.week.toString().padStart(2, "0")}`, 10);
+    if (seenWeeks.has(weekKey)) return false;
+    seenWeeks.add(weekKey);
     return true;
   });
 
@@ -1984,9 +1987,10 @@ export const getScheduleWeekByAthleteAndWeek = async (
   try {
     const { data, error } = await supabase
       .from("scheduleWeek")
-      .select("id,week,owner,athlete,title,year")
+      .select("id,week,year,owner,athlete,title")
       .eq("athlete", input.athleteId)
       .eq("week", input.week)
+      .eq("year", input.year)
       .order("id", { ascending: true });
 
     if (error) {
@@ -2158,7 +2162,7 @@ export const getScheduleWeekWithModulesById = async (
   try {
     const { data: week, error } = await supabase
       .from("scheduleWeek")
-      .select("id,week,owner,athlete,title,year")
+      .select("id,week,year,owner,athlete,title")
       .eq("id", toDbNumericId(weekId))
       .maybeSingle();
 
@@ -2285,6 +2289,7 @@ export const createScheduleWeek = async (
   const existingWeek = await getScheduleWeekByAthleteAndWeek({
     athleteId: input.athleteId,
     week: input.week,
+    year: input.year,
   });
 
   if (existingWeek) {

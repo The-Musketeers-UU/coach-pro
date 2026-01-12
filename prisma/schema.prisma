@@ -63,6 +63,7 @@ model ScheduleWeek {
   athlete   User   @relation("AthleteWeeks", fields: [athleteId], references: [id])
 
   week  Int
+  year  Int    @default(dbgenerated("date_part('year', now())::int"))
   title String @default("") @db.Text
 
   days ScheduleDay[]

@@ -32,11 +32,22 @@ export const getIsoWeekNumber = (date: Date) => {
   firstThursday.setUTCDate(firstThursday.getUTCDate() - firstThursdayDayNumber + 3);
 
   const weekNumber = 1 + Math.round((target.getTime() - firstThursday.getTime()) / MILLISECONDS_IN_WEEK);
-  
+  return weekNumber;
+};
+
+export const getIsoWeekKey = (date: Date) => {
+  const target = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()));
+  const dayNumber = (target.getUTCDay() + 6) % 7;
+  target.setUTCDate(target.getUTCDate() - dayNumber + 3);
+
+  const firstThursday = new Date(Date.UTC(target.getUTCFullYear(), 0, 4));
+  const firstThursdayDayNumber = (firstThursday.getUTCDay() + 6) % 7;
+  firstThursday.setUTCDate(firstThursday.getUTCDate() - firstThursdayDayNumber + 3);
+
+  const weekNumber = 1 + Math.round((target.getTime() - firstThursday.getTime()) / MILLISECONDS_IN_WEEK);
   const isoYear = target.getUTCFullYear();
-  
-  // Return combined year+week format (e.g., 202634)
-  return parseInt(`${isoYear}${weekNumber.toString().padStart(2, '0')}`);
+
+  return parseInt(`${isoYear}${weekNumber.toString().padStart(2, "0")}`, 10);
 };
 
 export const getDateRangeForIsoWeek = (
@@ -85,15 +96,18 @@ export const formatIsoWeekMonthYear = (
 export { getStartDateOfIsoWeek, resolveIsoWeekYear };
 
 export const findClosestWeekIndex = (
-  weeks: { week: number }[],
+  weeks: { week: number; year?: number }[],
   targetWeek: number,
 ) => {
   if (weeks.length === 0) return 0;
 
-  const exactIndex = weeks.findIndex((week) => week.week === targetWeek);
+  const weekKey = (week: { week: number; year?: number }) =>
+    week.year ? parseInt(`${week.year}${week.week.toString().padStart(2, "0")}`, 10) : week.week;
+
+  const exactIndex = weeks.findIndex((week) => weekKey(week) === targetWeek);
   if (exactIndex !== -1) return exactIndex;
 
-  const upcomingIndex = weeks.findIndex((week) => week.week > targetWeek);
+  const upcomingIndex = weeks.findIndex((week) => weekKey(week) > targetWeek);
   if (upcomingIndex !== -1) return upcomingIndex;
 
   return weeks.length - 1;
