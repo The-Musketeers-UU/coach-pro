@@ -9,6 +9,7 @@ import {
   type TrainingGroupInvite,
   type TrainingGroupWithMembers,
   acceptTrainingGroupInvite,
+  addTrainingGroupMember,
   addTrainingGroupMembers,
   createTrainingGroup,
   deleteTrainingGroup,
