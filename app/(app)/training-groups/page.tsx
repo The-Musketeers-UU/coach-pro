@@ -7,16 +7,23 @@ import { useAuth } from "@/components/auth-provider";
 import {
   type AthleteRow,
   type TrainingGroupInvite,
+  type TrainingGroupSearchResult,
   type TrainingGroupWithMembers,
   acceptTrainingGroupInvite,
+  approveTrainingGroupJoinRequest,
   addTrainingGroupMember,
   createTrainingGroup,
+  declineTrainingGroupJoinRequest,
   deleteTrainingGroup,
   declineTrainingGroupInvite,
+  getTrainingGroupJoinRequestsForAthlete,
+  getTrainingGroupJoinRequestsForGroup,
   getPendingTrainingGroupInvites,
   getTrainingGroupsForUser,
   leaveTrainingGroup,
   removeTrainingGroupMember,
+  requestTrainingGroupJoin,
+  searchTrainingGroups,
   searchUsers,
 } from "@/lib/supabase/training-modules";
 
@@ -62,6 +69,8 @@ const GroupManagementPanel = ({
   const [searchTerm, setSearchTerm] = useState("");
   const [searchResults, setSearchResults] = useState<AthleteRow[]>([]);
   const [isSearching, setIsSearching] = useState(false);
+  const [pendingAthleteRequests, setPendingAthleteRequests] = useState<AthleteRow[]>([]);
+  const [isLoadingRequests, setIsLoadingRequests] = useState(false);
 
   const existingMemberIds = useMemo(() => {
     const ids = new Set<string>([group.headCoach.id]);
@@ -86,6 +95,24 @@ const GroupManagementPanel = ({
     }
   };
 
+  const loadPendingRequests = async () => {
+    setIsLoadingRequests(true);
+    onError("");
+    try {
+      const pending = await getTrainingGroupJoinRequestsForGroup(group.id);
+      setPendingAthleteRequests(pending);
+    } catch (requestError) {
+      onError(requestError instanceof Error ? requestError.message : String(requestError));
+    } finally {
+      setIsLoadingRequests(false);
+    }
+  };
+
+  useEffect(() => {
+    if (!isExpanded) return;
+    void loadPendingRequests();
+  }, [group.id, isExpanded]);
+
   const handleAddMember = async (member: AthleteRow) => {
     setIsUpdatingMembership(true);
     onError("");
@@ -100,6 +127,35 @@ const GroupManagementPanel = ({
       );
     } catch (addError) {
       onError(addError instanceof Error ? addError.message : String(addError));
+    } finally {
+      setIsUpdatingMembership(false);
+    }
+  };
+
+  const handleApproveRequest = async (athlete: AthleteRow) => {
+    setIsUpdatingMembership(true);
+    onError("");
+    try {
+      await approveTrainingGroupJoinRequest(group.id, athlete.id);
+      await onRefresh();
+      await loadPendingRequests();
+      onNotice("Förfrågan godkänd.");
+    } catch (approveError) {
+      onError(approveError instanceof Error ? approveError.message : String(approveError));
+    } finally {
+      setIsUpdatingMembership(false);
+    }
+  };
+
+  const handleDeclineRequest = async (athlete: AthleteRow) => {
+    setIsUpdatingMembership(true);
+    onError("");
+    try {
+      await declineTrainingGroupJoinRequest(group.id, athlete.id);
+      await loadPendingRequests();
+      onNotice("Förfrågan avböjdes.");
+    } catch (declineError) {
+      onError(declineError instanceof Error ? declineError.message : String(declineError));
     } finally {
       setIsUpdatingMembership(false);
     }
@@ -218,6 +274,47 @@ const GroupManagementPanel = ({
           </div>
 
           <div className="rounded-lg border border-base-300 bg-base-100 p-3">
+            <p className="text-sm font-semibold">Förfrågningar från atleter</p>
+            {isLoadingRequests ? (
+              <p className="mt-1 text-xs text-base-content/60">Laddar förfrågningar...</p>
+            ) : pendingAthleteRequests.length === 0 ? (
+              <p className="mt-1 text-xs text-base-content/60">Inga väntande förfrågningar.</p>
+            ) : (
+              <div className="mt-2 flex flex-col gap-2">
+                {pendingAthleteRequests.map((athlete) => (
+                  <div
+                    key={athlete.id}
+                    className="flex items-center justify-between gap-2 rounded-lg border border-base-300 bg-base-200 p-2"
+                  >
+                    <div className="min-w-0 flex-1 text-sm">
+                      <p className="truncate font-semibold">{athlete.name}</p>
+                      <p className="truncate text-xs text-base-content/70">{athlete.email}</p>
+                    </div>
+                    <div className="flex gap-2">
+                      <button
+                        className="btn btn-primary btn-xs"
+                        type="button"
+                        onClick={() => handleApproveRequest(athlete)}
+                        disabled={isUpdatingMembership}
+                      >
+                        Godkänn
+                      </button>
+                      <button
+                        className="btn btn-ghost btn-xs"
+                        type="button"
+                        onClick={() => handleDeclineRequest(athlete)}
+                        disabled={isUpdatingMembership}
+                      >
+                        Avböj
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+
+          <div className="rounded-lg border border-base-300 bg-base-100 p-3">
             <p className="text-sm font-semibold">Assisterande coacher</p>
             {group.assistantCoaches.length === 0 ? (
               <p className="mt-1 text-xs text-base-content/60">Inga assisterande coacher ännu.</p>
@@ -292,11 +389,16 @@ export default function TrainingGroupsPage() {
   const [athleteResults, setAthleteResults] = useState<AthleteRow[]>([]);
   const [isSearchingCoach, setIsSearchingCoach] = useState(false);
   const [isSearchingAthlete, setIsSearchingAthlete] = useState(false);
+  const [groupSearchTerm, setGroupSearchTerm] = useState("");
+  const [groupSearchResults, setGroupSearchResults] = useState<TrainingGroupSearchResult[]>([]);
+  const [isSearchingGroups, setIsSearchingGroups] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [groups, setGroups] = useState<TrainingGroupWithMembers[]>([]);
   const [isLoadingGroups, setIsLoadingGroups] = useState(false);
   const [pendingInvites, setPendingInvites] = useState<TrainingGroupInvite[]>([]);
   const [isLoadingInvites, setIsLoadingInvites] = useState(false);
+  const [requestedGroupIds, setRequestedGroupIds] = useState<string[]>([]);
+  const [requestingGroupIds, setRequestingGroupIds] = useState<string[]>([]);
   const [isUpdatingMembership, setIsUpdatingMembership] = useState(false);
   const [notice, setNotice] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -370,6 +472,24 @@ export default function TrainingGroupsPage() {
     void loadInvites();
   }, [profile?.id]);
 
+  useEffect(() => {
+    if (!profile?.id || profile.isCoach) return;
+
+    const loadRequests = async () => {
+      setError(null);
+      setNotice(null);
+
+      try {
+        const requests = await getTrainingGroupJoinRequestsForAthlete(profile.id);
+        setRequestedGroupIds(requests);
+      } catch (loadError) {
+        setError(loadError instanceof Error ? loadError.message : String(loadError));
+      }
+    };
+
+    void loadRequests();
+  }, [profile?.id, profile?.isCoach]);
+
   const handleSearchCoaches = async () => {
     setIsSearchingCoach(true);
     setError(null);
@@ -400,6 +520,21 @@ export default function TrainingGroupsPage() {
     }
   };
 
+  const handleSearchGroups = async () => {
+    setIsSearchingGroups(true);
+    setError(null);
+    setNotice(null);
+
+    try {
+      const results = await searchTrainingGroups(groupSearchTerm);
+      setGroupSearchResults(results);
+    } catch (searchError) {
+      setError(searchError instanceof Error ? searchError.message : String(searchError));
+    } finally {
+      setIsSearchingGroups(false);
+    }
+  };
+
   const addAssistantCoach = (coach: AthleteRow) => {
     if (headCoach?.id === coach.id) return;
 
@@ -414,6 +549,27 @@ export default function TrainingGroupsPage() {
       if (current.some((candidate) => candidate.id === athlete.id)) return current;
       return [...current, athlete];
     });
+  };
+
+  const handleRequestJoin = async (group: TrainingGroupSearchResult) => {
+    if (!profile?.id) return;
+    if (requestedGroupIds.includes(group.id)) return;
+
+    setRequestingGroupIds((current) => [...current, group.id]);
+    setError(null);
+    setNotice(null);
+
+    try {
+      await requestTrainingGroupJoin(group.id, profile.id);
+      setRequestedGroupIds((current) =>
+        current.includes(group.id) ? current : [...current, group.id],
+      );
+      setNotice(`Förfrågan skickad till ${group.headCoach.name}.`);
+    } catch (requestError) {
+      setError(requestError instanceof Error ? requestError.message : String(requestError));
+    } finally {
+      setRequestingGroupIds((current) => current.filter((id) => id !== group.id));
+    }
   };
 
   const handleCreateGroup = async () => {
@@ -512,6 +668,21 @@ export default function TrainingGroupsPage() {
     }
   };
 
+  const joinedGroupIds = useMemo(() => new Set(groups.map((group) => group.id)), [groups]);
+  const invitedGroupIds = useMemo(
+    () =>
+      new Set(
+        pendingInvites
+          .filter((invite) => invite.role === "athlete")
+          .map((invite) => invite.groupId),
+      ),
+    [pendingInvites],
+  );
+  const requestedGroupIdSet = useMemo(
+    () => new Set(requestedGroupIds),
+    [requestedGroupIds],
+  );
+
   const disableGroupCreation = isSubmitting || !headCoach || athletes.length === 0;
 
   if (isLoading || isLoadingProfile || !user) {
@@ -546,240 +717,326 @@ export default function TrainingGroupsPage() {
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
         <div className="card border border-base-300 bg-base-200 shadow-sm lg:col-span-2">
           <div className="card-body gap-6">
-            <div className="flex flex-col gap-2">
-              <h2 className="card-title">Ny träningsgrupp</h2>
-              <p className="text-sm text-base-content/70">
-                Både coacher och atleter kan söka efter varandra. Gruppen skapas under vald huvudcoach,
-                och varje atlet kopplas till den.
-              </p>
-            </div>
-
-            <div className="form-control gap-2">
-              <label className="label" htmlFor="group-name">
-                <span className="label-text">Gruppnamn</span>
-              </label>
-              <input
-                id="group-name"
-                type="text"
-                className="input input-bordered"
-                placeholder={groupNamePlaceholder}
-                value={groupName}
-                onChange={(event) => setGroupName(event.target.value)}
-              />
-              <p className="text-xs text-base-content/60">
-                Namnet kan ändras senare. Ange något som hjälper atleterna att känna igen gruppen.
-              </p>
-            </div>
-
-            <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-              <div className="flex flex-col gap-3 rounded-xl border border-base-300 bg-base-100 p-4">
-                <div className="flex items-center justify-between gap-2">
-                  <div>
-                    <p className="font-semibold">Huvudcoach</p>
-                    <p className="text-sm text-base-content/70">
-                      En grupp kan bara ha en huvudcoach. Sök efter coacher för att byta.
-                    </p>
-                  </div>
-                  {headCoach && !isCoach && (
-                    <button
-                      className="btn btn-ghost btn-sm"
-                      onClick={() => setHeadCoach(null)}
-                      type="button"
-                    >
-                      Byt coach
-                    </button>
-                  )}
+            {isCoach ? (
+              <>
+                <div className="flex flex-col gap-2">
+                  <h2 className="card-title">Ny träningsgrupp</h2>
+                  <p className="text-sm text-base-content/70">
+                    Både coacher och atleter kan söka efter varandra. Gruppen skapas under vald huvudcoach,
+                    och varje atlet kopplas till den.
+                  </p>
                 </div>
 
-                {headCoach ? (
-                  <div className="rounded-lg border border-primary/30 bg-primary/5 p-3">
-                    <p className="text-sm font-semibold">{headCoach.name}</p>
-                    <p className="text-xs text-base-content/70">{headCoach.email}</p>
-                  </div>
-                ) : (
-                  <div className="rounded-lg border border-dashed border-base-300 bg-base-100 p-3 text-sm text-base-content/70">
-                    Ingen huvudcoach vald än.
-                  </div>
-                )}
-
-                <div className="flex flex-col gap-2">
-                  <label className="label" htmlFor="coach-search">
-                    <span className="label-text">Sök coacher</span>
+                <div className="form-control gap-2">
+                  <label className="label" htmlFor="group-name">
+                    <span className="label-text">Gruppnamn</span>
                   </label>
-                  <div className="flex gap-2">
-                    <input
-                      id="coach-search"
-                      type="search"
-                      className="input input-bordered flex-1"
-                      placeholder="Sök på namn eller e-post"
-                      value={coachSearchTerm}
-                      onChange={(event) => setCoachSearchTerm(event.target.value)}
-                    />
-                    <button
-                      className="btn btn-secondary"
-                      type="button"
-                      onClick={handleSearchCoaches}
-                      disabled={isSearchingCoach}
-                    >
-                      {isSearchingCoach ? "Söker..." : "Sök"}
-                    </button>
-                  </div>
-                  {coachResults.length > 0 && (
-                    <div className="mt-2 flex flex-col gap-2">
-                      {coachResults.map((coach) => (
-                        <div
-                          key={coach.id}
-                          className="flex items-center justify-between gap-2 rounded-lg border border-base-300 bg-base-100 p-2"
+                  <input
+                    id="group-name"
+                    type="text"
+                    className="input input-bordered"
+                    placeholder={groupNamePlaceholder}
+                    value={groupName}
+                    onChange={(event) => setGroupName(event.target.value)}
+                  />
+                  <p className="text-xs text-base-content/60">
+                    Namnet kan ändras senare. Ange något som hjälper atleterna att känna igen gruppen.
+                  </p>
+                </div>
+
+                <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                  <div className="flex flex-col gap-3 rounded-xl border border-base-300 bg-base-100 p-4">
+                    <div className="flex items-center justify-between gap-2">
+                      <div>
+                        <p className="font-semibold">Huvudcoach</p>
+                        <p className="text-sm text-base-content/70">
+                          En grupp kan bara ha en huvudcoach. Sök efter coacher för att byta.
+                        </p>
+                      </div>
+                      {headCoach && !isCoach && (
+                        <button
+                          className="btn btn-ghost btn-sm"
+                          onClick={() => setHeadCoach(null)}
+                          type="button"
                         >
-                          <div className="text-sm">
-                            <p className="font-semibold">{coach.name}</p>
-                            <p className="text-xs text-base-content/70">{coach.email}</p>
-                          </div>
-                          <div className="flex gap-2">
-                            <button
-                              className="btn btn-ghost btn-xs"
-                              type="button"
-                              onClick={() => setHeadCoach(coach)}
-                            >
-                              Gör till huvudcoach
-                            </button>
-                            <button
-                              className="btn btn-outline btn-xs"
-                              type="button"
-                              onClick={() => addAssistantCoach(coach)}
-                            >
-                              Lägg till som assisterande
-                            </button>
-                          </div>
-                        </div>
-                      ))}
+                          Byt coach
+                        </button>
+                      )}
                     </div>
-                  )}
-                </div>
 
-                <div className="flex flex-col gap-2">
-                  <p className="font-semibold">Assisterande coacher</p>
-                  {assistantCoaches.length === 0 ? (
-                    <p className="text-sm text-base-content/60">Inga assisterande coacher valda.</p>
-                  ) : (
-                    <div className="flex flex-wrap gap-2">
-                      {assistantCoaches.map((coach) => (
-                        <span key={coach.id} className="badge badge-outline gap-2">
-                          {coach.name}
-                          <button
-                            type="button"
-                            className="btn btn-ghost btn-xs"
-                            onClick={() => setAssistantCoaches((current) => removeUserById(current, coach.id))}
-                          >
-                            ✕
-                          </button>
-                        </span>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              </div>
+                    {headCoach ? (
+                      <div className="rounded-lg border border-primary/30 bg-primary/5 p-3">
+                        <p className="text-sm font-semibold">{headCoach.name}</p>
+                        <p className="text-xs text-base-content/70">{headCoach.email}</p>
+                      </div>
+                    ) : (
+                      <div className="rounded-lg border border-dashed border-base-300 bg-base-100 p-3 text-sm text-base-content/70">
+                        Ingen huvudcoach vald än.
+                      </div>
+                    )}
 
-              <div className="flex flex-col gap-3 rounded-xl border border-base-300 bg-base-100 p-4">
-                <div className="flex items-center justify-between gap-2">
-                  <div>
-                    <p className="font-semibold">Atleter</p>
-                    <p className="text-sm text-base-content/70">
-                      Lägg till en eller flera atleter i gruppen.
-                    </p>
-                  </div>
-                </div>
-
-                <div className="flex flex-col gap-2">
-                  <label className="label" htmlFor="athlete-search">
-                    <span className="label-text">Sök atleter</span>
-                  </label>
-                  <div className="flex gap-2">
-                    <input
-                      id="athlete-search"
-                      type="search"
-                      className="input input-bordered flex-1"
-                      placeholder="Sök på namn eller e-post"
-                      value={athleteSearchTerm}
-                      onChange={(event) => setAthleteSearchTerm(event.target.value)}
-                    />
-                    <button
-                      className="btn btn-secondary"
-                      type="button"
-                      onClick={handleSearchAthletes}
-                      disabled={isSearchingAthlete}
-                    >
-                      {isSearchingAthlete ? "Söker..." : "Sök"}
-                    </button>
-                  </div>
-                  {athleteResults.length > 0 && (
-                    <div className="mt-2 flex flex-col gap-2">
-                      {athleteResults.map((athlete) => (
-                        <div
-                          key={athlete.id}
-                          className="flex items-center justify-between gap-2 rounded-lg border border-base-300 bg-base-100 p-2"
+                    <div className="flex flex-col gap-2">
+                      <label className="label" htmlFor="coach-search">
+                        <span className="label-text">Sök coacher</span>
+                      </label>
+                      <div className="flex gap-2">
+                        <input
+                          id="coach-search"
+                          type="search"
+                          className="input input-bordered flex-1"
+                          placeholder="Sök på namn eller e-post"
+                          value={coachSearchTerm}
+                          onChange={(event) => setCoachSearchTerm(event.target.value)}
+                        />
+                        <button
+                          className="btn btn-secondary"
+                          type="button"
+                          onClick={handleSearchCoaches}
+                          disabled={isSearchingCoach}
                         >
-                          <div className="text-sm">
-                            <p className="font-semibold">{athlete.name}</p>
-                            <p className="text-xs text-base-content/70">{athlete.email}</p>
-                          </div>
-                          <div className="flex gap-2">
-                            <button
-                              className="btn btn-outline btn-xs"
-                              type="button"
-                              onClick={() => addAthlete(athlete)}
+                          {isSearchingCoach ? "Söker..." : "Sök"}
+                        </button>
+                      </div>
+                      {coachResults.length > 0 && (
+                        <div className="mt-2 flex flex-col gap-2">
+                          {coachResults.map((coach) => (
+                            <div
+                              key={coach.id}
+                              className="flex items-center justify-between gap-2 rounded-lg border border-base-300 bg-base-100 p-2"
                             >
-                              Lägg till i gruppen
-                            </button>
-                          </div>
+                              <div className="text-sm">
+                                <p className="font-semibold">{coach.name}</p>
+                                <p className="text-xs text-base-content/70">{coach.email}</p>
+                              </div>
+                              <div className="flex gap-2">
+                                <button
+                                  className="btn btn-ghost btn-xs"
+                                  type="button"
+                                  onClick={() => setHeadCoach(coach)}
+                                >
+                                  Gör till huvudcoach
+                                </button>
+                                <button
+                                  className="btn btn-outline btn-xs"
+                                  type="button"
+                                  onClick={() => addAssistantCoach(coach)}
+                                >
+                                  Lägg till som assisterande
+                                </button>
+                              </div>
+                            </div>
+                          ))}
                         </div>
-                      ))}
+                      )}
                     </div>
-                  )}
-                </div>
 
-                <div className="flex flex-col gap-2">
-                  <p className="font-semibold">Valda atleter</p>
-                  {athletes.length === 0 ? (
-                    <p className="text-sm text-base-content/60">Inga atleter valda.</p>
-                  ) : (
-                    <div className="flex flex-wrap gap-2">
-                      {athletes.map((athlete) => {
-                        const isLocked = !isCoach && athlete.id === profile?.id;
-                        return (
-                          <span key={athlete.id} className="badge badge-outline gap-2">
-                            {formatUser(athlete)}
-                            {!isLocked && (
+                    <div className="flex flex-col gap-2">
+                      <p className="font-semibold">Assisterande coacher</p>
+                      {assistantCoaches.length === 0 ? (
+                        <p className="text-sm text-base-content/60">Inga assisterande coacher valda.</p>
+                      ) : (
+                        <div className="flex flex-wrap gap-2">
+                          {assistantCoaches.map((coach) => (
+                            <span key={coach.id} className="badge badge-outline gap-2">
+                              {coach.name}
                               <button
                                 type="button"
                                 className="btn btn-ghost btn-xs"
-                                onClick={() => setAthletes((current) => removeUserById(current, athlete.id))}
+                                onClick={() => setAssistantCoaches((current) => removeUserById(current, coach.id))}
                               >
                                 ✕
                               </button>
-                            )}
-                          </span>
-                        );
-                      })}
+                            </span>
+                          ))}
+                        </div>
+                      )}
                     </div>
-                  )}
-                </div>
-              </div>
-            </div>
+                  </div>
 
-            <div className="flex flex-col gap-3 border-t border-base-300 pt-4 sm:flex-row sm:items-center sm:justify-between">
-              <p className="text-sm text-base-content/70">
-                Minst en atlet krävs för att skapa en grupp.
-              </p>
-              <button
-                className="btn btn-primary"
-                type="button"
-                disabled={disableGroupCreation}
-                onClick={handleCreateGroup}
-              >
-                {isSubmitting ? "Skapar grupp..." : "Skapa träningsgrupp"}
-              </button>
-            </div>
+                  <div className="flex flex-col gap-3 rounded-xl border border-base-300 bg-base-100 p-4">
+                    <div className="flex items-center justify-between gap-2">
+                      <div>
+                        <p className="font-semibold">Atleter</p>
+                        <p className="text-sm text-base-content/70">
+                          Lägg till en eller flera atleter i gruppen.
+                        </p>
+                      </div>
+                    </div>
+
+                    <div className="flex flex-col gap-2">
+                      <label className="label" htmlFor="athlete-search">
+                        <span className="label-text">Sök atleter</span>
+                      </label>
+                      <div className="flex gap-2">
+                        <input
+                          id="athlete-search"
+                          type="search"
+                          className="input input-bordered flex-1"
+                          placeholder="Sök på namn eller e-post"
+                          value={athleteSearchTerm}
+                          onChange={(event) => setAthleteSearchTerm(event.target.value)}
+                        />
+                        <button
+                          className="btn btn-secondary"
+                          type="button"
+                          onClick={handleSearchAthletes}
+                          disabled={isSearchingAthlete}
+                        >
+                          {isSearchingAthlete ? "Söker..." : "Sök"}
+                        </button>
+                      </div>
+                      {athleteResults.length > 0 && (
+                        <div className="mt-2 flex flex-col gap-2">
+                          {athleteResults.map((athlete) => (
+                            <div
+                              key={athlete.id}
+                              className="flex items-center justify-between gap-2 rounded-lg border border-base-300 bg-base-100 p-2"
+                            >
+                              <div className="text-sm">
+                                <p className="font-semibold">{athlete.name}</p>
+                                <p className="text-xs text-base-content/70">{athlete.email}</p>
+                              </div>
+                              <div className="flex gap-2">
+                                <button
+                                  className="btn btn-outline btn-xs"
+                                  type="button"
+                                  onClick={() => addAthlete(athlete)}
+                                >
+                                  Lägg till i gruppen
+                                </button>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+
+                    <div className="flex flex-col gap-2">
+                      <p className="font-semibold">Valda atleter</p>
+                      {athletes.length === 0 ? (
+                        <p className="text-sm text-base-content/60">Inga atleter valda.</p>
+                      ) : (
+                        <div className="flex flex-wrap gap-2">
+                          {athletes.map((athlete) => {
+                            const isLocked = !isCoach && athlete.id === profile?.id;
+                            return (
+                              <span key={athlete.id} className="badge badge-outline gap-2">
+                                {formatUser(athlete)}
+                                {!isLocked && (
+                                  <button
+                                    type="button"
+                                    className="btn btn-ghost btn-xs"
+                                    onClick={() => setAthletes((current) => removeUserById(current, athlete.id))}
+                                  >
+                                    ✕
+                                  </button>
+                                )}
+                              </span>
+                            );
+                          })}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+
+                <div className="flex flex-col gap-3 border-t border-base-300 pt-4 sm:flex-row sm:items-center sm:justify-between">
+                  <p className="text-sm text-base-content/70">
+                    Minst en atlet krävs för att skapa en grupp.
+                  </p>
+                  <button
+                    className="btn btn-primary"
+                    type="button"
+                    disabled={disableGroupCreation}
+                    onClick={handleCreateGroup}
+                  >
+                    {isSubmitting ? "Skapar grupp..." : "Skapa träningsgrupp"}
+                  </button>
+                </div>
+              </>
+            ) : (
+              <>
+                <div className="flex flex-col gap-2">
+                  <h2 className="card-title">Hitta träningsgrupp</h2>
+                  <p className="text-sm text-base-content/70">
+                    Sök efter träningsgrupper och skicka en förfrågan till huvudcoachen för att gå med.
+                  </p>
+                </div>
+
+                <div className="flex flex-col gap-2">
+                  <label className="label" htmlFor="group-search">
+                    <span className="label-text">Sök träningsgrupper</span>
+                  </label>
+                  <div className="flex gap-2">
+                    <input
+                      id="group-search"
+                      type="search"
+                      className="input input-bordered flex-1"
+                      placeholder="Sök på gruppnamn"
+                      value={groupSearchTerm}
+                      onChange={(event) => setGroupSearchTerm(event.target.value)}
+                    />
+                    <button
+                      className="btn btn-secondary"
+                      type="button"
+                      onClick={handleSearchGroups}
+                      disabled={isSearchingGroups}
+                    >
+                      {isSearchingGroups ? "Söker..." : "Sök"}
+                    </button>
+                  </div>
+                </div>
+
+                {groupSearchResults.length > 0 && (
+                  <div className="flex flex-col gap-3">
+                    {groupSearchResults.map((group) => {
+                      const isMember = joinedGroupIds.has(group.id);
+                      const isInvited = invitedGroupIds.has(group.id);
+                      const isRequested = requestedGroupIdSet.has(group.id);
+                      const isRequesting = requestingGroupIds.includes(group.id);
+                      const isDisabled = isMember || isInvited || isRequested || isRequesting;
+                      const buttonLabel = isMember
+                        ? "Redan medlem"
+                        : isInvited
+                          ? "Inbjuden"
+                          : isRequested
+                            ? "Förfrågan skickad"
+                            : isRequesting
+                              ? "Skickar..."
+                              : "Skicka förfrågan";
+
+                      return (
+                        <div
+                          key={group.id}
+                          className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-base-300 bg-base-100 p-3"
+                        >
+                          <div className="min-w-0">
+                            <p className="truncate font-semibold">{group.name}</p>
+                            <p className="text-xs text-base-content/70">
+                              Huvudcoach: {group.headCoach.name}
+                            </p>
+                            <p className="text-xs text-base-content/60">{group.headCoach.email}</p>
+                          </div>
+                          <button
+                            className="btn btn-primary btn-sm"
+                            type="button"
+                            onClick={() => handleRequestJoin(group)}
+                            disabled={isDisabled}
+                          >
+                            {buttonLabel}
+                          </button>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+                {groupSearchResults.length === 0 &&
+                  groupSearchTerm.trim().length > 0 &&
+                  !isSearchingGroups && (
+                    <p className="text-sm text-base-content/60">Inga träningsgrupper hittades.</p>
+                  )}
+              </>
+            )}
           </div>
         </div>
 
