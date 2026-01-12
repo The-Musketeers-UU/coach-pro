@@ -86,6 +86,14 @@ type DbScheduleWeekRow = {
 
 export type ScheduleWeekRow = DbScheduleWeekRow & { id: string };
 
+type DbScheduleTemplateRow = {
+  id: number | string;
+  owner: string;
+  name: string;
+};
+
+export type ScheduleTemplateRow = DbScheduleTemplateRow & { id: string };
+
 type DbScheduleDayRow = {
   id: number | string;
   day: number;
@@ -98,9 +106,25 @@ type ScheduleDayRow = {
   weekId: string | null;
 };
 
+type DbScheduleTemplateDayRow = {
+  id: number | string;
+  day: number;
+  templateId: number | string;
+};
+
+type ScheduleTemplateDayRow = {
+  id: string;
+  day: number;
+  templateId: string;
+};
+
 type DbModuleScheduleDayRow = { A: string; B: number | string };
 
 type ModuleScheduleDayRow = { moduleId: string; dayId: string };
+
+type DbModuleScheduleTemplateDayRow = { A: string; B: number | string };
+
+type ModuleScheduleTemplateDayRow = { moduleId: string; dayId: string };
 
 type ScheduleDayModule = ModuleRow & {
   scheduleDayId: string;
@@ -327,13 +351,35 @@ const coerceScheduleWeekRow = (row: DbScheduleWeekRow): ScheduleWeekRow => ({
   id: toId(row.id),
 });
 
+const coerceScheduleTemplateRow = (
+  row: DbScheduleTemplateRow,
+): ScheduleTemplateRow => ({
+  ...row,
+  id: toId(row.id),
+});
+
 const coerceScheduleDayRow = (row: DbScheduleDayRow): ScheduleDayRow => ({
   ...row,
   id: toId(row.id),
   weekId: row.weekId === null ? null : toId(row.weekId),
 });
 
+const coerceScheduleTemplateDayRow = (
+  row: DbScheduleTemplateDayRow,
+): ScheduleTemplateDayRow => ({
+  ...row,
+  id: toId(row.id),
+  templateId: toId(row.templateId),
+});
+
 const coerceModuleLinkRow = (row: DbModuleScheduleDayRow): ModuleScheduleDayRow => ({
+  moduleId: toId(row.A),
+  dayId: toId(row.B),
+});
+
+const coerceModuleTemplateLinkRow = (
+  row: DbModuleScheduleTemplateDayRow,
+): ModuleScheduleTemplateDayRow => ({
   moduleId: toId(row.A),
   dayId: toId(row.B),
 });
@@ -467,6 +513,11 @@ export type CreateScheduleWeekInput = {
   title: string;
 };
 
+export type CreateScheduleTemplateInput = {
+  ownerId: string;
+  name: string;
+};
+
 export type UpsertScheduleModuleFeedbackInput = {
   moduleId: string;
   scheduleDayId: string;
@@ -476,6 +527,12 @@ export type UpsertScheduleModuleFeedbackInput = {
 export type AddModuleToScheduleDayInput = {
   moduleId: string;
   weekId: string;
+  day: number;
+};
+
+export type AddModuleToScheduleTemplateDayInput = {
+  moduleId: string;
+  templateId: string;
   day: number;
 };
 
@@ -1513,10 +1570,40 @@ export const getScheduleWeeksByAthlete = async (
   }
 };
 
+export const getScheduleTemplatesByOwner = async (
+  ownerId: string,
+): Promise<ScheduleTemplateRow[]> => {
+  try {
+    const { data, error } = await supabase
+      .from("scheduleTemplate")
+      .select("id,name,owner")
+      .eq("owner", ownerId)
+      .order("name", { ascending: true });
+
+    if (error) {
+      console.error("Error fetching schedule templates:", error);
+      throw toReadableError(error);
+    }
+
+    return (data ?? []).map(coerceScheduleTemplateRow);
+  } catch (error) {
+    console.error("Error retrieving schedule templates via SQL query:", error);
+    throw toReadableError(error);
+  }
+};
+
 export type ScheduleDayWithModules = ScheduleDayRow & { modules: ScheduleDayModule[] };
 
 export type ScheduleWeekWithModules = ScheduleWeekRow & {
   days: ScheduleDayWithModules[];
+};
+
+export type ScheduleTemplateDayWithModules = ScheduleTemplateDayRow & {
+  modules: ModuleRow[];
+};
+
+export type ScheduleTemplateWithModules = ScheduleTemplateRow & {
+  days: ScheduleTemplateDayWithModules[];
 };
 
 const getScheduleDaysWithModules = async (
@@ -1626,6 +1713,103 @@ const getScheduleDaysWithModules = async (
   }
 };
 
+const getScheduleTemplateDaysWithModules = async (
+  templateId: string,
+): Promise<ScheduleTemplateDayWithModules[]> => {
+  try {
+    const { data: templateDays, error: templateDaysError } = await supabase
+      .from("scheduleTemplateDay")
+      .select("id,day,templateId")
+      .eq("templateId", toDbNumericId(templateId))
+      .order("day", { ascending: true });
+
+    if (templateDaysError) {
+      console.error("Error fetching schedule template days:", templateDaysError);
+      throw templateDaysError;
+    }
+
+    const days = (templateDays ?? []).map(coerceScheduleTemplateDayRow);
+    if (days.length === 0) return [];
+
+    const dayIds = days.map((day) => day.id);
+    const dayIdsForQuery = toDbNumericIds(dayIds);
+
+    const { data: moduleLinks, error: moduleLinksError } = await supabase
+      .from("_ModuleToScheduleTemplateDay")
+      .select("A,B")
+      .in("B", dayIdsForQuery);
+
+    if (moduleLinksError) {
+      console.error(
+        "Error fetching module links for schedule template days:",
+        moduleLinksError,
+      );
+      throw moduleLinksError;
+    }
+
+    const links = (moduleLinks ?? []).map(coerceModuleTemplateLinkRow);
+    if (links.length === 0) {
+      return days.map((day) => ({ ...day, modules: [] }));
+    }
+
+    const moduleIds = Array.from(new Set(links.map((link) => link.moduleId)));
+    const moduleIdsForQuery = toDbNumericIds(moduleIds);
+
+    const { data: modules, error: modulesError } = await supabase
+      .from("module")
+      .select(moduleSelectColumns)
+      .in("id", moduleIdsForQuery);
+
+    if (modulesError) {
+      console.error(
+        "Error fetching modules for schedule template days:",
+        modulesError,
+      );
+      throw modulesError;
+    }
+
+    const modulesList = (modules ?? []).map(coerceModuleRow);
+    const modulesById = new Map(modulesList.map((module) => [module.id, module]));
+    const modulesByDayId = new Map<string, ModuleRow[]>();
+    dayIds.forEach((dayId) => modulesByDayId.set(dayId, []));
+
+    links.forEach((link) => {
+      const linkedModule = modulesById.get(link.moduleId);
+      if (!linkedModule) return;
+
+      const current = modulesByDayId.get(link.dayId);
+      if (current) {
+        current.push(linkedModule);
+      }
+    });
+
+    const aggregatedByDay = new Map<number, ScheduleTemplateDayWithModules>();
+
+    days.forEach((day) => {
+      const modulesForDay = modulesByDayId.get(day.id) ?? [];
+      const existing = aggregatedByDay.get(day.day);
+
+      if (existing) {
+        existing.modules.push(...modulesForDay);
+        return;
+      }
+
+      aggregatedByDay.set(day.day, {
+        ...day,
+        modules: [...modulesForDay],
+      });
+    });
+
+    return Array.from(aggregatedByDay.values()).sort((a, b) => a.day - b.day);
+  } catch (error) {
+    console.error(
+      "Error retrieving schedule template days with modules via SQL query:",
+      error,
+    );
+    throw toReadableError(error);
+  }
+};
+
 const fillMissingDays = (weekId: string, days: ScheduleDayWithModules[]) => {
   const existing = new Map(days.map((day) => [day.day, day]));
 
@@ -1636,6 +1820,25 @@ const fillMissingDays = (weekId: string, days: ScheduleDayWithModules[]) => {
         id: `${weekId}-day-${dayNumber}`,
         day: dayNumber,
         weekId,
+        modules: [],
+      }
+    );
+  });
+};
+
+const fillMissingTemplateDays = (
+  templateId: string,
+  days: ScheduleTemplateDayWithModules[],
+) => {
+  const existing = new Map(days.map((day) => [day.day, day]));
+
+  return Array.from({ length: 7 }, (_, index) => {
+    const dayNumber = index + 1;
+    return (
+      existing.get(dayNumber) ?? {
+        id: `${templateId}-day-${dayNumber}`,
+        day: dayNumber,
+        templateId,
         modules: [],
       }
     );
@@ -1821,6 +2024,23 @@ const deleteScheduleLinksForDays = async (dayIds: string[]) => {
   }
 };
 
+const deleteScheduleTemplateLinksForDays = async (dayIds: string[]) => {
+  if (dayIds.length === 0) return;
+
+  const numericDayIds = toDbNumericIds(dayIds);
+
+  const { error } = await supabase
+    .from("_ModuleToScheduleTemplateDay")
+    .delete()
+    .in("B", numericDayIds);
+
+  if (error) {
+    const message = formatSupabaseError(error);
+    console.error("Error deleting module links for schedule template days:", message);
+    throw toReadableError(error);
+  }
+};
+
 const deleteScheduleFeedbackForDays = async (dayIds: string[]) => {
   if (dayIds.length === 0) return;
 
@@ -1834,6 +2054,25 @@ const deleteScheduleFeedbackForDays = async (dayIds: string[]) => {
   if (error) {
     const message = formatSupabaseError(error);
     console.error("Error deleting schedule module feedback for days:", message);
+    throw toReadableError(error);
+  }
+};
+
+const deleteScheduleTemplateDays = async (templateId: string, dayIds: string[]) => {
+  if (dayIds.length === 0) return;
+
+  const numericTemplateId = toDbNumericId(templateId);
+  const numericDayIds = toDbNumericIds(dayIds);
+
+  const { error } = await supabase
+    .from("scheduleTemplateDay")
+    .delete()
+    .in("id", numericDayIds)
+    .eq("templateId", numericTemplateId);
+
+  if (error) {
+    const message = formatSupabaseError(error);
+    console.error("Error deleting schedule template days:", message);
     throw toReadableError(error);
   }
 };
@@ -1885,6 +2124,32 @@ export const clearScheduleWeek = async (weekId: string): Promise<void> => {
   }
 };
 
+export const clearScheduleTemplate = async (templateId: string): Promise<void> => {
+  try {
+    const numericTemplateId = toDbNumericId(templateId);
+
+    const { data: existingDays, error } = await supabase
+      .from("scheduleTemplateDay")
+      .select("id")
+      .eq("templateId", numericTemplateId);
+
+    if (error) {
+      const message = formatSupabaseError(error);
+      console.error("Error fetching schedule template days to clear:", message);
+      throw toReadableError(error);
+    }
+
+    const dayIds = toIds((existingDays ?? []).map((day) => day.id));
+    if (dayIds.length === 0) return;
+
+    await deleteScheduleTemplateLinksForDays(dayIds);
+    await deleteScheduleTemplateDays(templateId, dayIds);
+  } catch (error) {
+    const message = formatSupabaseError(error);
+    console.error("Error clearing schedule template via SQL query:", message);
+    throw toReadableError(error);
+  }
+};
 export const getScheduleWeekWithModulesById = async (
   weekId: string,
 ): Promise<ScheduleWeekWithModules | null> => {
@@ -1912,6 +2177,40 @@ export const getScheduleWeekWithModulesById = async (
     };
   } catch (error) {
     console.error("Error retrieving schedule week with modules via SQL query:", error);
+    throw toReadableError(error);
+  }
+};
+
+export const getScheduleTemplateWithModulesById = async (
+  templateId: string,
+): Promise<ScheduleTemplateWithModules | null> => {
+  try {
+    const { data: template, error } = await supabase
+      .from("scheduleTemplate")
+      .select("id,name,owner")
+      .eq("id", toDbNumericId(templateId))
+      .maybeSingle();
+
+    if (error) {
+      console.error("Error fetching schedule template by id:", error);
+      throw toReadableError(error);
+    }
+
+    if (!template) return null;
+
+    const days = await getScheduleTemplateDaysWithModules(toId(template.id));
+
+    const coercedTemplate = coerceScheduleTemplateRow(template);
+
+    return {
+      ...coercedTemplate,
+      days: fillMissingTemplateDays(coercedTemplate.id, days),
+    };
+  } catch (error) {
+    console.error(
+      "Error retrieving schedule template with modules via SQL query:",
+      error,
+    );
     throw toReadableError(error);
   }
 };
@@ -2016,6 +2315,39 @@ export const createScheduleWeek = async (
   }
 };
 
+export const createScheduleTemplate = async (
+  input: CreateScheduleTemplateInput,
+): Promise<ScheduleTemplateRow> => {
+  const name = input.name.trim();
+
+  if (!name) {
+    throw new Error("Mallnamn krävs för att spara en mall.");
+  }
+
+  const payload = {
+    owner: input.ownerId,
+    name,
+  } satisfies Omit<ScheduleTemplateRow, "id">;
+
+  try {
+    const { data, error } = await supabase
+      .from("scheduleTemplate")
+      .insert(payload)
+      .select()
+      .single();
+
+    if (error) {
+      console.error("Error creating schedule template:", error);
+      throw toReadableError(error);
+    }
+
+    return coerceScheduleTemplateRow(data);
+  } catch (error) {
+    console.error("Error persisting schedule template via SQL query:", error);
+    throw toReadableError(error);
+  }
+};
+
 export const updateScheduleWeek = async (
   weekId: string,
   updates: Partial<Pick<ScheduleWeekRow, "title">>,
@@ -2042,6 +2374,49 @@ export const updateScheduleWeek = async (
     return coerceScheduleWeekRow(data);
   } catch (error) {
     console.error("Error persisting schedule week updates via SQL query:", error);
+    throw toReadableError(error);
+  }
+};
+
+const createScheduleTemplateDay = async (
+  templateId: string,
+  day: number,
+): Promise<ScheduleTemplateDayRow> => {
+  try {
+    const numericTemplateId = toDbNumericId(templateId);
+
+    const { data: existingDay, error: existingError } = await supabase
+      .from("scheduleTemplateDay")
+      .select("id,day,templateId")
+      .eq("templateId", numericTemplateId)
+      .eq("day", day)
+      .order("id", { ascending: true })
+      .limit(1);
+
+    if (existingError) {
+      console.error("Error checking for existing schedule template day:", existingError);
+      throw toReadableError(existingError);
+    }
+
+    const alreadyCreatedDay = existingDay?.[0];
+    if (alreadyCreatedDay) {
+      return coerceScheduleTemplateDayRow(alreadyCreatedDay);
+    }
+
+    const { data, error } = await supabase
+      .from("scheduleTemplateDay")
+      .insert({ templateId: numericTemplateId, day })
+      .select()
+      .single();
+
+    if (error) {
+      console.error("Error creating schedule template day:", error);
+      throw toReadableError(error);
+    }
+
+    return coerceScheduleTemplateDayRow(data);
+  } catch (error) {
+    console.error("Error persisting schedule template day via SQL query:", error);
     throw toReadableError(error);
   }
 };
@@ -2109,6 +2484,33 @@ export const addModuleToScheduleDay = async (
     return { day: dayRow, link: coerceModuleLinkRow(linkRow) };
   } catch (error) {
     console.error("Error persisting module link via SQL query:", error);
+    throw toReadableError(error);
+  }
+};
+
+export const addModuleToScheduleTemplateDay = async (
+  input: AddModuleToScheduleTemplateDayInput,
+): Promise<{ day: ScheduleTemplateDayRow; link: ModuleScheduleTemplateDayRow }> => {
+  const dayRow = await createScheduleTemplateDay(input.templateId, input.day);
+
+  try {
+    const { data: linkRow, error } = await supabase
+      .from("_ModuleToScheduleTemplateDay")
+      .insert({
+        A: input.moduleId,
+        B: toDbNumericId(dayRow.id),
+      })
+      .select()
+      .single();
+
+    if (error) {
+      console.error("Error linking module to schedule template day:", error);
+      throw toReadableError(error);
+    }
+
+    return { day: dayRow, link: coerceModuleTemplateLinkRow(linkRow) };
+  } catch (error) {
+    console.error("Error persisting module link for schedule template via SQL query:", error);
     throw toReadableError(error);
   }
 };

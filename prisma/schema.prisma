@@ -24,6 +24,7 @@ model User {
   modules                   Module[]               @relation("UserModules")
   ownedWeeks                ScheduleWeek[]         @relation("CoachWeeks")
   athleteWeeks              ScheduleWeek[]         @relation("AthleteWeeks")
+  scheduleTemplates         ScheduleTemplate[]     @relation("CoachTemplates")
   headCoachGroups           TrainingGroup[]        @relation("HeadCoachGroups")
   assistantCoachMemberships TrainingGroupCoach[]   @relation("GroupCoaches")
   athleteGroupMemberships   TrainingGroupAthlete[] @relation("GroupAthletes")
@@ -46,6 +47,7 @@ model Module {
 
   scheduleDays            ScheduleDay[]
   scheduleModuleFeedbacks ScheduleModuleFeedback[]
+  scheduleTemplateDays    ScheduleTemplateDay[]
 
   @@map("module")
 }
@@ -68,6 +70,19 @@ model ScheduleWeek {
   @@map("scheduleWeek")
 }
 
+model ScheduleTemplate {
+  id BigInt @id @default(autoincrement()) @db.BigInt
+
+  ownerId String @map("owner") @db.Uuid
+  owner   User   @relation("CoachTemplates", fields: [ownerId], references: [id])
+
+  name String @db.Text
+
+  days ScheduleTemplateDay[]
+
+  @@map("scheduleTemplate")
+}
+
 model ScheduleDay {
   id  BigInt @id @default(autoincrement()) @db.BigInt
   day Int
@@ -82,6 +97,18 @@ model ScheduleDay {
   feedback ScheduleModuleFeedback[]
 
   @@map("scheduleDay")
+}
+
+model ScheduleTemplateDay {
+  id  BigInt @id @default(autoincrement()) @db.BigInt
+  day Int
+
+  templateId BigInt          @db.BigInt
+  template   ScheduleTemplate @relation(fields: [templateId], references: [id])
+
+  modules Module[]
+
+  @@map("scheduleTemplateDay")
 }
 
 model ScheduleModuleFeedback {
