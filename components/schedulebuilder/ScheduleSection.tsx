@@ -102,7 +102,7 @@ export function ScheduleSection({
     <section className="w-full max-w-full self-center space-y-6">
       <div className="card bg-base-200 border border-base-300 shadow-md">
         <div className="card-body gap-6">
-          <div className="grid w-full grid-cols-1 gap-4 lg:grid-cols-[auto_auto_auto] lg:items-end lg:justify-start">
+          <div className="grid w-full grid-cols-1 gap-4 lg:grid-cols-[auto_auto_1fr] lg:items-end lg:justify-start">
             <div className="flex flex-col gap-2">
               <span className="text-sm font-semibold text-base-content">
                 Spara som mall
@@ -110,7 +110,7 @@ export function ScheduleSection({
               <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
                 <input
                   type="text"
-                  className="input input-sm input-bordered w-full sm:max-w-xs"
+                  className="input input-sm input-bordered w-full sm:w-56"
                   value={templateName}
                   onChange={(event) => onTemplateNameChange(event.target.value)}
                   placeholder="Mallnamn"
@@ -130,7 +130,7 @@ export function ScheduleSection({
               </span>
               <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
                 <select
-                  className="select select-sm select-bordered w-full sm:max-w-xs"
+                  className="select select-sm select-bordered w-full sm:w-56"
                   value={selectedTemplate}
                   onChange={(event) => onTemplateChange(event.target.value)}
                   disabled={templateOptions.length === 0}
@@ -155,7 +155,7 @@ export function ScheduleSection({
                 </button>
               </div>
             </div>
-            <div className="flex items-end justify-end">
+            <div className="flex items-end justify-end lg:justify-self-end">
               <button className="btn btn-secondary btn-sm" onClick={onAssignClick}>
                 Tilldela schema
               </button>
