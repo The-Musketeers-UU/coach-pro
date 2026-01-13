@@ -5,6 +5,7 @@ import { usePathname } from "next/navigation";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { ThemeToggle } from "@/components/theme_toggle";
 import { useAuth } from "@/components/auth-provider";
+import { getPendingTrainingGroupInvites } from "@/lib/supabase/training-modules";
 
 const statsLink = { href: "/stats", label: "Statistik" };
 const trainingGroupsLink = { href: "/training-groups", label: "Träningsgrupper" };
@@ -34,6 +35,7 @@ export function SiteNav() {
   const [storedRole, setStoredRole] = useState<"coach" | "athlete">(fallbackRole);
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [isSigningOut, setIsSigningOut] = useState(false);
+  const [hasPendingInvites, setHasPendingInvites] = useState(false);
   const dropdownRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
@@ -95,6 +97,47 @@ export function SiteNav() {
     };
   }, [isDropdownOpen]);
 
+  useEffect(() => {
+    if (!user?.id) {
+      setHasPendingInvites(false);
+      return;
+    }
+
+    let isActive = true;
+
+    const loadPendingInvites = async () => {
+      try {
+        const invites = await getPendingTrainingGroupInvites(user.id);
+        if (isActive) {
+          setHasPendingInvites(invites.length > 0);
+        }
+      } catch (error) {
+        if (isActive) {
+          setHasPendingInvites(false);
+        }
+      }
+    };
+
+    void loadPendingInvites();
+
+    return () => {
+      isActive = false;
+    };
+  }, [user?.id]);
+
+  useEffect(() => {
+    const handleInviteUpdate = (event: Event) => {
+      if (!(event instanceof CustomEvent)) return;
+      const count = Number(event.detail);
+      setHasPendingInvites(Number.isFinite(count) && count > 0);
+    };
+
+    window.addEventListener("training-group-invites-updated", handleInviteUpdate);
+    return () => {
+      window.removeEventListener("training-group-invites-updated", handleInviteUpdate);
+    };
+  }, []);
+
   const showAuthenticatedShell = Boolean(user) || isLoading || isSigningOut;
 
   return (
@@ -113,15 +156,23 @@ export function SiteNav() {
           {navLinks.map((link) => {
             const isActive =
               link.href === "/" ? pathname === link.href : pathname.startsWith(link.href);
+            const showInviteStatus =
+              link.href === trainingGroupsLink.href && hasPendingInvites;
             return (
               <Link
                 key={link.href}
                 href={link.href}
                 className={`btn btn-sm ${
                   isActive ? "btn-primary" : "btn-ghost border-base-200"
-                } rounded-full px-4`}
+                } ${showInviteStatus ? "relative" : ""} rounded-full px-4`}
               >
                 {link.label}
+                {showInviteStatus && (
+                  <div
+                    aria-label="info"
+                    className="status status-info absolute -right-0.5 -top-0.5"
+                  ></div>
+                )}
               </Link>
             );
           })}
