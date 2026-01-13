@@ -876,9 +876,6 @@ function ScheduleBuilderPage() {
               scheduleControls.toggleScheduledModuleExpansion
             }
             onAssignClick={handleOpenAssignModal}
-            weekOptions={weekOptions}
-            selectedWeek={selectedWeek}
-            onWeekChange={setSelectedWeek}
             templateOptions={templateOptions}
             selectedTemplate={selectedTemplateId}
             onTemplateChange={setSelectedTemplateId}
@@ -930,6 +927,9 @@ function ScheduleBuilderPage() {
           toggleAthleteSelection={assignControls.toggleAthleteSelection}
           scheduleTitle={scheduleTitle}
           onScheduleTitleChange={setScheduleTitle}
+          weekOptions={weekOptions}
+          selectedWeek={selectedWeek}
+          onWeekChange={setSelectedWeek}
           onClose={handleCloseAssignModal}
           onAssign={handleAssignToAthletes}
           isAssigning={isAssigning}
