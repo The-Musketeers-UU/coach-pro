@@ -54,6 +54,7 @@ type ScheduleSectionProps = {
   isSavingTemplate: boolean;
   isApplyingTemplate: boolean;
   onOpenMobileLibrary: (dayId: string) => void;
+  isAlternateLayout?: boolean;
 };
 
 export function ScheduleSection({
@@ -86,6 +87,7 @@ export function ScheduleSection({
   isSavingTemplate,
   isApplyingTemplate,
   onOpenMobileLibrary,
+  isAlternateLayout = false,
 }: ScheduleSectionProps) {
   const [selectedDayId, setSelectedDayId] = useState<string | null>(
     days[0]?.id ?? null,
@@ -97,11 +99,23 @@ export function ScheduleSection({
   );
 
   const activeDayId = selectedDay?.id ?? null;
+  const sectionClassName = isAlternateLayout
+    ? "flex min-h-0 flex-1 flex-col space-y-6 w-full max-w-full self-center"
+    : "w-full max-w-full self-center space-y-6";
+  const cardClassName = `card bg-base-200 border border-base-300 shadow-md ${
+    isAlternateLayout ? "flex min-h-0 flex-1 flex-col" : ""
+  }`;
+  const cardBodyClassName = isAlternateLayout
+    ? "card-body gap-6 flex min-h-0 flex-1 flex-col"
+    : "card-body gap-6";
+  const desktopGridClassName = `hidden grid-cols-1 gap-1 md:grid md:grid-cols-2 xl:grid-cols-7 ${
+    isAlternateLayout ? "min-h-0 flex-1 items-stretch" : ""
+  }`;
 
   return (
-    <section className="w-full max-w-full self-center space-y-6">
-      <div className="card bg-base-200 border border-base-300 shadow-md">
-        <div className="card-body gap-6">
+    <section className={sectionClassName}>
+      <div className={cardClassName}>
+        <div className={cardBodyClassName}>
           <div className="grid w-full grid-cols-1 gap-4 lg:grid-cols-[auto_auto_1fr] lg:items-end lg:justify-start">
             <div className="flex flex-col gap-2">
               <span className="text-sm font-semibold text-base-content">
@@ -206,13 +220,14 @@ export function ScheduleSection({
                       onToggleScheduledModuleExpansion
                     }
                     onOpenMobileLibrary={onOpenMobileLibrary}
+                    isAlternateLayout={isAlternateLayout}
                   />
                 </div>
               )}
             </div>
           )}
 
-          <div className="hidden grid-cols-1 gap-1 md:grid md:grid-cols-2 xl:grid-cols-7">
+          <div className={desktopGridClassName}>
             {days.map((day) => (
               <DayColumn
                 key={day.id}
@@ -235,6 +250,7 @@ export function ScheduleSection({
                 onMoveScheduledModule={onMoveScheduledModule}
                 onToggleScheduledModuleExpansion={onToggleScheduledModuleExpansion}
                 onOpenMobileLibrary={onOpenMobileLibrary}
+                isAlternateLayout={isAlternateLayout}
               />
             ))}
           </div>

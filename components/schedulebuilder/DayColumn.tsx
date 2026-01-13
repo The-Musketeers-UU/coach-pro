@@ -42,6 +42,7 @@ type DayColumnProps = {
   ) => void;
   onToggleScheduledModuleExpansion: (moduleId: string) => void;
   onOpenMobileLibrary: (dayId: string) => void;
+  isAlternateLayout?: boolean;
 };
 
 export function DayColumn({
@@ -64,6 +65,7 @@ export function DayColumn({
   onMoveScheduledModule,
   onToggleScheduledModuleExpansion,
   onOpenMobileLibrary,
+  isAlternateLayout = false,
 }: DayColumnProps) {
   return (
     <div
@@ -78,7 +80,9 @@ export function DayColumn({
           setDropPreview(null);
         }
       }}
-      className="flex min-h-[600px] flex-col rounded-2xl bg-base-300 p-2"
+      className={`flex flex-col rounded-2xl bg-base-300 p-2 ${
+        isAlternateLayout ? "min-h-0 h-full overflow-y-auto" : "min-h-[600px]"
+      }`}
     >
       <div className="flex items-center justify-between">
         <div>
