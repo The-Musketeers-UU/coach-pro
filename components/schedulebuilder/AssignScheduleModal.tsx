@@ -6,6 +6,8 @@ type AssignScheduleModalProps = {
   trainingGroups: TrainingGroup[];
   selectedGroupIds: string[];
   selectedAthletes: string[];
+  scheduleTitle: string;
+  onScheduleTitleChange: (value: string) => void;
   toggleGroupSelection: (groupId: string) => void;
   toggleAthleteSelection: (athleteId: string) => void;
   isAssigning?: boolean;
@@ -21,6 +23,8 @@ export function AssignScheduleModal({
   trainingGroups,
   selectedGroupIds,
   selectedAthletes,
+  scheduleTitle,
+  onScheduleTitleChange,
   toggleGroupSelection,
   toggleAthleteSelection,
   isAssigning = false,
@@ -31,26 +35,33 @@ export function AssignScheduleModal({
 }: AssignScheduleModalProps) {
   return (
     <dialog className={`modal ${isOpen ? "modal-open" : ""}`}>
-      <div className="modal-box max-w-md space-y-4">
+      <div className="modal-box flex max-h-[70vh] max-w-md flex-col gap-4">
         <div className="flex items-start justify-between gap-4">
           <div>
             <h3 className="text-xl font-semibold">Tilldela schema</h3>
-            <p className="text-sm text-base-content/60">
-              Välj aktiva eller träningsgrupper att dela veckoschemat med.
-            </p>
           </div>
           <button className="btn btn-circle btn-ghost btn-sm" onClick={onClose}>
             ✕
           </button>
         </div>
 
-        <div className="space-y-4">
+        <div className="space-y-4 overflow-y-auto pr-1">
           {errorMessage && (
             <div className="alert alert-error text-sm">{errorMessage}</div>
           )}
           {successMessage && (
             <div className="alert alert-success text-sm">{successMessage}</div>
           )}
+          <label className="form-control flex flex-col gap-1">
+            <span className="label-text text-sm">Schematitel (valfritt)</span>
+            <input
+              type="text"
+              className="input input-sm input-bordered w-full"
+              value={scheduleTitle}
+              onChange={(event) => onScheduleTitleChange(event.target.value)}
+              placeholder="Ange schematitel"
+            />
+          </label>
           <section className="space-y-2">
             <p className="text-xs font-semibold uppercase tracking-wide text-neutral">
               Träningsgrupper

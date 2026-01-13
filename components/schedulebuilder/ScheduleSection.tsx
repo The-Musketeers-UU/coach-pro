@@ -47,8 +47,6 @@ type ScheduleSectionProps = {
   weekOptions: { value: string; label: string }[];
   selectedWeek: string;
   onWeekChange: (value: string) => void;
-  scheduleTitle: string;
-  onScheduleTitleChange: (value: string) => void;
   templateOptions: { value: string; label: string }[];
   selectedTemplate: string;
   onTemplateChange: (value: string) => void;
@@ -84,8 +82,6 @@ export function ScheduleSection({
   weekOptions,
   selectedWeek,
   onWeekChange,
-  scheduleTitle,
-  onScheduleTitleChange,
   templateOptions,
   selectedTemplate,
   onTemplateChange,
@@ -113,25 +109,7 @@ export function ScheduleSection({
       <div className="card bg-base-200 border border-base-300 shadow-md">
         <div className="card-body gap-6">
           <div className="grid w-full grid-cols-1 gap-3 sm:grid-cols-3 sm:items-center">
-            <form
-              className="form-control gap-2"
-              onSubmit={(event) => event.preventDefault()}
-            >
-              <div className=" flex flex-col gap-2">
-                <input
-                  id="schedule-title"
-                  type="text-xl"
-                  className="input input-md sm:input-lg input-bordered max-w-xs"
-                  value={scheduleTitle}
-                  onChange={(event) =>
-                    onScheduleTitleChange(event.target.value)
-                  }
-                  placeholder="Ange schematitel"
-                />
-              </div>
-            </form>
-
-            <div className="grid grid-cols-2 items-center gap-3 sm:col-span-2 sm:grid-cols-2">
+            <div className="grid grid-cols-2 items-center gap-3 sm:col-span-3 sm:grid-cols-2">
               <div className="form-control max-w-40 justify-self-start sm:justify-self-center">
                 <label className="label sr-only" htmlFor="week-select">
                   Välj vecka
