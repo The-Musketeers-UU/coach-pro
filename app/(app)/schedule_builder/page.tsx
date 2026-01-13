@@ -849,9 +849,31 @@ function ScheduleBuilderPage() {
           {existingWeekError && (
             <div className="alert alert-warning">{existingWeekError}</div>
           )}
-          {templateError && <div className="alert alert-error">{templateError}</div>}
+          {templateError && (
+            <div className="alert alert-error flex items-center justify-between">
+              <span>{templateError}</span>
+              <button
+                type="button"
+                className="btn btn-ghost btn-xs"
+                aria-label="Stäng"
+                onClick={() => setTemplateError(null)}
+              >
+                ✕
+              </button>
+            </div>
+          )}
           {templateSuccess && (
-            <div className="alert alert-success">{templateSuccess}</div>
+            <div className="alert alert-success flex items-center justify-between">
+              <span>{templateSuccess}</span>
+              <button
+                type="button"
+                className="btn btn-ghost btn-xs"
+                aria-label="Stäng"
+                onClick={() => setTemplateSuccess(null)}
+              >
+                ✕
+              </button>
+            </div>
           )}
 
           <ScheduleSection
