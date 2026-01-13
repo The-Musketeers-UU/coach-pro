@@ -915,6 +915,8 @@ function ScheduleBuilderPage() {
           newModule={libraryControls.newModule}
           formError={libraryControls.formError}
           isSubmitting={libraryControls.isSavingModule}
+          categoryOptions={libraryControls.categoryOptions}
+          subcategoryOptions={libraryControls.subcategoryOptions}
           onClose={libraryControls.closeCreateModal}
           onSubmit={libraryControls.handleAddModule}
           onUpdate={libraryControls.setNewModule}
@@ -942,6 +944,8 @@ function ScheduleBuilderPage() {
           editingContext={editingControls.editingContext}
           editingModuleForm={editingControls.editingModuleForm}
           editFormError={editingControls.editFormError}
+          categoryOptions={libraryControls.categoryOptions}
+          subcategoryOptions={libraryControls.subcategoryOptions}
           setEditingModuleForm={editingControls.setEditingModuleForm}
           onClose={editingControls.closeEditModal}
           onSave={editingControls.handleSaveEditedModule}

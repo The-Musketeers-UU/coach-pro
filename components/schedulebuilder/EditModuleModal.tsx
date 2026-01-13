@@ -9,6 +9,8 @@ type EditModuleModalProps = {
   editingContext: EditingContext | null;
   editingModuleForm: ModuleForm | null;
   editFormError: string | null;
+  categoryOptions: string[];
+  subcategoryOptions: Record<string, string[]>;
   setEditingModuleForm: Dispatch<SetStateAction<ModuleForm | null>>;
   onClose: () => void;
   onSave: (event: FormEvent<HTMLFormElement>) => void;
@@ -20,6 +22,8 @@ export function EditModuleModal({
   editingContext,
   editingModuleForm,
   editFormError,
+  categoryOptions,
+  subcategoryOptions,
   setEditingModuleForm,
   onClose,
   onSave,
@@ -52,6 +56,8 @@ export function EditModuleModal({
             <ModuleFormFields
               formState={editingModuleForm}
               onChange={setEditingModuleForm as Dispatch<SetStateAction<ModuleForm>>}
+              categoryOptions={categoryOptions}
+              subcategoryOptions={subcategoryOptions}
             />
 
             <div className="mt-7 flex flex-row gap-2 sm:flex-row">

@@ -1,4 +1,4 @@
-import type { Dispatch, SetStateAction } from "react";
+import { useId, useMemo, type Dispatch, type SetStateAction } from "react";
 
 import type {
   FeedbackFieldDefinition,
@@ -27,6 +27,8 @@ const feedbackFieldDescriptions: Record<FeedbackFieldType, string> = {
 type ModuleFormFieldsProps = {
   formState: ModuleForm;
   onChange: Dispatch<SetStateAction<ModuleForm>>;
+  categoryOptions?: string[];
+  subcategoryOptions?: Record<string, string[]>;
 };
 
 const createFeedbackField = (
@@ -49,7 +51,14 @@ const createFeedbackField = (
   return { id, type, label: defaultLabel };
 };
 
-export function ModuleFormFields({ formState, onChange }: ModuleFormFieldsProps) {
+export function ModuleFormFields({
+  formState,
+  onChange,
+  categoryOptions = [],
+  subcategoryOptions = {},
+}: ModuleFormFieldsProps) {
+  const categoryListId = useId();
+  const subcategoryListId = useId();
   const hasFieldType = (type: FeedbackFieldType) =>
     formState.feedbackFields.some((field) => field.type === type);
 
@@ -79,6 +88,27 @@ export function ModuleFormFields({ formState, onChange }: ModuleFormFieldsProps)
   );
   const durationFields = formState.feedbackFields.filter((field) => field.type === "duration");
   const weightFields = formState.feedbackFields.filter((field) => field.type === "weight");
+  const normalizedCategoryKey = formState.category.trim().toLowerCase();
+  const allSubcategoryOptions = useMemo(() => {
+    if (!subcategoryOptions) return [];
+
+    const options = new Map<string, string>();
+    Object.values(subcategoryOptions).forEach((values) => {
+      values.forEach((value) => {
+        const normalizedValue = value.trim();
+        if (!normalizedValue) return;
+        const key = normalizedValue.toLowerCase();
+        if (!options.has(key)) {
+          options.set(key, normalizedValue);
+        }
+      });
+    });
+
+    return Array.from(options.values());
+  }, [subcategoryOptions]);
+  const filteredSubcategoryOptions = normalizedCategoryKey
+    ? subcategoryOptions[normalizedCategoryKey] ?? []
+    : allSubcategoryOptions;
 
   const addDistanceDurationPair = () => {
     onChange((prev) => {
@@ -213,6 +243,7 @@ export function ModuleFormFields({ formState, onChange }: ModuleFormFieldsProps)
             type="text"
             className="input input-sm input-bordered w-full"
             value={formState.category}
+            list={categoryListId}
             onChange={(event) =>
               onChange((prev) => ({
                 ...prev,
@@ -222,6 +253,13 @@ export function ModuleFormFields({ formState, onChange }: ModuleFormFieldsProps)
             placeholder="t.ex. Kondition"
             required
           />
+          {categoryOptions.length > 0 && (
+            <datalist id={categoryListId}>
+              {categoryOptions.map((option) => (
+                <option key={option} value={option} />
+              ))}
+            </datalist>
+          )}
         </label>
 
         <label className="form-control flex flex-col gap-1">
@@ -230,6 +268,7 @@ export function ModuleFormFields({ formState, onChange }: ModuleFormFieldsProps)
             type="text"
             className="input input-sm input-bordered w-full"
             value={formState.subcategory}
+            list={subcategoryListId}
             onChange={(event) =>
               onChange((prev) => ({
                 ...prev,
@@ -238,6 +277,13 @@ export function ModuleFormFields({ formState, onChange }: ModuleFormFieldsProps)
             }
             placeholder="t.ex. Intervaller, baslyft"
           />
+          {filteredSubcategoryOptions.length > 0 && (
+            <datalist id={subcategoryListId}>
+              {filteredSubcategoryOptions.map((option) => (
+                <option key={option} value={option} />
+              ))}
+            </datalist>
+          )}
         </label>
         <div className="flex flex-row">
           <div className="text text-xs text-red-500">*</div>

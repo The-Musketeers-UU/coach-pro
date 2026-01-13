@@ -86,6 +86,53 @@ export const useScheduleBuilderState = ({
   const scheduledModuleCounter = useRef(0);
   const dragPointerOffsetYRef = useRef<number | null>(null);
   const scheduleCardRefs = useRef<Record<string, (HTMLDivElement | null)[]>>({});
+  const categoryOptions = useMemo(() => {
+    const uniqueCategories = new Map<string, string>();
+
+    moduleLibrary.forEach((module) => {
+      const trimmedCategory = module.category?.trim();
+      if (!trimmedCategory) return;
+
+      const key = trimmedCategory.toLowerCase();
+      if (!uniqueCategories.has(key)) {
+        uniqueCategories.set(key, trimmedCategory);
+      }
+    });
+
+    return Array.from(uniqueCategories.values()).sort((a, b) =>
+      a.localeCompare(b, "sv")
+    );
+  }, [moduleLibrary]);
+  const subcategoryOptions = useMemo(() => {
+    const byCategory = new Map<string, Map<string, string>>();
+
+    moduleLibrary.forEach((module) => {
+      const trimmedCategory = module.category?.trim();
+      const trimmedSubcategory = module.subcategory?.trim();
+      if (!trimmedCategory || !trimmedSubcategory) return;
+
+      const categoryKey = trimmedCategory.toLowerCase();
+      const subcategoryKey = trimmedSubcategory.toLowerCase();
+
+      if (!byCategory.has(categoryKey)) {
+        byCategory.set(categoryKey, new Map());
+      }
+
+      const subcategoryMap = byCategory.get(categoryKey);
+      if (!subcategoryMap?.has(subcategoryKey)) {
+        subcategoryMap?.set(subcategoryKey, trimmedSubcategory);
+      }
+    });
+
+    const options: Record<string, string[]> = {};
+    byCategory.forEach((subcategoryMap, categoryKey) => {
+      options[categoryKey] = Array.from(subcategoryMap.values()).sort((a, b) =>
+        a.localeCompare(b, "sv")
+      );
+    });
+
+    return options;
+  }, [moduleLibrary]);
 
   useEffect(() => {
     // Keep the builder library in sync when Supabase data refreshes.
@@ -607,6 +654,8 @@ export const useScheduleBuilderState = ({
       resetModuleForm,
       isSavingModule,
       isCreateModuleModalOpen,
+      categoryOptions,
+      subcategoryOptions,
       openCreateModal: () => setIsCreateModuleModalOpen(true),
       closeCreateModal: closeCreateModuleModal,
       handleRemoveLibraryModule,
