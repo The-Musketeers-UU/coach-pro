@@ -851,7 +851,7 @@ function ScheduleBuilderPage() {
         onChange={(event) => setIsDrawerOpen(event.target.checked)}
       />
       <div
-        className={`drawer-content min-h-screen flex flex-col ${
+        className={`drawer-content min-h-screen ${
           isAlternateLayout ? "" : "2xl:ml-[260px]"
         }`}
       >
@@ -861,7 +861,7 @@ function ScheduleBuilderPage() {
             onOpen={() => setIsDrawerOpen(true)}
           />
         )}
-        <div className="mx-auto max-w-full px-5 py-5 flex flex-col flex-1 min-h-0">
+        <div className="mx-auto max-w-full px-5 py-5">
           {!isAlternateLayout && (
             <DrawerToggle
               targetId="reusable-blocks-drawer"
@@ -932,7 +932,6 @@ function ScheduleBuilderPage() {
             isSavingTemplate={isSavingTemplate}
             isApplyingTemplate={isApplyingTemplate}
             onOpenMobileLibrary={openMobileLibrary}
-            isAlternateLayout={isAlternateLayout}
           />
         </div>
 
