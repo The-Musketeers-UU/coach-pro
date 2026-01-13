@@ -787,20 +787,13 @@ export default function TrainingGroupsPage() {
                                 <p className="font-semibold">{coach.name}</p>
                                 <p className="text-xs text-base-content/70">{coach.email}</p>
                               </div>
-                              <div className="flex gap-2">
-                                <button
-                                  className="btn btn-ghost btn-xs"
-                                  type="button"
-                                  onClick={() => setHeadCoach(coach)}
-                                >
-                                  Gör till huvudcoach
-                                </button>
+                              <div className="flex shrink-0">
                                 <button
                                   className="btn btn-outline btn-xs"
                                   type="button"
                                   onClick={() => addAssistantCoach(coach)}
                                 >
-                                  Lägg till som assisterande
+                                  Lägg till assisterande
                                 </button>
                               </div>
                             </div>
