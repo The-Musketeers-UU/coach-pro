@@ -322,9 +322,9 @@ export default function StatsPage() {
             <p className="text-xs font-semibold uppercase tracking-wide text-base-content/70">
               Statistik
             </p>
-            <h1 className="text-2xl font-semibold leading-tight">Traningens utveckling</h1>
+            <h1 className="text-2xl font-semibold leading-tight">Träningens utveckling</h1>
             <p className="text-sm text-base-content/70">
-              Visar veckor med tilldelat schema for {selectedAthleteName}.
+              Visar veckor med tilldelat schema för {selectedAthleteName}.
             </p>
           </div>
 
@@ -332,7 +332,7 @@ export default function StatsPage() {
             <label className="form-control w-full max-w-xs">
               <div className="label py-1">
                 <span className="label-text text-xs uppercase tracking-wide text-base-content/70">
-                  Valj atlet
+                  Välj atlet
                 </span>
               </div>
               <select
@@ -342,7 +342,7 @@ export default function StatsPage() {
                 disabled={athletes.length === 0}
               >
                 <option value="" disabled>
-                  {athletes.length === 0 ? "Inga atleter" : "Valj"}
+                  {athletes.length === 0 ? "Inga atleter" : "Välj"}
                 </option>
                 {athletes.map((athlete) => (
                   <option key={athlete.id} value={athlete.id}>
@@ -358,9 +358,9 @@ export default function StatsPage() {
 
         {!hasData ? (
           <div className="rounded-2xl border border-dashed border-base-300 bg-base-100 p-6 text-center">
-            <p className="text-lg font-semibold">Inget att visa an</p>
+            <p className="text-lg font-semibold">Inget att visa än</p>
             <p className="text-sm text-base-content/70">
-              Vi hittar inga pass med inspelad feedback for de veckor som har delats ut.
+              Vi hittar inga pass med insamlad feedback för de veckor som har delats ut.
             </p>
           </div>
         ) : (
@@ -395,7 +395,7 @@ export default function StatsPage() {
                   </p>
                   <p className="text-2xl font-semibold">{formatDistance(overall.distance)}</p>
                   <p className="text-xs text-base-content/70">
-                    Summerar distans fran feedback i tilldelade pass.
+                    Summerar distans från feedback i tilldelade pass.
                   </p>
                 </div>
               </div>
@@ -409,7 +409,7 @@ export default function StatsPage() {
                     {formatDurationTotal(overall.duration)}
                   </p>
                   <p className="text-xs text-base-content/70">
-                    Beraknar total tid med inspelad feedback.
+                    Beräknar total tid med insamlad feedback.
                   </p>
                 </div>
               </div>
@@ -417,14 +417,14 @@ export default function StatsPage() {
               <div className="card border border-base-300 bg-base-200 shadow-sm">
                 <div className="card-body gap-2">
                   <p className="text-xs uppercase tracking-wide text-base-content/70">
-                    Snittvarden
+                    Snittvärden
                   </p>
                   <div className="flex items-baseline gap-3">
                     <div>
                       <p className="text-2xl font-semibold">
                         {formatAverage(overall.avgFeeling)}
                       </p>
-                      <p className="text-xs text-base-content/70">Kansla</p>
+                      <p className="text-xs text-base-content/70">Känsla</p>
                     </div>
                     <div className="divider divider-horizontal" />
                     <div>
@@ -443,9 +443,9 @@ export default function StatsPage() {
                 <div className="flex items-center justify-between">
                   <div>
                     <p className="text-xs uppercase tracking-wide text-base-content/70">
-                      Datatackning
+                      Datatäckning
                     </p>
-                    <h2 className="text-lg font-semibold">Falt dar feedback har sparats</h2>
+                    <h2 className="text-lg font-semibold">Fält där feedback har sparats</h2>
                   </div>
                   <span className="text-sm text-base-content/70">
                     Totalt {coverage.total} pass tilldelade
@@ -498,7 +498,7 @@ export default function StatsPage() {
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-xs uppercase tracking-wide text-base-content/70">
-                    Vecka for vecka
+                    Vecka för vecka
                   </p>
                   <h2 className="text-lg font-semibold">Utveckling i respektive vecka</h2>
                 </div>
@@ -519,7 +519,7 @@ export default function StatsPage() {
                           <h3 className="text-lg font-semibold">{week.label}</h3>
                         </div>
                         <div className="text-right">
-                          <p className="text-xs text-base-content/70">Feedbacktackning</p>
+                          <p className="text-xs text-base-content/70">Feedbacktäckning</p>
                           <p className="text-xl font-semibold">{week.completionRate}%</p>
                         </div>
                       </div>
@@ -570,7 +570,7 @@ export default function StatsPage() {
 
                         <div className="rounded-xl border border-base-300 bg-base-200 p-3">
                           <p className="text-xs uppercase tracking-wide text-base-content/70">
-                            Kansla
+                            Känsla
                           </p>
                           <p className="text-base font-semibold">
                             {formatAverage(week.avgFeeling)}
