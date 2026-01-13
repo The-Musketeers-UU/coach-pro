@@ -8,6 +8,8 @@ type CreateModuleModalProps = {
   newModule: ModuleForm;
   formError: string | null;
   isSubmitting: boolean;
+  categoryOptions: string[];
+  subcategoryOptions: Record<string, string[]>;
   onClose: () => void;
   onSubmit: (event: FormEvent<HTMLFormElement>) => void;
   onUpdate: Dispatch<SetStateAction<ModuleForm>>;
@@ -18,6 +20,8 @@ export function CreateModuleModal({
   newModule,
   formError,
   isSubmitting,
+  categoryOptions,
+  subcategoryOptions,
   onClose,
   onSubmit,
   onUpdate,
@@ -37,7 +41,12 @@ export function CreateModuleModal({
         {formError && <div className="alert alert-error text-sm">{formError}</div>}
 
         <form className="space-y-3" onSubmit={onSubmit}>
-          <ModuleFormFields formState={newModule} onChange={onUpdate} />
+          <ModuleFormFields
+            formState={newModule}
+            onChange={onUpdate}
+            categoryOptions={categoryOptions}
+            subcategoryOptions={subcategoryOptions}
+          />
 
           <div className="mt-7 flex justify-end">
             <button

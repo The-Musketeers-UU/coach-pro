@@ -28,12 +28,7 @@ textarea,
   caret-color: auto;
 }
 
-html {
-  background-color: hsl(var(--b2));
-}
-
 body {
-  background-color: inherit;
   overflow-x: hidden;
   scrollbar-gutter: stable;
 }

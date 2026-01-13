@@ -583,6 +583,13 @@ export default function TrainingGroupsPage() {
       ]);
       setGroups(loadedGroups);
       setPendingInvites(loadedInvites);
+      if (typeof window !== "undefined") {
+        window.dispatchEvent(
+          new CustomEvent("training-group-invites-updated", {
+            detail: loadedInvites.length,
+          }),
+        );
+      }
       if (profile.isCoach) {
         setPendingJoinRequests(loadedRequests);
       }

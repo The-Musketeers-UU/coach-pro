@@ -849,9 +849,31 @@ function ScheduleBuilderPage() {
           {existingWeekError && (
             <div className="alert alert-warning">{existingWeekError}</div>
           )}
-          {templateError && <div className="alert alert-error">{templateError}</div>}
+          {templateError && (
+            <div className="alert alert-error flex items-center justify-between">
+              <span>{templateError}</span>
+              <button
+                type="button"
+                className="btn btn-ghost btn-xs"
+                aria-label="Stäng"
+                onClick={() => setTemplateError(null)}
+              >
+                ✕
+              </button>
+            </div>
+          )}
           {templateSuccess && (
-            <div className="alert alert-success">{templateSuccess}</div>
+            <div className="alert alert-success flex items-center justify-between">
+              <span>{templateSuccess}</span>
+              <button
+                type="button"
+                className="btn btn-ghost btn-xs"
+                aria-label="Stäng"
+                onClick={() => setTemplateSuccess(null)}
+              >
+                ✕
+              </button>
+            </div>
           )}
 
           <ScheduleSection
@@ -876,11 +898,6 @@ function ScheduleBuilderPage() {
               scheduleControls.toggleScheduledModuleExpansion
             }
             onAssignClick={handleOpenAssignModal}
-            weekOptions={weekOptions}
-            selectedWeek={selectedWeek}
-            onWeekChange={setSelectedWeek}
-            scheduleTitle={scheduleTitle}
-            onScheduleTitleChange={setScheduleTitle}
             templateOptions={templateOptions}
             selectedTemplate={selectedTemplateId}
             onTemplateChange={setSelectedTemplateId}
@@ -915,6 +932,8 @@ function ScheduleBuilderPage() {
           newModule={libraryControls.newModule}
           formError={libraryControls.formError}
           isSubmitting={libraryControls.isSavingModule}
+          categoryOptions={libraryControls.categoryOptions}
+          subcategoryOptions={libraryControls.subcategoryOptions}
           onClose={libraryControls.closeCreateModal}
           onSubmit={libraryControls.handleAddModule}
           onUpdate={libraryControls.setNewModule}
@@ -928,6 +947,11 @@ function ScheduleBuilderPage() {
           toggleGroupSelection={toggleGroupSelection}
           selectedAthletes={assignControls.selectedAthletes}
           toggleAthleteSelection={assignControls.toggleAthleteSelection}
+          scheduleTitle={scheduleTitle}
+          onScheduleTitleChange={setScheduleTitle}
+          weekOptions={weekOptions}
+          selectedWeek={selectedWeek}
+          onWeekChange={setSelectedWeek}
           onClose={handleCloseAssignModal}
           onAssign={handleAssignToAthletes}
           isAssigning={isAssigning}
@@ -942,6 +966,8 @@ function ScheduleBuilderPage() {
           editingContext={editingControls.editingContext}
           editingModuleForm={editingControls.editingModuleForm}
           editFormError={editingControls.editFormError}
+          categoryOptions={libraryControls.categoryOptions}
+          subcategoryOptions={libraryControls.subcategoryOptions}
           setEditingModuleForm={editingControls.setEditingModuleForm}
           onClose={editingControls.closeEditModal}
           onSave={editingControls.handleSaveEditedModule}
