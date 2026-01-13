@@ -15,6 +15,7 @@ import {
   DrawerToggle,
   EditModuleModal,
   ReusableBlocksDrawer,
+  ReusableBlocksShelf,
   ReusableBlocksModal,
   ScheduleSection,
   type DaySchedule,
@@ -337,6 +338,7 @@ function ScheduleBuilderPage() {
   } = scheduleControls;
 
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
+  const [isAlternateLayout, setIsAlternateLayout] = useState(false);
   const [mobileLibraryDayId, setMobileLibraryDayId] = useState<string | null>(
     null
   );
@@ -374,6 +376,18 @@ function ScheduleBuilderPage() {
 
     addLibraryModuleToDay(mobileLibraryDayId, selectedMobileModuleId);
     closeMobileLibrary();
+  };
+
+  const handleSwitchToShelf = () => {
+    setIsAlternateLayout(true);
+    setIsDrawerOpen(false);
+  };
+
+  const handleSwitchToDrawer = () => {
+    setIsAlternateLayout(false);
+    if (typeof window !== "undefined") {
+      setIsDrawerOpen(window.matchMedia("(min-width: 1536px)").matches);
+    }
   };
 
   useEffect(() => {
@@ -826,24 +840,34 @@ function ScheduleBuilderPage() {
   };
 
   return (
-    <div className={`drawer ${isDrawerOpen ? "drawer-open" : ""} 2xl:drawer-open`}>
+    <div
+      className={`drawer ${isDrawerOpen && !isAlternateLayout ? "drawer-open" : ""} 2xl:drawer-open`}
+    >
       <input
         id="reusable-blocks-drawer"
         type="checkbox"
         className="drawer-toggle"
-        checked={isDrawerOpen}
+        checked={isDrawerOpen && !isAlternateLayout}
         onChange={(event) => setIsDrawerOpen(event.target.checked)}
       />
-      <div className="drawer-content min-h-screen 2xl:ml-[260px]">
-        <DrawerHandle
-          isOpen={isDrawerOpen}
-          onOpen={() => setIsDrawerOpen(true)}
-        />
-        <div className="mx-auto max-w-full px-5 py-5">
-          <DrawerToggle
-            targetId="reusable-blocks-drawer"
+      <div
+        className={`drawer-content min-h-screen ${
+          isAlternateLayout ? "" : "2xl:ml-[260px]"
+        }`}
+      >
+        {!isAlternateLayout && (
+          <DrawerHandle
+            isOpen={isDrawerOpen}
             onOpen={() => setIsDrawerOpen(true)}
           />
+        )}
+        <div className="mx-auto max-w-full px-5 py-5">
+          {!isAlternateLayout && (
+            <DrawerToggle
+              targetId="reusable-blocks-drawer"
+              onOpen={() => setIsDrawerOpen(true)}
+            />
+          )}
 
           {dataError && <div className="alert alert-error">{dataError}</div>}
           {existingWeekError && (
@@ -975,22 +999,40 @@ function ScheduleBuilderPage() {
         />
       </div>
 
-      <ReusableBlocksDrawer
-        search={libraryControls.search}
-        setSearch={libraryControls.setSearch}
-        filteredModules={libraryControls.filteredModules}
-        setActiveDrag={dragState.setActiveDrag}
-        dragPointerOffsetYRef={dragState.dragPointerOffsetYRef}
-        setDropPreview={dragState.setDropPreview}
-        startEditingModule={editingControls.startEditingModule}
-        handleRemoveLibraryModule={libraryControls.handleRemoveLibraryModule}
-        resetModuleForm={libraryControls.resetModuleForm}
-        openCreateModal={libraryControls.openCreateModal}
-        onHoverOpen={() => setIsDrawerOpen(true)}
-        onHoverClose={() => setIsDrawerOpen(false)}
-        onClose={() => setIsDrawerOpen(false)}
-        onDragOutsideBounds={() => setIsDrawerOpen(false)}
-      />
+      {!isAlternateLayout && (
+        <ReusableBlocksDrawer
+          search={libraryControls.search}
+          setSearch={libraryControls.setSearch}
+          filteredModules={libraryControls.filteredModules}
+          setActiveDrag={dragState.setActiveDrag}
+          dragPointerOffsetYRef={dragState.dragPointerOffsetYRef}
+          setDropPreview={dragState.setDropPreview}
+          startEditingModule={editingControls.startEditingModule}
+          handleRemoveLibraryModule={libraryControls.handleRemoveLibraryModule}
+          resetModuleForm={libraryControls.resetModuleForm}
+          openCreateModal={libraryControls.openCreateModal}
+          onSwitchToShelf={handleSwitchToShelf}
+          onHoverOpen={() => setIsDrawerOpen(true)}
+          onHoverClose={() => setIsDrawerOpen(false)}
+          onClose={() => setIsDrawerOpen(false)}
+          onDragOutsideBounds={() => setIsDrawerOpen(false)}
+        />
+      )}
+      {isAlternateLayout && (
+        <ReusableBlocksShelf
+          search={libraryControls.search}
+          setSearch={libraryControls.setSearch}
+          filteredModules={libraryControls.filteredModules}
+          setActiveDrag={dragState.setActiveDrag}
+          dragPointerOffsetYRef={dragState.dragPointerOffsetYRef}
+          setDropPreview={dragState.setDropPreview}
+          startEditingModule={editingControls.startEditingModule}
+          handleRemoveLibraryModule={libraryControls.handleRemoveLibraryModule}
+          resetModuleForm={libraryControls.resetModuleForm}
+          openCreateModal={libraryControls.openCreateModal}
+          onSwitchToDrawer={handleSwitchToDrawer}
+        />
+      )}
     </div>
   );
 }

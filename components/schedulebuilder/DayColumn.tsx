@@ -90,17 +90,13 @@ export function DayColumn({
 
       <div className="mt-3 flex-1 space-y-1">
         {modules.length === 0 && (
-<div className="hidden sm:block h-full rounded-xl bg-base-100/60 p-4">
-    {/* Lägg till Flexbox-klasser på den yttre DIV:en */}
-    <div className="h-full flex items-center justify-center"> 
-        
-        {/* Ta bort text-center härifrån om du vill centrera hela textblocket */
-           /* Om du vill ha flera rader text: behåll text-center här */ }
-        <div className="text-center text-xs text-base-content/60">
-            Dra en modul hit
-        </div>
-    </div>
-</div>
+          <div className="hidden sm:block h-full rounded-xl bg-base-100/60 p-4">
+            <div className="flex h-full items-center justify-center">
+              <div className="text-center text-xs text-base-content/60">
+                Dra en modul hit
+              </div>
+            </div>
+          </div>
         )}
 
         <button

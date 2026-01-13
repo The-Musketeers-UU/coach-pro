@@ -9,6 +9,7 @@ export { ModuleBadges } from "../ModuleBadges";
 export { ModuleFormFields } from "./ModuleFormFields";
 export { ReusableBlocksModal } from "./ReusableBlocksModal";
 export { ReusableBlocksDrawer } from "./ReusableBlocksDrawer";
+export { ReusableBlocksShelf } from "./ReusableBlocksShelf";
 export { ScheduleSection } from "./ScheduleSection";
 export { ScheduledModuleCard } from "./ScheduledModuleCard";
 export { useScheduleBuilderState } from "./useScheduleBuilderState";

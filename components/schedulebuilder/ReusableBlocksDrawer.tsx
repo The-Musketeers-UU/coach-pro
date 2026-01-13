@@ -20,6 +20,7 @@ type ReusableBlocksDrawerProps = {
   handleRemoveLibraryModule: (moduleId: string) => void;
   resetModuleForm: () => void;
   openCreateModal: () => void;
+  onSwitchToShelf: () => void;
   onHoverOpen: () => void;
   onHoverClose: () => void;
   onClose: () => void;
@@ -37,6 +38,7 @@ export function ReusableBlocksDrawer({
   handleRemoveLibraryModule,
   resetModuleForm,
   openCreateModal,
+  onSwitchToShelf,
   onHoverOpen,
   onHoverClose,
   onClose,
@@ -109,6 +111,13 @@ export function ReusableBlocksDrawer({
             }}
           >
             + Skapa ny modul
+          </button>
+          <button
+            type="button"
+            className="btn btn-outline btn-sm w-full"
+            onClick={onSwitchToShelf}
+          >
+            Alternativ layout
           </button>
         </div>
         <div className="min-h-0 flex-1 space-y-3 overflow-y-auto pr-1">
