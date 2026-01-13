@@ -41,7 +41,7 @@ export function AssignScheduleModal({
 }: AssignScheduleModalProps) {
   return (
     <dialog className={`modal ${isOpen ? "modal-open" : ""}`}>
-      <div className="modal-box flex max-h-[70vh] max-w-md flex-col">
+      <div className="modal-box flex max-h-[80vh] max-w-md flex-col">
         <div className="flex items-start justify-between gap-4">
           <div>
             <h3 className="text-xl font-semibold">Tilldela schema</h3>
