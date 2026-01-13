@@ -168,7 +168,13 @@ export default function AthleteSchedulePage() {
       try {
         const athleteRows = await getCoachAthletes(profile.id);
         setAthletes(athleteRows);
-        setSelectedAthlete((current) => current || athleteRows[0]?.id || "");
+        setSelectedAthlete((current) => {
+          if (athleteRows.length === 0) return "";
+          if (current && athleteRows.some((athlete) => athlete.id === current)) {
+            return current;
+          }
+          return athleteRows[0]?.id ?? "";
+        });
       } catch (supabaseError) {
         setError(
           supabaseError instanceof Error
