@@ -51,8 +51,10 @@ type ScheduleSectionProps = {
   onTemplateNameChange: (value: string) => void;
   onSaveTemplate: () => void;
   onApplyTemplate: () => void;
+  onDeleteTemplate: () => void;
   isSavingTemplate: boolean;
   isApplyingTemplate: boolean;
+  isDeletingTemplate: boolean;
   onOpenMobileLibrary: (dayId: string) => void;
 };
 
@@ -83,8 +85,10 @@ export function ScheduleSection({
   onTemplateNameChange,
   onSaveTemplate,
   onApplyTemplate,
+  onDeleteTemplate,
   isSavingTemplate,
   isApplyingTemplate,
+  isDeletingTemplate,
   onOpenMobileLibrary,
 }: ScheduleSectionProps) {
   const [selectedDayId, setSelectedDayId] = useState<string | null>(
@@ -152,6 +156,13 @@ export function ScheduleSection({
                   disabled={!selectedTemplate || isApplyingTemplate}
                 >
                   {isApplyingTemplate ? "Laddar..." : "Ladda mall"}
+                </button>
+                <button
+                  className="btn btn-outline btn-error btn-sm"
+                  onClick={onDeleteTemplate}
+                  disabled={!selectedTemplate || isDeletingTemplate}
+                >
+                  {isDeletingTemplate ? "Raderar..." : "Radera mall"}
                 </button>
               </div>
             </div>

@@ -43,6 +43,7 @@ import {
   getScheduleTemplateWithModulesById,
   getScheduleTemplatesByOwner,
   getTrainingGroupsForUser,
+  deleteScheduleTemplate,
 } from "@/lib/supabase/training-modules";
 
 type WeekOption = { value: string; label: string };
@@ -280,6 +281,7 @@ function ScheduleBuilderPage() {
   const [templateSuccess, setTemplateSuccess] = useState<string | null>(null);
   const [isSavingTemplate, setIsSavingTemplate] = useState(false);
   const [isApplyingTemplate, setIsApplyingTemplate] = useState(false);
+  const [isDeletingTemplate, setIsDeletingTemplate] = useState(false);
 
   const persistModule = async (module: Module): Promise<Module> => {
     if (!profile?.id) {
@@ -678,6 +680,46 @@ function ScheduleBuilderPage() {
     }
   };
 
+  const handleDeleteTemplate = async () => {
+    if (!profile?.id) {
+      setTemplateError("Inloggning krävs för att radera mallar.");
+      return;
+    }
+
+    if (!selectedTemplateId) {
+      setTemplateError("Välj en mall att radera.");
+      return;
+    }
+
+    const templateToDelete = templates.find(
+      (template) => template.id === selectedTemplateId,
+    );
+    const shouldDelete = window.confirm(
+      `Vill du radera mallen "${templateToDelete?.name ?? "Okänd mall"}"?`,
+    );
+    if (!shouldDelete) return;
+
+    setTemplateError(null);
+    setTemplateSuccess(null);
+    setIsDeletingTemplate(true);
+
+    try {
+      await deleteScheduleTemplate(selectedTemplateId);
+      const updatedTemplates = await getScheduleTemplatesByOwner(profile.id);
+      setTemplates(updatedTemplates);
+      setSelectedTemplateId("");
+      setTemplateSuccess("Mallen har raderats.");
+    } catch (templateFailure) {
+      setTemplateError(
+        templateFailure instanceof Error
+          ? templateFailure.message
+          : String(templateFailure),
+      );
+    } finally {
+      setIsDeletingTemplate(false);
+    }
+  };
+
   const handleAssignToAthletes = async () => {
     if (!profile?.id) {
       setAssignError("Inloggning krävs för att tilldela scheman.");
@@ -849,9 +891,31 @@ function ScheduleBuilderPage() {
           {existingWeekError && (
             <div className="alert alert-warning">{existingWeekError}</div>
           )}
-          {templateError && <div className="alert alert-error">{templateError}</div>}
+          {templateError && (
+            <div className="alert alert-error flex items-start justify-between gap-2">
+              <span>{templateError}</span>
+              <button
+                type="button"
+                className="btn btn-ghost btn-xs"
+                aria-label="Stäng meddelande"
+                onClick={() => setTemplateError(null)}
+              >
+                ✕
+              </button>
+            </div>
+          )}
           {templateSuccess && (
-            <div className="alert alert-success">{templateSuccess}</div>
+            <div className="alert alert-success flex items-start justify-between gap-2">
+              <span>{templateSuccess}</span>
+              <button
+                type="button"
+                className="btn btn-ghost btn-xs"
+                aria-label="Stäng meddelande"
+                onClick={() => setTemplateSuccess(null)}
+              >
+                ✕
+              </button>
+            </div>
           )}
 
           <ScheduleSection
@@ -883,8 +947,10 @@ function ScheduleBuilderPage() {
             onTemplateNameChange={setTemplateName}
             onSaveTemplate={handleSaveTemplate}
             onApplyTemplate={handleApplyTemplate}
+            onDeleteTemplate={handleDeleteTemplate}
             isSavingTemplate={isSavingTemplate}
             isApplyingTemplate={isApplyingTemplate}
+            isDeletingTemplate={isDeletingTemplate}
             onOpenMobileLibrary={openMobileLibrary}
           />
         </div>

@@ -2156,6 +2156,25 @@ export const clearScheduleTemplate = async (templateId: string): Promise<void> =
     throw toReadableError(error);
   }
 };
+
+export const deleteScheduleTemplate = async (templateId: string): Promise<void> => {
+  try {
+    await clearScheduleTemplate(templateId);
+
+    const { error } = await supabase
+      .from("scheduleTemplate")
+      .delete()
+      .eq("id", toDbNumericId(templateId));
+
+    if (error) {
+      console.error("Error deleting schedule template:", error);
+      throw toReadableError(error);
+    }
+  } catch (error) {
+    console.error("Error deleting schedule template via SQL query:", error);
+    throw toReadableError(error);
+  }
+};
 export const getScheduleWeekWithModulesById = async (
   weekId: string,
 ): Promise<ScheduleWeekWithModules | null> => {
