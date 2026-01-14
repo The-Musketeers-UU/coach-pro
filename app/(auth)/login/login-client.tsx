@@ -138,6 +138,11 @@ export default function LoginClient() {
             <Link href="/register" className="link link-primary">
               Skapa ett konto
             </Link>
+</p>
+             <p className="text-center text-sm">
+               <Link href="/forgot-password" className="link link-primary">
+            Glömt lösenordet?{" "}
+            </Link>
           </p>
         </div>
       </div>
