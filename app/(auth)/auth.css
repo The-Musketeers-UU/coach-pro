@@ -27,5 +27,8 @@ textarea,
 
   /* text lite ljusare */
   /*--color-base-content: oklch(97% 0.02 260);*/
+
+    /*lila text istället för rosa*/
+  --color-primary: oklch(58% 0.233 277.117);
 }
 
