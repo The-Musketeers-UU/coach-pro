@@ -6,7 +6,12 @@ import { FormEvent, Suspense, useEffect, useState } from "react";
 
 import { useAuth } from "@/components/auth-provider";
 import { getSupabaseBrowserClient } from "@/lib/supabase/browser-client";
-import { ensureUserForAuth } from "@/lib/supabase/training-modules";
+
+const resolveRedirectPath = (value: string | null) => {
+  if (!value) return "/";
+  if (value.startsWith("/") && !value.startsWith("//")) return value;
+  return "/";
+};
 
 export default function ForgotPassPage() {
   return (
@@ -19,17 +24,15 @@ export default function ForgotPassPage() {
 function ForgotPassword() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const redirectTo = searchParams.get("redirectTo") ?? "/";
+  const redirectTo = resolveRedirectPath(searchParams.get("redirectTo"));
 
   const supabase = getSupabaseBrowserClient();
   const { user, isLoading } = useAuth();
 
-  const [name, setName] = useState("");
   const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [role, setRole] = useState<"aktiv" | "coach">("aktiv");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [message, setMessage] = useState<string | null>(null);
 
   useEffect(() => {
     if (!isLoading && user) {
@@ -41,37 +44,19 @@ function ForgotPassword() {
     event.preventDefault();
     setIsSubmitting(true);
     setError(null);
+    setMessage(null);
 
     try {
-      const { data, error: signUpError } = await supabase.auth.signUp({
-        email,
-        password,
-        options: {
-          data: {
-            name: name.trim() || undefined,
-            isCoach: role === "coach",
-          },
-        },
+      const redirectUrl = new URL("/reset-password", window.location.origin);
+      redirectUrl.searchParams.set("redirectTo", redirectTo);
+
+      const { error: resetError } = await supabase.auth.resetPasswordForEmail(email, {
+        redirectTo: redirectUrl.toString(),
       });
 
-      if (signUpError) throw signUpError;
+      if (resetError) throw resetError;
 
-      const sessionResponse = await supabase.auth.getSession();
-      const sessionUser = data.session?.user ?? sessionResponse.data.session?.user;
-      const accessToken = data.session?.access_token ?? sessionResponse.data.session?.access_token;
-      const authUser = data.user ?? sessionUser;
-
-      const requiresEmailVerification = !data.session && !sessionResponse.data.session;
-
-      if (requiresEmailVerification) {
-        router.replace(`/login?verificationPending=1&redirectTo=${encodeURIComponent(redirectTo)}`);
-        return;
-      }
-
-      if (authUser) {
-        await ensureUserForAuth(authUser, accessToken);
-      }
-      router.replace(redirectTo);
+      setMessage("If an account exists for this email, a reset link is on the way.");
     } catch (authError) {
       setError(authError instanceof Error ? authError.message : String(authError));
     } finally {
@@ -82,14 +67,18 @@ function ForgotPassword() {
   return (
     <main className="flex items-center justify-center bg-base-200">
       <div className="card bg-base-100 shadow-xl w:[80vw] sm:w-md">
-        <div className="card-body">
-          <h1 className="text-2xl font-bold text-center">återställ lösenord</h1>
+        <div className="card-body space-y-3">
+          <div className="space-y-1 text-center">
+            <h1 className="text-2xl font-bold">Reset password</h1>
+            <p className="text-sm text-base-content/70">
+              Enter your email and we will send a reset link.
+            </p>
+          </div>
 
-          {error && <div className="alert alert-error mt-2">{error}</div>}
+          {error && <div className="alert alert-error">{error}</div>}
+          {message && <div className="alert alert-info">{message}</div>}
 
           <form className="space-y-4" onSubmit={handleSubmit}>
-        
-
             <div className="form-control">
               <label className="label">
                 <span className="label-text">E-post</span>
@@ -104,23 +93,19 @@ function ForgotPassword() {
               />
             </div>
 
-      
-
-           
-
             <div className="form-control mt-2 pt-4">
               <button
                 type="submit"
                 className="btn btn-primary w-full"
                 disabled={isSubmitting || isLoading}
               >
-                {isSubmitting ? "Skapar..." : "Skapa konto"}
+                {isSubmitting ? "Sending..." : "Send reset link"}
               </button>
             </div>
           </form>
 
-          <p className="text-center text-sm mt-4">
-            Har du redan ett konto?{" "}
+          <p className="text-center text-sm">
+            Already have an account?{" "}
             <Link href="/login" className="link link-primary">
               Logga in
             </Link>
