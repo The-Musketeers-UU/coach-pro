@@ -84,7 +84,7 @@ export function AssignScheduleModal({
             />
           </label>
           <section className="space-y-2">
-            <p className="text-xs font-semibold uppercase tracking-wide text-neutral">
+            <p className="text-xs font-semibold uppercase tracking-wide">
               Träningsgrupper
             </p>
             {trainingGroups.length === 0 ? (
@@ -125,7 +125,7 @@ export function AssignScheduleModal({
           </section>
 
           <section className="space-y-2">
-            <p className="text-xs font-semibold uppercase tracking-wide text-neutral">Aktiva</p>
+            <p className="text-xs font-semibold uppercase tracking-wide">Aktiva</p>
             <div className="max-h-56 overflow-y-auto pr-1">
               <div className="grid gap-2">
                 {athletes.map((athlete) => (

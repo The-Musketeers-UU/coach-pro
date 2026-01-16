@@ -854,7 +854,7 @@ export function WeekScheduleView({
             <div className="grid gap-4 md:grid-cols-[minmax(320px,1fr)_minmax(360px,0.8fr)]">
               <div className="space-y-4 rounded-2xl border border-base-300 bg-base-100 p-4">
                 <div className="space-y-2">
-                  <p className="text-xs uppercase tracking-wide text-neutral">
+                  <p className="text-xs uppercase tracking-wide">
                     Beskrivning
                   </p>
                   <div className="h-70 rounded-lg border border-base-200 bg-base-100/70 p-3 overflow-y-auto">
@@ -866,7 +866,7 @@ export function WeekScheduleView({
 
                 <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                   <div className="space-y-1">
-                    <p className="text-xs uppercase tracking-wide text-neutral">
+                    <p className="text-xs uppercase tracking-wide">
                       Kategori
                     </p>
                     <p className="badge badge-sm capitalize badge-accent">
@@ -875,7 +875,7 @@ export function WeekScheduleView({
                   </div>
 
                   <div className="space-y-1">
-                    <p className="text-xs uppercase tracking-wide text-neutral">
+                    <p className="text-xs uppercase tracking-wide">
                       Underkategori
                     </p>
                     <p className="badge badge-sm capitalize badge-accent badge-outline">
@@ -887,7 +887,7 @@ export function WeekScheduleView({
 
               <div className="flex h-full flex-col space-y-3 rounded-2xl border border-base-300 bg-base-100 p-4">
                 <div className="flex items-center justify-between gap-2">
-                  <p className="text-xs uppercase tracking-wide text-neutral">
+                  <p className="text-xs uppercase tracking-wide">
                     {isAthlete ? "Din feedback" : "Atletens feedback"}
                   </p>
 

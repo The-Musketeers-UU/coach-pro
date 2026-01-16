@@ -42,7 +42,7 @@ export function ReusableBlocksModal({
       <div className="modal-box flex h-[80vh] max-w-md flex-col space-y-4 p-0 md:h-auto">
         <div className="flex items-center justify-between border-b border-base-200 px-5 py-4">
           <div>
-            <p className="text-xs font-semibold uppercase tracking-wide text-neutral">
+            <p className="text-xs font-semibold uppercase tracking-wide">
               Sparade moduler
             </p>
             {dayLabel && (
